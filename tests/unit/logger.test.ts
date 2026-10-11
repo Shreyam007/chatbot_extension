@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Logger, redactSecrets, createLogger } from '../../src/shared/logger';
+import { createSyntheticKey, createSyntheticKeyWithDigits } from '../helpers/keys';
 
 describe('Step 2: Structured Logger & Secret Redaction', () => {
   beforeEach(() => {
@@ -8,9 +9,10 @@ describe('Step 2: Structured Logger & Secret Redaction', () => {
 
   describe('redactSecrets', () => {
     it('redacts Google Gemini API keys from strings', () => {
-      const raw = 'Calling Gemini with key AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q and model gemini-2.5-flash';
+      const syntheticKey = createSyntheticKey('A');
+      const raw = `Calling Gemini with key ${syntheticKey} and model gemini-2.5-flash`;
       const redacted = redactSecrets(raw);
-      expect(redacted).not.toContain('AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q');
+      expect(redacted).not.toContain(syntheticKey);
       expect(redacted).toContain('[REDACTED_API_KEY]');
       expect(redacted).toContain('gemini-2.5-flash');
     });
@@ -53,13 +55,14 @@ describe('Step 2: Structured Logger & Secret Redaction', () => {
 
     it('automatically redacts API keys logged via messages or data payloads', () => {
       const logger = createLogger('AuthService');
-      logger.error('Failed request with AIzaSy01234567890123456789012345678901234', {
-        key: 'AIzaSy01234567890123456789012345678901234',
+      const syntheticKey = createSyntheticKeyWithDigits();
+      logger.error(`Failed request with ${syntheticKey}`, {
+        key: syntheticKey,
       });
 
       const history = Logger.getHistory();
       expect(history[0]?.message).toContain('[REDACTED_API_KEY]');
-      expect(JSON.stringify(history[0]?.data)).not.toContain('AIzaSy01234567890123456789012345678901234');
+      expect(JSON.stringify(history[0]?.data)).not.toContain(syntheticKey);
     });
 
     it('caps ring buffer at max entries without unbounded growth', () => {

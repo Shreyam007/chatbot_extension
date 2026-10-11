@@ -8,6 +8,7 @@ import {
   formatDiagnostics,
   sanitizeDiagnosticsText,
 } from '../../src/ui/ErrorBoundary';
+import { createSyntheticKey } from '../helpers/keys';
 
 // Set React act environment flag
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -104,7 +105,7 @@ describe('ErrorBoundary Component (Step 14 & EC-127)', () => {
   });
 
   describe('Zero-Secret & Zero-Page-Content Leakage Guarantee (Rule 4 & Rule 3)', () => {
-    const REAL_LOOKING_KEY = 'AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q';
+    const REAL_LOOKING_KEY = createSyntheticKey('A');
     const SENSITIVE_PAGE_TEXT = '<<<UNTRUSTED_PAGE_DATA>>>leetcode problem statement with proprietary testcases<<<END_UNTRUSTED_DATA>>>';
     const SENSITIVE_CODE = 'statementText="Given an array of integers nums and an integer target, return indices"';
 

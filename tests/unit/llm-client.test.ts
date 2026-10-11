@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GeminiClient, LlmError, mapCodeToS13Screen } from '../../src/background/llm';
+import { createSyntheticKey } from '../helpers/keys';
 
 describe('GeminiClient & Error Mapping (Step 8)', () => {
-  const TEST_API_KEY = 'AIzaSy_fake_test_key_1234567890abcdef';
+  const TEST_API_KEY = 'FAKE_TEST_KEY_NOT_REAL_LLM';
   const originalFetch = global.fetch;
 
   beforeEach(() => {
@@ -336,7 +337,7 @@ describe('GeminiClient & Error Mapping (Step 8)', () => {
   });
 
   it('strictly redacts API keys from error messages, ensuring zero leakage (Rule 4)', async () => {
-    const secretKey = 'AIzaSySecretApiKeyThatMustNeverLeak12345';
+    const secretKey = createSyntheticKey('L');
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,

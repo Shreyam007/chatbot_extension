@@ -37,3 +37,17 @@ npm test
 2. Toggle on **Developer mode** in the top right.
 3. Click **Load unpacked**.
 4. Select the `.output/chrome-mv3` folder created by `npm run build`.
+
+---
+
+## Security & Pre-Commit Hook
+
+A secret scanner is included to prevent accidental credential commits:
+```bash
+# Audit repository for exposed secrets
+npm run security:scan
+
+# Enable the pre-commit hook in .git/hooks/
+npm run prepare
+```
+

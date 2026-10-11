@@ -10,6 +10,7 @@ import {
   closeDb
 } from '../../src/shared/storage';
 import { DEFAULT_SETTINGS } from '../../src/shared/config';
+import { createSyntheticKey } from '../helpers/keys';
 
 describe('Step 4: Privacy-Preserving Export (Rule 4)', () => {
   beforeEach(async () => {
@@ -21,7 +22,7 @@ describe('Step 4: Privacy-Preserving Export (Rule 4)', () => {
   });
 
   it('exports user settings, mastery, and event logs but STRICTLY OMITS the API key', async () => {
-    const secretApiKey = 'AIzaSy_CONFIDENTIAL_SECRET_KEY_123';
+    const secretApiKey = createSyntheticKey('C');
     await setStoredApiKey(secretApiKey);
 
     await setStoredSettings({

@@ -127,7 +127,7 @@ describe('Step 4: Storage Layer (IndexedDB & Chrome Storage)', () => {
   describe('Corrupt Record Recovery (EC-010)', () => {
     it('resets only corrupted settings to defaults while preserving other storage keys', async () => {
       // 1. Set valid API key and valid settings
-      await setStoredApiKey('AIzaSy_my_key_999');
+      await setStoredApiKey('FAKE_TEST_KEY_NOT_REAL_STORAGE');
       await setStoredSettings({
         ...DEFAULT_SETTINGS,
         trackingEnabled: true,
@@ -143,7 +143,7 @@ describe('Step 4: Storage Layer (IndexedDB & Chrome Storage)', () => {
 
       // 4. Verify API key was NOT touched or reset
       const apiKey = await getStoredApiKey();
-      expect(apiKey).toBe('AIzaSy_my_key_999');
+      expect(apiKey).toBe('FAKE_TEST_KEY_NOT_REAL_STORAGE');
     });
   });
 

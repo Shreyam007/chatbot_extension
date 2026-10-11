@@ -22,11 +22,11 @@ describe('Step 3: Onboarding State & API Key Testing', () => {
         ...DEFAULT_ONBOARDING_STATE,
         currentStep: 2,
         trackingEnabled: true,
-        apiKey: 'AIzaSy_custom_test_key_123',
+        apiKey: 'FAKE_TEST_KEY_NOT_REAL_ONBOARDING',
       });
       expect(updated.currentStep).toBe(2);
       expect(updated.trackingEnabled).toBe(true);
-      expect(updated.apiKey).toBe('AIzaSy_custom_test_key_123');
+      expect(updated.apiKey).toBe('FAKE_TEST_KEY_NOT_REAL_ONBOARDING');
     });
 
     it('rejects invalid step numbers', () => {
@@ -76,7 +76,7 @@ describe('Step 3: Onboarding State & API Key Testing', () => {
     });
 
     it('handles Google AI API 403 error parsing without leaking key in error message', async () => {
-      const sensitiveKey = 'AIzaSy_super_secret_user_key_456';
+      const sensitiveKey = 'FAKE_TEST_KEY_NOT_REAL_SENSITIVE';
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 403,

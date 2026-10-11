@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "security:scan": "node scripts/scan-secrets.mjs",
+    "prepare": "node scripts/setup-hooks.mjs"
   },
   "dependencies": {
     "idb": "^8.0.4",

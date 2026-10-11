@@ -15,6 +15,11 @@ playwright-report/
 .env
 .env.*
 *.local
+*.pem
+*.key
+*.pfx
+secrets.*
+credentials.json
 
 # Logs
 *.log

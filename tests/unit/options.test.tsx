@@ -59,7 +59,7 @@ describe('OptionsApp & Privacy Tools (Step 12 — S11)', () => {
     window.location.hash = '#ai';
 
     // Default mocks
-    vi.mocked(storage.getStoredApiKey).mockResolvedValue('AIzaSy_mock_test_key');
+    vi.mocked(storage.getStoredApiKey).mockResolvedValue('FAKE_TEST_KEY_NOT_REAL_OPTIONS');
     vi.mocked(storage.getStoredSettings).mockResolvedValue(mockSettings);
     vi.mocked(messaging.sendToBackground).mockImplementation(async (req) => {
       if (req.type === 'GET_SETTINGS') {
@@ -128,7 +128,7 @@ describe('OptionsApp & Privacy Tools (Step 12 — S11)', () => {
     expect(container.querySelector('[data-testid="tab-ai-provider"]')).not.toBeNull();
     const apiKeyInput = container.querySelector('[data-testid="api-key-input"]') as HTMLInputElement;
     expect(apiKeyInput).not.toBeNull();
-    expect(apiKeyInput.value).toBe('AIzaSy_mock_test_key');
+    expect(apiKeyInput.value).toBe('FAKE_TEST_KEY_NOT_REAL_OPTIONS');
     expect(apiKeyInput.type).toBe('password');
 
     // Toggle reveal key
@@ -147,7 +147,7 @@ describe('OptionsApp & Privacy Tools (Step 12 — S11)', () => {
     expect(messaging.sendToBackground).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'TEST_API_KEY',
-        apiKey: 'AIzaSy_mock_test_key',
+        apiKey: 'FAKE_TEST_KEY_NOT_REAL_OPTIONS',
       })
     );
     expect(container.querySelector('[data-testid="test-api-success-indicator"]')).not.toBeNull();
