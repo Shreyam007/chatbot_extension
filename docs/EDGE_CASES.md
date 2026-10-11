@@ -34,7 +34,7 @@ Every edge case defined in Section 5 of `ANTIGRAVITY.md` is tracked here. Each i
 | EC-026 | Page language not English | Detect; still hint; reply in the user's chat language | `tests/unit/language.test.ts` › Multilingual & Hinglish Linguistic Robustness (EC-026) | passed |
 | EC-027 | Host page has strict CSP or aggressive CSS | Overlay unaffected (Shadow DOM); all network calls happen in the service worker | `tests/e2e/content-script.test.ts` › displays S08 nudge overlay inside isolated Shadow DOM | passed |
 | EC-028 | Editor virtualises code lines | Include-code is best-effort; show what was captured and let the user edit it before sending | `tests/unit/editor-capture.test.ts` › Editor Virtualization & Best-Effort Code Capture (EC-028) | passed |
-| EC-029 | Page text contains prompt-injection | Treated as data; level rules unchanged; test fixtures prove it | `tests/unit/critic.test.ts` › Security: Prompt Injection Neutralization (EC-029) & `tests/unit/injection.test.ts` | passed |
+| EC-029 | Page text contains prompt-injection | Treated as data; level rules unchanged; test fixtures prove it | `tests/unit/critic.test.ts` › Security: Prompt Injection Neutralization (EC-029) | passed |
 
 ---
 

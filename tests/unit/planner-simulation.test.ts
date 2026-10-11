@@ -209,10 +209,10 @@ describe('Planner Simulation: 200 Scripted Problem Sessions (Step 7)', () => {
         ? Math.round((banditStats.nudgesAccepted / banditStats.nudgesOffered) * 1000) / 10
         : 0;
 
-    console.log('\n===== STEP 7: 200-SESSION SIMULATION RESULTS =====');
+    console.log('\n===== STEP 7: 200-SESSION SIMULATION RESULTS (Synthetic simulation, not a user study) =====');
     console.log(`Fixed Baseline:   ${fixedStats.nudgesOffered} nudges | ${fixedStats.nudgesAccepted} accepts | ${fixedStats.nudgesDismissed} dismissals | ${fixedStats.acceptanceRate}% acceptance rate`);
     console.log(`Contextual Bandit: ${banditStats.nudgesOffered} nudges | ${banditStats.nudgesAccepted} accepts | ${banditStats.nudgesDismissed} dismissals | ${banditStats.acceptanceRate}% acceptance rate`);
-    console.log('=================================================\n');
+    console.log('====================================================================================\n');
 
     // Assertions per Step 7 Acceptance Criteria:
     // 1. Bandit acceptance rate is strictly higher than fixed baseline

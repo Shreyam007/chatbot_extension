@@ -30,6 +30,13 @@ yarn-error.log*
 # Exported user backups
 *-backup-*.json
 unstuck-backup-*.json
+unstuck-metrics-*.json
+unstuck-metrics-*.csv
+unstuck-metrics-*.md
+
+# Evaluation outputs
+eval-output/
+evaluation_results.*
 
 # OS files
 .DS_Store

@@ -11,6 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "eval": "vite-node scripts/evaluate.ts",
+    "eval:live": "vite-node scripts/evaluate-live.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "security:scan": "node scripts/scan-secrets.mjs",

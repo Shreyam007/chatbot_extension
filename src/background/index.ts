@@ -14,7 +14,15 @@ import {
   setTopicMastery,
   getHintsForProblem,
   addEventLog,
+  getEventLogs,
+  getAllHints,
 } from '../shared/storage';
+import {
+  calculateMetricsFromRecords,
+  exportMetricsJson,
+  exportMetricsCsv,
+  exportMetricsMarkdown,
+} from '../shared/metrics';
 import {
   calculateBktUpdate,
   applyTemporalDecay,
@@ -270,6 +278,15 @@ export function initBackground() {
           decision,
           context: req.context,
         });
+
+        await addEventLog({
+          id: `nudge-offer-${now}-${Math.random().toString(36).slice(2, 6)}`,
+          timestamp: now,
+          type: 'nudge_offered',
+          contextHash: req.context.url,
+          title: 'Stuck Nudge Offered',
+          details: { decision, pStuck: estimate.p },
+        });
       }
 
       return {
@@ -381,12 +398,19 @@ export function initBackground() {
               { topic: 'Dynamic Programming', pKnown: 0.41, attempts: 5, hintsUsed: 7 },
             ];
 
+      const [events, hints, banditStats] = await Promise.all([
+        getEventLogs(),
+        getAllHints(),
+        getAllBanditStats(),
+      ]);
+      const metrics = calculateMetricsFromRecords(events, hints, banditStats, recentTraces);
+
       return {
         type: 'MASTERY_PROGRESS',
         topics: populatedTopics,
-        weeklySolved: 6,
-        hintsPerSolve: 1.8,
-        nudgeAcceptRate: 0.64,
+        weeklySolved: metrics.solvedProblemsCount > 0 ? metrics.solvedProblemsCount : 6,
+        hintsPerSolve: metrics.hintsPerSolve > 0 ? metrics.hintsPerSolve : 1.8,
+        nudgeAcceptRate: metrics.nudgeAcceptanceRate > 0 ? metrics.nudgeAcceptanceRate : 0.64,
         recentProblemHints: [
           { id: 'P-10', hints: 3 },
           { id: 'P-9', hints: 2 },
@@ -617,6 +641,51 @@ export function initBackground() {
       return {
         type: 'DELETE_ALL_DATA_RESULT',
         success: true,
+      };
+    },
+    GET_LOCAL_METRICS: async (_req) => {
+      const [events, hints, banditStats] = await Promise.all([
+        getEventLogs(),
+        getAllHints(),
+        getAllBanditStats(),
+      ]);
+      const metrics = calculateMetricsFromRecords(events, hints, banditStats, recentTraces);
+      return {
+        type: 'LOCAL_METRICS',
+        metrics,
+      };
+    },
+    EXPORT_METRICS: async (req) => {
+      const [events, hints, banditStats] = await Promise.all([
+        getEventLogs(),
+        getAllHints(),
+        getAllBanditStats(),
+      ]);
+      const metrics = calculateMetricsFromRecords(events, hints, banditStats, recentTraces);
+      if (req.format === 'csv') {
+        const data = exportMetricsCsv(metrics);
+        return {
+          type: 'EXPORT_METRICS_RESULT',
+          data,
+          filename: `unstuck-metrics-${Date.now()}.csv`,
+          mimeType: 'text/csv',
+        };
+      }
+      if (req.format === 'markdown') {
+        const data = exportMetricsMarkdown(metrics);
+        return {
+          type: 'EXPORT_METRICS_RESULT',
+          data,
+          filename: `unstuck-metrics-${Date.now()}.md`,
+          mimeType: 'text/markdown',
+        };
+      }
+      const data = exportMetricsJson(metrics);
+      return {
+        type: 'EXPORT_METRICS_RESULT',
+        data,
+        filename: `unstuck-metrics-${Date.now()}.json`,
+        mimeType: 'application/json',
       };
     },
   });

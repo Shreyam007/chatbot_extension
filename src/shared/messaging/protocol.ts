@@ -5,6 +5,7 @@ import { SignalWindowSchema, NudgeDecisionSchema } from '../schemas/signals';
 import { HintSchema, HintLevelSchema } from '../schemas/hints';
 import { OnboardingStateSchema } from '../schemas/onboarding';
 import { WeakTopicRecommendationSchema } from '../schemas/mastery';
+import { LocalMetricsSummarySchema } from '../metrics/types';
 
 /**
  * Request Channels (RPC style)
@@ -332,6 +333,27 @@ export const GetPopupStateResponseSchema = z.object({
   hintsLeftCount: z.number(),
 });
 
+export const GetLocalMetricsRequestSchema = z.object({
+  type: z.literal('GET_LOCAL_METRICS'),
+});
+
+export const GetLocalMetricsResponseSchema = z.object({
+  type: z.literal('LOCAL_METRICS'),
+  metrics: LocalMetricsSummarySchema,
+});
+
+export const ExportMetricsRequestSchema = z.object({
+  type: z.literal('EXPORT_METRICS'),
+  format: z.enum(['json', 'csv', 'markdown']),
+});
+
+export const ExportMetricsResponseSchema = z.object({
+  type: z.literal('EXPORT_METRICS_RESULT'),
+  data: z.string(),
+  filename: z.string(),
+  mimeType: z.string(),
+});
+
 /**
  * Union of all valid requests
  */
@@ -362,6 +384,8 @@ export const BusRequestSchema = z.discriminatedUnion('type', [
   BlockSiteRequestSchema,
   GetPopupStateRequestSchema,
   GetWeakTopicsReviewRequestSchema,
+  GetLocalMetricsRequestSchema,
+  ExportMetricsRequestSchema,
 ]);
 
 /**
