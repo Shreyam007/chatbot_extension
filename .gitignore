@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build and framework outputs
+.output/
+.wxt/
+dist/
+coverage/
+
+# Test reports & results
+test-results/
+playwright-report/
+
+# Environment files & secrets
+.env
+.env.*
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Exported user backups
+*-backup-*.json
+unstuck-backup-*.json
+
+# OS files
+.DS_Store
+Thumbs.db

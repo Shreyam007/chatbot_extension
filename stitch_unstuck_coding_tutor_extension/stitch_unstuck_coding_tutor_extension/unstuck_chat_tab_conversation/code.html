@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Chrome Side Panel</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "outline-variant": "#3d4a3d",
+            "primary-fixed-dim": "#4ae176",
+            "secondary": "#7bd0ff",
+            "on-primary-fixed": "#002109",
+            "primary": "#4be277",
+            "on-tertiary": "#472a00",
+            "tertiary-fixed": "#ffddb8",
+            "tertiary": "#ffba61",
+            "surface-bright": "#31394d",
+            "on-secondary-fixed-variant": "#004c69",
+            "tertiary-container": "#ef9900",
+            "on-secondary": "#00354a",
+            "on-primary": "#003915",
+            "on-surface": "#dae2fd",
+            "secondary-container": "#00a6e0",
+            "on-secondary-container": "#00374d",
+            "surface": "#0b1326",
+            "surface-container-highest": "#2d3449",
+            "surface-variant": "#2d3449",
+            "on-surface-variant": "#bccbb9",
+            "surface-container": "#171f33",
+            "primary-container": "#22c55e",
+            "inverse-primary": "#006e2f",
+            "on-error-container": "#ffdad6",
+            "on-primary-fixed-variant": "#005321",
+            "surface-container-lowest": "#060e20",
+            "background": "#0b1326",
+            "inverse-on-surface": "#283044",
+            "inverse-surface": "#dae2fd",
+            "secondary-fixed-dim": "#7bd0ff",
+            "on-primary-container": "#004b1e",
+            "error": "#ffb4ab",
+            "primary-fixed": "#6bff8f",
+            "error-container": "#93000a",
+            "on-tertiary-fixed": "#2a1700",
+            "on-secondary-fixed": "#001e2c",
+            "surface-container-low": "#131b2e",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-error": "#690005",
+            "outline": "#869585",
+            "surface-dim": "#0b1326",
+            "on-tertiary-fixed-variant": "#653e00",
+            "on-background": "#dae2fd",
+            "on-tertiary-container": "#5c3800",
+            "secondary-fixed": "#c4e7ff",
+            "surface-tint": "#4ae176",
+            "surface-container-high": "#222a3d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-md": "0.75rem",
+            "space-xl": "1.5rem",
+            "gutter": "0.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1rem",
+            "margin": "0.75rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "body-lg": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "code-inline": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "body-lg": ["0.9375rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "headline-md": ["1rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "headline-sm": ["0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "0em", "fontWeight": "600" }],
+            "body-md": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "code-inline": ["0.75rem", { "lineHeight": "1rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "body-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0b1326;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #2d3449;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #3d4a3d;
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+    .pulse-dot {
+      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes typing-bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+      40% { transform: translateY(-4px); opacity: 1; }
+    }
+    .typing-dot:nth-child(1) { animation: typing-bounce 1.2s infinite 0.1s; }
+    .typing-dot:nth-child(2) { animation: typing-bounce 1.2s infinite 0.25s; }
+    .typing-dot:nth-child(3) { animation: typing-bounce 1.2s infinite 0.4s; }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased min-h-screen flex items-center justify-center p-0 md:p-space-md font-body-md select-none">
+<!-- Side Panel Container (Chrome side panel viewport ~420px width) -->
+<div class="w-full max-w-[428px] h-screen md:h-[962px] bg-surface flex flex-col border border-outline-variant/40 md:rounded-xl overflow-hidden shadow-2xl relative">
+<!-- TopNavBar (Shared Component Blueprint) -->
+<header class="bg-surface-container-low docked full-width top-0 sticky z-40 flex flex-col w-full px-space-md py-space-sm border-b border-outline-variant/40 flat no shadows shrink-0">
+<div class="flex items-center justify-between gap-space-sm w-full">
+<!-- Brand & Watch status -->
+<div class="flex items-center gap-space-sm">
+<div class="w-6 h-6 rounded bg-primary/20 border border-primary/40 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">hub</span>
+</div>
+<span class="text-headline-sm font-headline-sm font-bold text-on-surface tracking-tight">Unstuck</span>
+<!-- Live Watch Pill -->
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high border border-outline-variant/40 ml-1">
+<span class="w-2 h-2 rounded-full bg-primary pulse-dot"></span>
+<span class="font-label-sm text-label-sm text-primary">Watching</span>
+</div>
+</div>
+<!-- Trailing actions: Pause, Pause Circle, Settings -->
+<div class="flex items-center gap-1">
+<button class="flex items-center gap-1 px-2 py-1 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors duration-150 active:scale-95 text-label-md font-label-md" title="Pause observation">
+<span class="material-symbols-outlined text-[15px]" data-icon="pause_circle">pause_circle</span>
+<span>Pause</span>
+</button>
+<button aria-label="Settings" class="p-1 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors duration-150 active:scale-95" title="Settings">
+<span class="material-symbols-outlined text-[18px]" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+<!-- Navigation Links Shell (Active Chat with exact casing & style keys) -->
+<nav class="flex items-center gap-space-md mt-space-sm pt-1 border-t border-outline-variant/20">
+<!-- Chat: Active Match -->
+<a class="border-b-2 border-primary text-primary font-label-md text-label-md pb-1 flex items-center gap-1.5 cursor-default" href="#chat">
+<span>Chat</span>
+<span class="px-1.5 py-0.2 rounded-full bg-primary/20 text-primary text-[10px] font-label-sm font-semibold">2</span>
+</a>
+<!-- Hints -->
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors flex items-center gap-1" href="#hints">
+<span>Hints</span>
+</a>
+<!-- Trace -->
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors flex items-center gap-1" href="#trace">
+<span>Trace</span>
+</a>
+<!-- Progress -->
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors flex items-center gap-1" href="#progress">
+<span>Progress</span>
+</a>
+</nav>
+</header>
+<!-- Context & Cognitive Status Ribbon -->
+<div class="bg-surface-container-low/80 border-b border-outline-variant/30 px-space-md py-space-xs shrink-0 flex flex-col gap-1.5">
+<!-- Active Problem / Page Context -->
+<div class="flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+<div class="flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
+<span class="material-symbols-outlined text-[14px] text-secondary" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span class="text-on-surface font-medium truncate">leetcode.com</span>
+<span class="text-outline">/</span>
+<span class="text-on-surface font-semibold truncate">1. Two Sum</span>
+</div>
+<div class="flex items-center gap-1 text-[10px] text-outline shrink-0">
+<span class="material-symbols-outlined text-[12px]">sync</span>
+<span>12s ago</span>
+</div>
+</div>
+<!-- Problem Meta Badges -->
+<div class="flex items-center justify-between gap-1 overflow-x-auto py-0.5 custom-scroll">
+<div class="flex items-center gap-1">
+<span class="px-1.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant border border-outline-variant/30 font-label-sm text-[10px]">Array</span>
+<span class="px-1.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant border border-outline-variant/30 font-label-sm text-[10px]">Hash Table</span>
+<span class="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 font-label-sm text-[10px] font-semibold">Easy</span>
+</div>
+<!-- Cognitive State Selector -->
+<div class="flex items-center gap-1 bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant/30 shrink-0">
+<span class="text-[10px] font-label-sm text-outline">State:</span>
+<button class="px-1 py-0.2 rounded bg-primary/20 text-primary text-[10px] font-label-sm font-semibold flex items-center gap-0.5" title="Cognitive Flow detected">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            Flowing
+          </button>
+<button class="px-1 py-0.2 rounded text-on-surface-variant/70 hover:text-on-surface text-[10px] font-label-sm transition-colors">
+            Stuck
+          </button>
+<button class="px-1 py-0.2 rounded text-on-surface-variant/70 hover:text-on-surface text-[10px] font-label-sm transition-colors">
+            Distracted
+          </button>
+</div>
+</div>
+</div>
+<!-- Active Conversation Viewport (Scrollable Single-Column Canvas) -->
+<main class="flex-1 overflow-y-auto px-space-md py-space-md space-y-space-md custom-scroll">
+<!-- 1. User Message Bubble -->
+<div class="flex flex-col items-end group">
+<div class="max-w-[85%] bg-surface-container-high border border-outline-variant/50 rounded-xl rounded-tr-xs p-3 transition-colors">
+<p class="font-headline-sm text-headline-sm text-on-surface break-words leading-relaxed select-text">
+            I don't get why my solution is O(n^2)
+          </p>
+</div>
+<div class="flex items-center gap-2 mt-1 px-1">
+<span class="text-[10px] font-label-sm text-outline">14:22</span>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-on-surface-variant">
+<button class="p-0.5 hover:text-primary transition-colors" title="Copy text">
+<span class="material-symbols-outlined text-[13px]">content_copy</span>
+</button>
+<button class="p-0.5 hover:text-primary transition-colors" title="Edit query">
+<span class="material-symbols-outlined text-[13px]">edit</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 2. Assistant Message Card: Socratic Hint -->
+<article class="bg-surface-container border border-outline-variant/40 rounded-xl p-3 flex flex-col gap-2.5 transition-all">
+<!-- Assistant Card Header -->
+<div class="flex items-center justify-between gap-2 border-b border-outline-variant/25 pb-2">
+<div class="flex items-center gap-2">
+<div class="w-5 h-5 rounded bg-primary/20 border border-primary/50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Unstuck Tutor</span>
+</div>
+<!-- Critic Checked Badge (Verification Gate) -->
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-label-sm font-semibold">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+            Critic: Checked
+          </span>
+</div>
+<!-- Assistant Message Content -->
+<div class="text-body-md font-body-md text-on-surface space-y-2 leading-relaxed break-words select-text">
+<p>
+            Look at your inner loop: for each element <code class="px-1 py-0.5 rounded bg-surface-container-lowest font-code-inline text-code-inline text-secondary border border-outline-variant/30">nums[i]</code>, you scan the remaining elements <code class="px-1 py-0.5 rounded bg-surface-container-lowest font-code-inline text-code-inline text-secondary border border-outline-variant/30">nums[j]</code> to see if their sum matches <code class="px-1 py-0.5 rounded bg-surface-container-lowest font-code-inline text-code-inline text-secondary border border-outline-variant/30">target</code>.
+          </p>
+<p class="text-on-surface-variant font-body-sm text-body-sm">
+            Since both loops depend on the length of <code class="font-code-inline text-code-inline text-on-surface">nums</code> (n), each element causes up to n comparisons: <span class="font-code-inline text-code-inline text-primary-fixed-dim">n × (n - 1) / 2</span> operations, giving <strong class="text-primary font-semibold">O(n²)</strong>.
+          </p>
+</div>
+<!-- Code Block -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2.5 overflow-hidden">
+<div class="flex items-center justify-between text-[10px] font-label-sm text-outline border-b border-outline-variant/20 pb-1 mb-1.5">
+<span class="font-medium">Detected Pattern</span>
+<span class="text-secondary">JavaScript / TypeScript</span>
+</div>
+<pre class="font-code-inline text-code-inline text-on-surface overflow-x-auto whitespace-pre custom-scroll text-[11px] leading-tight"><code><span class="text-outline">// Current approach: nested scan</span>
+<span class="text-secondary">for</span> (<span class="text-secondary">let</span> i = <span class="text-tertiary">0</span>; i &lt; n; i++) {
+  <span class="text-secondary">for</span> (<span class="text-secondary">let</span> j = i + <span class="text-tertiary">1</span>; j &lt; n; j++) { ... }
+}</code></pre>
+</div>
+<!-- "From the page" Citation Pill -->
+<div class="flex items-center justify-between p-1.5 px-2 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-secondary/50 cursor-pointer transition-colors group">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-[14px] text-secondary">feed</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">Problem statement, paragraph 2</span>
+</div>
+<div class="flex items-center gap-1 text-[10px] font-label-sm text-secondary shrink-0 opacity-80 group-hover:opacity-100">
+<span>Highlight</span>
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</div>
+</div>
+<!-- Message Actions Footer -->
+<footer class="flex items-center justify-between text-[11px] font-label-sm text-outline border-t border-outline-variant/20 pt-2 mt-0.5">
+<div class="flex items-center gap-2">
+<button class="hover:text-on-surface transition-colors p-1 rounded hover:bg-surface-container-high" title="Helpful hint">
+<span class="material-symbols-outlined text-[14px]">thumb_up</span>
+</button>
+<button class="hover:text-on-surface transition-colors p-1 rounded hover:bg-surface-container-high" title="Not helpful">
+<span class="material-symbols-outlined text-[14px]">thumb_down</span>
+</button>
+<button class="hover:text-on-surface transition-colors p-1 rounded hover:bg-surface-container-high" title="Copy hint text">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+</button>
+</div>
+<span class="text-[10px]">14:22</span>
+</footer>
+</article>
+<!-- 3. Assistant Message Variant: Low Confidence Warning -->
+<article class="bg-surface-container border border-tertiary/40 rounded-xl p-3 flex flex-col gap-2.5 transition-all">
+<!-- Low Confidence Warning Banner -->
+<div class="flex items-center justify-between gap-1.5 bg-tertiary/10 border border-tertiary/30 rounded-lg p-2 text-tertiary">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] shrink-0" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-sm text-label-sm leading-tight font-medium">I'm not sure about this one. Treat it as a guess.</span>
+</div>
+<span class="px-1.5 py-0.2 rounded-full bg-tertiary/20 text-tertiary text-[10px] font-label-sm font-semibold shrink-0">48%</span>
+</div>
+<!-- Assistant Sub-Header with Flagged Critic -->
+<div class="flex items-center justify-between gap-2 border-b border-outline-variant/20 pb-1.5">
+<div class="flex items-center gap-2">
+<div class="w-5 h-5 rounded bg-tertiary/20 border border-tertiary/40 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[14px]">quiz</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Unstuck Tutor</span>
+</div>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-tertiary/15 text-tertiary border border-tertiary/30 text-[10px] font-label-sm font-semibold">
+<span class="material-symbols-outlined text-[11px]">flag</span>
+            Critic: Low certainty
+          </span>
+</div>
+<!-- Follow-up Socratic question -->
+<div class="text-body-md font-body-md text-on-surface space-y-2 leading-relaxed break-words select-text">
+<p>
+            If you're using a single pass with a Hash Table instead, what would you store as the <strong class="text-secondary font-medium">key</strong> vs. the <strong class="text-secondary font-medium">value</strong> to find the complement in O(1) time?
+          </p>
+</div>
+<!-- Constraints Citation Pill -->
+<div class="flex items-center justify-between p-1.5 px-2 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-tertiary/50 cursor-pointer transition-colors group">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-[14px] text-tertiary">data_object</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline truncate">Constraints: 2 &lt;= nums.length &lt;= 10⁴</span>
+</div>
+<div class="flex items-center gap-1 text-[10px] font-label-sm text-outline group-hover:text-tertiary shrink-0">
+<span>Inspect</span>
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</div>
+</div>
+<!-- Footer -->
+<footer class="flex items-center justify-between text-[11px] font-label-sm text-outline border-t border-outline-variant/20 pt-2">
+<div class="flex items-center gap-2">
+<button class="hover:text-on-surface transition-colors p-1 rounded hover:bg-surface-container-high" title="Helpful">
+<span class="material-symbols-outlined text-[14px]">thumb_up</span>
+</button>
+<button class="hover:text-on-surface transition-colors p-1 rounded hover:bg-surface-container-high" title="Not helpful">
+<span class="material-symbols-outlined text-[14px]">thumb_down</span>
+</button>
+</div>
+<span class="text-[10px]">14:23</span>
+</footer>
+</article>
+<!-- 4. Live Typing Indicator State -->
+<div class="flex items-center gap-2 py-1">
+<div class="w-6 h-6 rounded bg-primary/10 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[13px]">psychology</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-container border border-outline-variant/30 rounded-full">
+<div class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary typing-dot"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary typing-dot"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary typing-dot"></span>
+</div>
+<span class="font-label-sm text-[11px] text-on-surface-variant">Unstuck is thinking...</span>
+</div>
+</div>
+</main>
+<!-- 5. Docked Bottom Input Area -->
+<footer class="bg-surface-container-low border-t border-outline-variant/40 p-space-md flex flex-col gap-2 shrink-0">
+<!-- Auxiliary Pill Bar -->
+<div class="flex items-center justify-between gap-1 text-label-sm font-label-sm">
+<!-- Hint Level Selector -->
+<button class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/40 text-on-surface hover:border-primary/50 transition-colors">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="text-[11px]">Hint: Auto (L1 Direction)</span>
+<span class="material-symbols-outlined text-[12px] text-outline">expand_more</span>
+</button>
+<!-- Current Target -->
+<div class="flex items-center gap-1 text-[11px] text-outline truncate" title="Context target">
+<span class="material-symbols-outlined text-[12px]">tab</span>
+<span class="truncate">Target: LeetCode JS Tab</span>
+</div>
+</div>
+<!-- Text Input Surface -->
+<div class="bg-surface-container border border-outline-variant/50 focus-within:border-secondary focus-within:ring-1 focus-within:ring-secondary/50 rounded-xl p-2 transition-all flex flex-col gap-2">
+<textarea class="w-full bg-transparent text-on-surface font-body-sm text-body-sm placeholder:text-outline resize-none border-0 p-0 focus:ring-0 focus:outline-none custom-scroll leading-relaxed" placeholder="Ask a question or paste your code snippet..." rows="2"></textarea>
+<!-- Input Control Strip -->
+<div class="flex items-center justify-between border-t border-outline-variant/20 pt-1.5 mt-0.5">
+<!-- Left auxiliary actions -->
+<div class="flex items-center gap-1 text-on-surface-variant">
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Insert code block">
+<span class="material-symbols-outlined text-[16px]">code</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-tertiary transition-colors" title="Request nudge hint">
+<span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+</button>
+<span class="text-[10px] font-label-sm text-outline ml-1">0 / 2000 chars</span>
+</div>
+<!-- Right send trigger & keyboard hint -->
+<div class="flex items-center gap-2">
+<span class="hidden sm:inline text-[10px] font-label-sm text-outline">↵ Send · ⇧↵ Newline</span>
+<button class="w-7 h-7 rounded-lg bg-primary-container hover:bg-primary-fixed-dim active:scale-95 text-on-primary-container flex items-center justify-center transition-all font-semibold shadow-sm" title="Send message (Enter)">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">arrow_upward</span>
+</button>
+</div>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

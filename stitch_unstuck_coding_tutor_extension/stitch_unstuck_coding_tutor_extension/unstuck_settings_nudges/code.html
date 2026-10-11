@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Settings / Nudges</title>
+<!-- Google Fonts: IBM Plex Sans & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#0b1326",
+            "on-primary": "#003915",
+            "surface-container-lowest": "#060e20",
+            "on-error": "#690005",
+            "surface-container": "#171f33",
+            "on-primary-container": "#004b1e",
+            "inverse-surface": "#dae2fd",
+            "primary-container": "#22c55e",
+            "secondary": "#7bd0ff",
+            "surface-dim": "#0b1326",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-background": "#dae2fd",
+            "on-surface": "#dae2fd",
+            "error-container": "#93000a",
+            "primary": "#4be277",
+            "inverse-on-surface": "#283044",
+            "on-primary-fixed-variant": "#005321",
+            "on-tertiary-fixed-variant": "#653e00",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-surface-variant": "#bccbb9",
+            "error": "#ffb4ab",
+            "on-tertiary-container": "#5c3800",
+            "secondary-fixed": "#c4e7ff",
+            "on-tertiary-fixed": "#2a1700",
+            "inverse-primary": "#006e2f",
+            "surface-container-high": "#222a3d",
+            "outline-variant": "#3d4a3d",
+            "outline": "#869585",
+            "surface-bright": "#31394d",
+            "surface-container-highest": "#2d3449",
+            "secondary-container": "#00a6e0",
+            "surface-container-low": "#131b2e",
+            "on-secondary-fixed": "#001e2c",
+            "tertiary-fixed": "#ffddb8",
+            "surface-variant": "#2d3449",
+            "on-secondary-container": "#00374d",
+            "on-tertiary": "#472a00",
+            "primary-fixed-dim": "#4ae176",
+            "secondary-fixed-dim": "#7bd0ff",
+            "on-secondary": "#00354a",
+            "surface-tint": "#4ae176",
+            "tertiary": "#ffba61",
+            "on-error-container": "#ffdad6",
+            "primary-fixed": "#6bff8f",
+            "surface": "#0b1326",
+            "on-primary-fixed": "#002109",
+            "tertiary-container": "#ef9900"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xl": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "margin": "1rem",
+            "space-md": "0.75rem",
+            "space-lg": "1rem",
+            "gutter": "0.75rem"
+          },
+          "fontFamily": {
+            "body-sm": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "code-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    /* Custom Range input styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      background: #171f33;
+      border-radius: 9999px;
+      border: 1px solid rgba(61, 74, 61, 0.4);
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 18px;
+      width: 18px;
+      border-radius: 9999px;
+      background: #4be277;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -6px;
+      box-shadow: 0 0 10px rgba(75, 226, 119, 0.45);
+      border: 2px solid #0b1326;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      box-shadow: 0 0 14px rgba(75, 226, 119, 0.65);
+    }
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1326;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #222a3d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #31394d;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col font-body-md select-none overflow-x-hidden">
+<!-- ================= TOP HEADER (Extension Settings Header) ================= -->
+<header class="bg-surface-container-low border-b border-outline-variant/40 sticky top-0 z-50 px-space-xl py-space-sm">
+<div class="max-w-7xl mx-auto flex items-center justify-between">
+<!-- Brand, Knot Motif & Breadcrumb -->
+<div class="flex items-center gap-space-md">
+<!-- Minimal Knot Logo Icon -->
+<div class="w-8 h-8 rounded-lg bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-primary shadow-sm group">
+<svg class="w-5 h-5 transition-transform duration-300 group-hover:rotate-45" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<!-- Sleek Endless Knot / Unstuck Motif -->
+<path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z"></path>
+<path d="M12 9V3a3 3 0 0 0-6 0v6a3 3 0 0 0 6 0Z"></path>
+<path d="M12 15v6a3 3 0 0 0 6 0v-6a3 3 0 0 0-6 0Z"></path>
+</svg>
+</div>
+<span class="text-headline-sm font-headline-sm font-bold text-on-surface tracking-tight">Unstuck</span>
+<span class="text-outline-variant font-code-sm">/</span>
+<!-- Breadcrumb -->
+<nav class="flex items-center gap-1 font-label-md text-label-md">
+<span class="text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">Settings</span>
+<span class="text-outline-variant">/</span>
+<span class="text-primary font-semibold flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+            Nudges
+          </span>
+</nav>
+</div>
+<!-- Right Toolbar: Save indicator & Close/Return button -->
+<div class="flex items-center gap-space-md">
+<!-- Auto-save Pill -->
+<div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container-high border border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-[14px]" data-icon="cloud_done">cloud_done</span>
+<span>Auto-saved</span>
+<span class="text-outline text-[10px] font-code-sm">14:02:18</span>
+</div>
+<!-- Back to Panel Link / Close Button -->
+<a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface hover:text-primary border border-outline-variant/50 transition-all active:scale-95 text-label-md font-label-md shadow-sm group" href="#return-panel">
+<span class="material-symbols-outlined text-[15px] group-hover:-translate-x-0.5 transition-transform" data-icon="arrow_back">arrow_back</span>
+<span>Return to Panel</span>
+<kbd class="ml-1 px-1.5 py-0.5 rounded bg-background border border-outline-variant/60 font-code-sm text-[10px] text-on-surface-variant">Esc</kbd>
+</a>
+</div>
+</div>
+</header>
+<!-- ================= MAIN TWO-COLUMN CONTAINER ================= -->
+<main class="flex-1 max-w-7xl w-full mx-auto p-space-md md:p-space-xl flex flex-col md:flex-row gap-space-xl">
+<!-- ================= LEFT SIDEBAR NAVIGATION ================= -->
+<aside class="w-full md:w-64 flex-shrink-0 flex flex-col justify-between">
+<div class="space-y-6">
+<div>
+<span class="px-2 text-label-sm font-label-sm uppercase tracking-wider text-outline font-semibold">Extension Preferences</span>
+<nav class="mt-2 space-y-1">
+<!-- General -->
+<a class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md group" href="#general">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-on-surface" data-icon="tune">tune</span>
+<span>General</span>
+</div>
+<span class="font-code-sm text-[10px] text-outline">G</span>
+</a>
+<!-- Nudges (ACTIVE) -->
+<a class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container-low text-primary border border-primary/30 font-label-md text-label-md relative overflow-hidden group shadow-sm" href="#nudges">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="notifications_active" data-weight="fill" style="font-variation-settings: 'FILL' 1;">notifications_active</span>
+<span class="font-semibold text-on-surface">Nudges</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#4be277]"></span>
+</div>
+<!-- Vertical glowing indicator line -->
+<span class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></span>
+</a>
+<!-- Sites -->
+<a class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md group" href="#sites">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-on-surface" data-icon="language">language</span>
+<span>Sites</span>
+</div>
+<span class="inline-block px-1.5 py-0.2 rounded bg-surface-container font-code-sm text-[10px] text-secondary">3 active</span>
+</a>
+<!-- AI Engine -->
+<a class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md group" href="#ai">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-on-surface" data-icon="neurology">neurology</span>
+<span>AI Models</span>
+</div>
+<span class="font-code-sm text-[10px] text-outline">Claude 3.5</span>
+</a>
+<!-- Privacy & data -->
+<a class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md group" href="#privacy">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-on-surface" data-icon="shield">shield</span>
+<span>Privacy &amp; data</span>
+</div>
+<span class="material-symbols-outlined text-[14px] text-outline group-hover:text-on-surface" data-icon="lock">lock</span>
+</a>
+<!-- About -->
+<a class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md group" href="#about">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-outline group-hover:text-on-surface" data-icon="info">info</span>
+<span>About</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Quick Help Card -->
+<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-2">
+<div class="flex items-center gap-2 text-primary font-headline-sm text-headline-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="psychology_alt">psychology_alt</span>
+<span class="text-xs">Socratic Mode</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Unstuck guides your thinking through questions rather than dumping finished code.
+          </p>
+<a class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary hover:underline pt-1" href="#docs">
+<span>Learn pedagogy</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Bottom of Sidebar: Version & Live Status -->
+<div class="pt-6 border-t border-outline-variant/30 space-y-2 mt-6">
+<div class="flex items-center justify-between px-1">
+<span class="font-code-sm text-code-sm text-outline">Extension</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant px-1.5 py-0.5 rounded bg-surface-container">v1.2.4</span>
+</div>
+<div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/30">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="font-label-sm text-label-sm text-on-surface truncate">Active on LeetCode</span>
+<span class="font-code-sm text-[10px] text-outline ml-auto">#84</span>
+</div>
+</div>
+</aside>
+<!-- ================= RIGHT MAIN CONTENT AREA ================= -->
+<div class="flex-1 space-y-6">
+<!-- Section Title & Description -->
+<div class="border-b border-outline-variant/30 pb-4">
+<div class="flex items-center gap-2">
+<h1 class="text-headline-lg font-headline-lg text-on-surface tracking-tight">Nudge Settings</h1>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/30 text-primary font-label-sm text-label-sm">Live Tutor</span>
+</div>
+<p class="mt-1 font-body-md text-body-md text-on-surface-variant">
+          Fine-tune when and how Unstuck gently intervenes while you solve coding problems.
+        </p>
+</div>
+<!-- CONTROLS CONTAINER -->
+<div class="space-y-5">
+<!-- 1. NUDGE SENSITIVITY (3-step segmented pill control) -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/40 p-space-md md:p-5 space-y-4 shadow-sm">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="speed">speed</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Nudge Sensitivity</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                Controls the idle dwell detection algorithm before presenting an interactive nudge.
+              </p>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container font-code-sm text-code-sm text-on-surface-variant border border-outline-variant/40">
+              Trigger Engine
+            </span>
+</div>
+<!-- 3-Segmented Pill Group -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+<!-- Option 1: Rarely -->
+<label class="cursor-pointer group flex flex-col p-3 rounded-lg bg-surface-container border border-outline-variant/40 hover:border-outline transition-all">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Rarely</span>
+<input class="text-primary bg-surface-container-lowest border-outline-variant focus:ring-0 focus:ring-offset-0" name="sensitivity" type="radio" value="rarely"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                High confidence stuck only. Intervenes after ~5+ min uninterrupted dwell.
+              </span>
+<div class="mt-3 flex items-center gap-1 font-code-sm text-[11px] text-outline">
+<span class="material-symbols-outlined text-[13px]" data-icon="hourglass_top">hourglass_top</span>
+<span>~300s timeout</span>
+</div>
+</label>
+<!-- Option 2: Balanced (SELECTED) -->
+<label class="cursor-pointer group flex flex-col p-3 rounded-lg bg-surface-container-high border-2 border-primary/80 ring-1 ring-primary/40 relative shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-primary">Balanced</span>
+<span class="px-1.5 py-0.2 rounded bg-primary/20 text-primary font-label-sm text-[9px] uppercase tracking-wider font-bold">Recommended</span>
+</div>
+<input checked="" class="text-primary bg-surface-container-lowest border-primary focus:ring-0 focus:ring-offset-0" name="sensitivity" type="radio" value="balanced"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface">
+                Subtle structural cues after 3 min dwell or repeated failed sample testcases.
+              </span>
+<div class="mt-3 flex items-center gap-1 font-code-sm text-[11px] text-primary">
+<span class="material-symbols-outlined text-[13px]" data-icon="timelapse">timelapse</span>
+<span>~180s timeout</span>
+</div>
+</label>
+<!-- Option 3: Often -->
+<label class="cursor-pointer group flex flex-col p-3 rounded-lg bg-surface-container border border-outline-variant/40 hover:border-outline transition-all">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Often</span>
+<input class="text-primary bg-surface-container-lowest border-outline-variant focus:ring-0 focus:ring-offset-0" name="sensitivity" type="radio" value="often"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                Frequent soft hints and rapid edge-case alerts after 90 seconds of hesitation.
+              </span>
+<div class="mt-3 flex items-center gap-1 font-code-sm text-[11px] text-outline">
+<span class="material-symbols-outlined text-[13px]" data-icon="bolt">bolt</span>
+<span>~90s timeout</span>
+</div>
+</label>
+</div>
+</div>
+<!-- 2. COOLDOWN & FREQUENCY LIMITS -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/40 p-space-md md:p-5 space-y-5 shadow-sm">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="timer">timer</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Cooldown &amp; Frequency Limits</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              Prevent cognitive overwhelm by enforcing minimum pacing between proactive interventions.
+            </p>
+</div>
+<!-- Slider Sub-block -->
+<div class="p-4 rounded-lg bg-surface-container border border-outline-variant/30 space-y-3">
+<div class="flex items-center justify-between">
+<div>
+<label class="font-label-md text-label-md font-medium text-on-surface block" for="cooldown-range">
+                  Cooldown between nudges
+                </label>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Minimum wait before next intervention card is allowed to appear</span>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary font-code-md text-code-md font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span>
+<span id="slider-val">15 min</span>
+</div>
+</div>
+<!-- Custom Styled Range Slider -->
+<div class="pt-2">
+<input class="w-full" id="cooldown-range" max="60" min="5" oninput="document.getElementById('slider-val').innerText = this.value + ' min';" step="5" type="range" value="15"/>
+<!-- Tick Marks -->
+<div class="flex justify-between text-code-sm text-code-sm text-outline pt-2 px-1">
+<span>5 min</span>
+<span class="text-primary font-semibold">15 min</span>
+<span>30 min</span>
+<span>45 min</span>
+<span>60 min</span>
+</div>
+</div>
+</div>
+<!-- Stepper Sub-block: Max nudges per hour -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-surface-container border border-outline-variant/30">
+<div>
+<span class="font-label-md text-label-md font-medium text-on-surface block">
+                Max nudges per hour
+              </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                Prevents prompt fatigue during long practice blocks
+              </span>
+</div>
+<!-- Stepper Component -->
+<div class="flex items-center gap-2 self-start sm:self-auto bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-1">
+<button class="w-8 h-8 rounded flex items-center justify-center bg-surface-container hover:bg-surface-container-high text-on-surface active:scale-95 transition-all text-label-md" onclick="let el = document.getElementById('nudges-stepper'); let val = parseInt(el.innerText); if(val &gt; 1) el.innerText = val - 1;" title="Decrease" type="button">
+<span class="material-symbols-outlined text-[15px]" data-icon="remove">remove</span>
+</button>
+<span class="w-10 text-center font-code-md text-code-md font-bold text-primary" id="nudges-stepper">4</span>
+<button class="w-8 h-8 rounded flex items-center justify-center bg-surface-container hover:bg-surface-container-high text-on-surface active:scale-95 transition-all text-label-md" onclick="let el = document.getElementById('nudges-stepper'); let val = parseInt(el.innerText); if(val &lt; 12) el.innerText = val + 1;" title="Increase" type="button">
+<span class="material-symbols-outlined text-[15px]" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 3. QUIET HOURS -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/40 p-space-md md:p-5 space-y-4 shadow-sm">
+<div class="flex items-start justify-between gap-4">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]" data-icon="bedtime">bedtime</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Quiet Hours</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                Suppress all pop-up prompts and proactive notifications during late sessions.
+              </p>
+</div>
+<!-- Toggle Switch -->
+<label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:border-outline after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Time Range Selector Container -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container border border-outline-variant/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[16px]" data-icon="dark_mode">dark_mode</span>
+<span class="font-label-md text-label-md text-on-surface">Start Quiet Mode</span>
+</div>
+<input class="bg-surface-container-lowest text-on-surface font-code-sm text-code-sm border border-outline-variant/40 rounded px-2 py-1 focus:ring-1 focus:ring-primary focus:border-primary" type="time" value="22:00"/>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container border border-outline-variant/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[16px]" data-icon="wb_sunny">wb_sunny</span>
+<span class="font-label-md text-label-md text-on-surface">Resume Assistance</span>
+</div>
+<input class="bg-surface-container-lowest text-on-surface font-code-sm text-code-sm border border-outline-variant/40 rounded px-2 py-1 focus:ring-1 focus:ring-primary focus:border-primary" type="time" value="07:00"/>
+</div>
+</div>
+<div class="flex items-center justify-between text-code-sm text-code-sm text-on-surface-variant px-1 pt-1">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-outline" data-icon="public">public</span>
+              Timezone: UTC-08:00 (Pacific Standard Time)
+            </span>
+<span class="text-outline">Active Every Day</span>
+</div>
+</div>
+<!-- 4. AUTO-DISABLE IN CONTESTS (Locked Policy) -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/40 p-space-md md:p-5 space-y-3 shadow-sm relative overflow-hidden">
+<div class="flex items-start justify-between gap-4">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="military_tech">military_tech</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Auto-disable in Contests</h3>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/50 text-[11px] font-label-sm text-outline">
+<span class="material-symbols-outlined text-[12px]" data-icon="lock" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lock</span>
+                  Mandatory
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Silences all heuristic analyzers, side-dock cards, and suggestions whenever an active contest URL is identified.
+              </p>
+</div>
+<!-- Toggle Switch (Locked ON) -->
+<div class="flex flex-col items-end gap-1 flex-shrink-0">
+<div class="relative inline-flex items-center cursor-not-allowed opacity-90">
+<input checked="" class="sr-only peer" disabled="" type="checkbox"/>
+<div class="w-11 h-6 bg-primary-container rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-background after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:border-outline after:border after:rounded-full after:h-5 after:w-5"></div>
+</div>
+</div>
+</div>
+<!-- Inline Tooltip / Locked Notice Pill -->
+<div class="p-3 rounded-lg bg-surface-container/70 border border-outline-variant/50 flex items-start gap-2.5">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5 flex-shrink-0" data-icon="verified_user">verified_user</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+<strong class="text-on-surface font-semibold">Locked:</strong> Contest detection is permanently enforced to maintain platform fairness and LeetCode / Codeforces contest integrity. Unstuck will auto-sleep until the contest round concludes.
+            </p>
+</div>
+</div>
+<!-- 5. DEFAULT HINT LEVEL (Dropdown Select & Preview) -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/40 p-space-md md:p-5 space-y-4 shadow-sm">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="stairs">stairs</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Default Hint Level</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              Select the initial level of detail Unstuck reveals on the first nudge attempt.
+            </p>
+</div>
+<!-- Dropdown Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Select element -->
+<div class="space-y-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant block" for="hint-level-select">Initial Stage</label>
+<div class="relative">
+<select class="w-full bg-surface-container text-on-surface font-code-md text-code-md border border-outline-variant/50 rounded-lg px-3 py-2.5 appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary pr-9 cursor-pointer" id="hint-level-select">
+<option value="lvl0">Level 0: Conceptual Query (Socratic)</option>
+<option selected="" value="lvl1">Level 1: Direction (Auto)</option>
+<option value="lvl2">Level 2: Algorithmic Blueprint</option>
+<option value="lvl3">Level 3: Pseudocode Trace</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-outline">
+<span class="material-symbols-outlined" data-icon="unfold_more">unfold_more</span>
+</div>
+</div>
+<span class="font-body-sm text-[11px] text-outline block pt-0.5">
+                Higher levels remain locked behind deliberate "Reveal next hint" clicks.
+              </span>
+</div>
+<!-- Preview Card -->
+<div class="p-3 rounded-lg bg-surface-container border border-outline-variant/30 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Sample Output Preview</span>
+<span class="px-1.5 py-0.5 rounded bg-secondary/15 text-secondary border border-secondary/30 font-code-sm text-[10px]">Level 1</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface italic">
+                  "Notice the input is sorted. Have you considered whether a two-pointer technique could bypass the hash table overhead?"
+                </p>
+</div>
+<div class="mt-2 pt-2 border-t border-outline-variant/20 flex items-center justify-between text-code-sm text-[11px] text-on-surface-variant">
+<span>Code revealed: <strong class="text-error font-semibold">0%</strong></span>
+<span class="text-primary">Cognitive prompt only</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Buttons Footer inside Settings Area -->
+<div class="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-outline-variant/30">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors text-label-md font-label-md" type="button">
+<span class="material-symbols-outlined text-[15px]" data-icon="restore">restore</span>
+<span>Reset Nudges to Default</span>
+</button>
+<div class="flex items-center gap-3">
+<a class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface border border-outline-variant/50 transition-all active:scale-95 text-label-md font-label-md" href="#test-nudge">
+<span class="material-symbols-outlined text-[15px]" data-icon="play_arrow">play_arrow</span>
+<span>Simulate Sample Nudge</span>
+</a>
+<button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-container text-on-primary-container font-semibold hover:bg-primary transition-all active:scale-95 text-body-md font-body-md shadow-[0_0_12px_rgba(34,197,94,0.35)]" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="check">check</span>
+<span>Apply Changes</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- ================= MINIMAL EXTENSION STATUS FOOTER ================= -->
+<footer class="w-full border-t border-outline-variant/20 bg-surface-container-lowest py-3 px-space-xl mt-8">
+<div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-code-sm text-code-sm text-outline gap-2">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[13px] text-primary" data-icon="memory">memory</span>
+<span>Local heuristics worker active</span>
+</span>
+<span>•</span>
+<span>Latency: &lt;4ms</span>
+</div>
+<div>
+<span>Press <kbd class="px-1 py-0.5 rounded bg-surface-container border border-outline-variant/40 text-[10px] text-on-surface">Cmd + Shift + U</kbd> to toggle panel anytime</span>
+</div>
+</div>
+</footer>
+</body></html>

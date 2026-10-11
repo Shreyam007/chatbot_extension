@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck — Chrome Side Panel</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary": "#ffba61",
+            "surface-container-low": "#131b2e",
+            "on-primary-fixed": "#002109",
+            "primary-fixed-dim": "#4ae176",
+            "secondary-container": "#00a6e0",
+            "surface-variant": "#2d3449",
+            "surface-container-high": "#222a3d",
+            "on-background": "#dae2fd",
+            "on-tertiary-container": "#5c3800",
+            "outline-variant": "#3d4a3d",
+            "secondary-fixed-dim": "#7bd0ff",
+            "on-error": "#690005",
+            "surface-dim": "#0b1326",
+            "surface-container": "#171f33",
+            "on-tertiary-fixed": "#2a1700",
+            "surface-tint": "#4ae176",
+            "inverse-primary": "#006e2f",
+            "tertiary-fixed-dim": "#ffb95f",
+            "error-container": "#93000a",
+            "background": "#0b1326",
+            "on-surface-variant": "#bccbb9",
+            "on-secondary-fixed": "#001e2c",
+            "primary-fixed": "#6bff8f",
+            "surface-container-lowest": "#060e20",
+            "primary-container": "#22c55e",
+            "inverse-surface": "#dae2fd",
+            "secondary-fixed": "#c4e7ff",
+            "on-primary": "#003915",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-primary-fixed-variant": "#005321",
+            "secondary": "#7bd0ff",
+            "surface-container-highest": "#2d3449",
+            "on-error-container": "#ffdad6",
+            "error": "#ffb4ab",
+            "on-surface": "#dae2fd",
+            "on-primary-container": "#004b1e",
+            "tertiary-fixed": "#ffddb8",
+            "primary": "#4be277",
+            "on-secondary-container": "#00374d",
+            "on-tertiary": "#472a00",
+            "inverse-on-surface": "#283044",
+            "surface": "#0b1326",
+            "on-secondary": "#00354a",
+            "tertiary-container": "#ef9900",
+            "surface-bright": "#31394d",
+            "on-tertiary-fixed-variant": "#653e00",
+            "outline": "#869585"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-lg": "1rem",
+            "margin": "0.75rem",
+            "space-xl": "1.5rem",
+            "gutter": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "0.75rem"
+          },
+          "fontFamily": {
+            "headline-sm": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "label-sm": ["JetBrains Mono"],
+            "code-inline": ["JetBrains Mono"],
+            "headline-md": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "headline-lg": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "headline-sm": ["0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "0em", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "body-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "code-inline": ["0.75rem", { "lineHeight": "1rem", "fontWeight": "400" }],
+            "headline-md": ["1rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-md": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.02em", "fontWeight": "500" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Custom thin scrollbar for extension side-panel */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.4);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(71, 85, 105, 0.8);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased font-body-md min-h-screen flex justify-center selection:bg-primary-container selection:text-on-primary-container">
+<!-- Desktop Chrome Side Panel Constraint Container (380px - 420px) -->
+<div class="w-full max-w-[400px] bg-surface flex flex-col min-h-screen border-x border-outline-variant/40 shadow-2xl relative">
+<!-- TOP SHELL / HEADER (Direct execution of Shared Components JSON) -->
+<header class="bg-surface-container-low docked full-width top-0 sticky z-40 flex flex-col w-full px-space-md py-space-sm border-b border-outline-variant/40">
+<!-- Upper row: Product, Status pill, Icon Actions -->
+<div class="flex items-center justify-between gap-2 pb-2">
+<!-- Logo and Brand -->
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-lg bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-primary">
+<!-- Stylized 'knot' icon -->
+<span class="material-symbols-outlined text-[15px]" data-icon="all_inclusive">all_inclusive</span>
+</div>
+<span class="text-headline-sm font-headline-sm font-bold text-on-surface tracking-tight">Unstuck</span>
+<!-- Live Status Badge -->
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/30">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-primary">Watching</span>
+</div>
+</div>
+<!-- Trailing actions: Pause & Settings -->
+<div class="flex items-center gap-1">
+<button class="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-95 duration-100 flex items-center gap-1 text-label-sm font-label-sm" title="Pause auto-detection">
+<span class="material-symbols-outlined" data-icon="pause_circle">pause_circle</span>
+<span class="text-label-sm font-label-sm">Pause</span>
+</button>
+<button class="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors active:scale-95 duration-100 flex items-center" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+<!-- Navigation Links (Chat, Hints, Trace, Progress) -->
+<nav class="flex items-center gap-4 pt-1">
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#chat">Chat</a>
+<!-- ACTIVE: Hints -->
+<a class="border-b-2 border-primary text-primary font-label-md text-label-md pb-1 flex items-center gap-1" href="#hints">
+          Hints
+          <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#trace">Trace</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#progress">Progress</a>
+</nav>
+</header>
+<!-- MAIN SCROLLABLE CONTENT CANVAS -->
+<main class="flex-1 flex flex-col p-margin gap-3 overflow-y-auto">
+<!-- Problem Context Card (Compact & High-Density) -->
+<section class="bg-surface-container-low border border-outline-variant/40 rounded-xl p-3 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-secondary font-label-sm text-label-sm border border-secondary/20">
+              leetcode.com
+            </span>
+<span class="text-on-surface font-headline-sm text-headline-sm">1. Two Sum</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary bg-primary/10 border border-primary/30 px-1.5 py-0.2 rounded-full">
+            Easy
+          </span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant pt-0.5">
+<div class="flex items-center gap-1.5">
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant/30">Array</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant/30">Hash Table</span>
+</div>
+<div class="flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant/80">
+<span class="material-symbols-outlined text-[13px]" data-icon="sync">sync</span>
+<span>Synced 12s ago</span>
+</div>
+</div>
+</section>
+<!-- 1. PROGRESSIVE HINT STEPPER (4 LEVELS) -->
+<section class="bg-surface-container-low border border-outline-variant/40 rounded-xl p-2.5 flex flex-col gap-2">
+<div class="flex items-center justify-between px-0.5">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Pedagogical Stepper</span>
+<span class="font-label-sm text-label-sm text-primary">Level 2 of 4</span>
+</div>
+<!-- 4-Stage Horizontal/Vertical Progression Nodes -->
+<div class="grid grid-cols-4 gap-1.5">
+<!-- Step 1: Direction (Completed) -->
+<button class="flex flex-col items-center gap-1 p-1.5 rounded-lg bg-surface-container/60 border border-primary/30 hover:bg-surface-container transition-colors group text-left">
+<div class="flex items-center justify-center w-5 h-5 rounded-full bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface group-hover:text-primary transition-colors">L1 Direct</span>
+<span class="text-[9px] font-label-sm text-on-surface-variant/70 leading-none">Reviewed</span>
+</button>
+<!-- Step 2: Approach (CURRENT / ACTIVE) -->
+<div class="flex flex-col items-center gap-1 p-1.5 rounded-lg bg-surface-container-high border-2 border-primary shadow-[0_0_8px_rgba(34,197,94,0.25)] relative text-left">
+<span class="absolute -top-1.5 px-1 bg-primary text-on-primary-container font-label-sm text-[9px] rounded-full uppercase tracking-tighter">Current</span>
+<div class="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary font-headline-sm text-xs mt-0.5">
+              2
+            </div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">L2 Approach</span>
+<span class="text-[9px] font-label-sm text-primary/80 leading-none">Active</span>
+</div>
+<!-- Step 3: Pseudocode (Locked) -->
+<div class="flex flex-col items-center gap-1 p-1.5 rounded-lg bg-surface-container-lowest/50 border border-outline-variant/30 opacity-70">
+<div class="flex items-center justify-center w-5 h-5 rounded-full bg-surface-variant text-on-surface-variant">
+<span class="material-symbols-outlined text-[13px]" data-icon="lock">lock</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">L3 Pseudo</span>
+<span class="text-[9px] font-label-sm text-on-surface-variant/60 leading-none">Next</span>
+</div>
+<!-- Step 4: Full Solution (Locked / Warning Amber) -->
+<div class="flex flex-col items-center gap-1 p-1.5 rounded-lg bg-surface-container-lowest/50 border border-tertiary-container/30 opacity-60">
+<div class="flex items-center justify-center w-5 h-5 rounded-full bg-tertiary-container/20 text-tertiary">
+<span class="material-symbols-outlined text-[13px]" data-icon="lock">lock</span>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary">L4 Code</span>
+<span class="text-[9px] font-label-sm text-tertiary/70 leading-none">Guarded</span>
+</div>
+</div>
+</section>
+<!-- 2. CURRENT HINT CARD (LEVEL 2: APPROACH) -->
+<section class="bg-surface-container border border-primary/40 rounded-xl p-3.5 relative shadow-[0_4px_16px_rgba(0,0,0,0.3)] flex flex-col gap-3">
+<!-- Top meta badge & confidence score -->
+<div class="flex items-center justify-between border-b border-outline-variant/30 pb-2">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Hint 2 of 4 — Approach</h2>
+</div>
+<!-- Confidence Badge with Tooltip Indicator -->
+<div class="relative group cursor-help flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary">
+<span class="font-label-sm text-label-sm font-semibold">Confidence 82%</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="info">info</span>
+<!-- Tooltip -->
+<div class="absolute right-0 top-6 hidden group-hover:block w-48 p-2 bg-surface-container-high border border-outline-variant text-on-surface rounded-lg shadow-xl text-[10px] leading-tight z-50">
+              How sure the checker is that this hint matches the problem and your current progress without revealing spoilers.
+            </div>
+</div>
+</div>
+<!-- Hint Pedagogical Copy -->
+<div class="text-body-md font-body-md text-on-surface leading-relaxed">
+          Think about <span class="text-primary font-medium font-headline-sm">trading space for time</span>. Can we remember numbers we've already seen in a single pass instead of scanning the rest of the array on every element?
+        </div>
+<!-- Code Block Reservation / Restriction Notice -->
+<div class="bg-surface-container-lowest/80 border border-outline-variant/30 rounded-lg p-2.5 flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5" data-icon="code_blocks">code_blocks</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface">Code snippets reserved for L3+</span>
+<span class="text-[11px] text-on-surface-variant font-body-sm leading-normal">
+              Structured pseudocode and implementation templates unlock at Level 3.
+            </span>
+</div>
+</div>
+<!-- Critic Check Tag (Verification against spoilers) -->
+<div class="flex items-center gap-1.5 pt-1 border-t border-outline-variant/20">
+<span class="material-symbols-outlined text-primary text-[14px]" data-icon="verified_user">verified_user</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">
+            Checked by Critic: <span class="text-primary font-medium">No spoiler code detected</span>
+</span>
+</div>
+</section>
+<!-- 3. ACTION CONTROLS ROW -->
+<section class="flex flex-col gap-2">
+<div class="grid grid-cols-2 gap-2">
+<!-- Primary Action: Next Hint Level -->
+<button class="bg-primary-container text-on-primary-container hover:bg-primary font-label-md text-label-md px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 font-semibold transition-all shadow-sm active:scale-95">
+<span>Next hint (L3)</span>
+<span class="material-symbols-outlined text-[15px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<!-- Secondary Action: More Direct -->
+<button class="bg-surface-container-high border border-outline-variant/60 text-on-surface hover:border-outline-variant hover:bg-surface-variant font-label-md text-label-md px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[15px]" data-icon="tune">tune</span>
+<span>Make it more direct</span>
+</button>
+</div>
+<!-- Solved It Text Action -->
+<button class="w-full py-1 text-center font-label-md text-label-md text-primary hover:text-primary-fixed hover:underline transition-all flex items-center justify-center gap-1">
+<span>I solved it! 🎉</span>
+</button>
+</section>
+<!-- 4. FEEDBACK & RATING INTERACTION -->
+<section class="bg-surface-container-low border border-outline-variant/30 rounded-xl p-3 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Was this hint helpful?</span>
+<div class="flex items-center gap-1">
+<!-- Thumbs up -->
+<button class="p-1 rounded-md text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors flex items-center gap-1 text-label-sm">
+<span class="material-symbols-outlined text-[15px]" data-icon="thumb_up">thumb_up</span>
+</button>
+<!-- Thumbs down (Active selected state demo) -->
+<button class="px-1.5 py-0.5 rounded-md bg-surface-container-highest text-tertiary border border-tertiary/40 flex items-center gap-1 text-label-sm">
+<span class="material-symbols-outlined text-[15px]" data-icon="thumb_down">thumb_down</span>
+<span class="font-label-sm text-[10px]">Feedback</span>
+</button>
+</div>
+</div>
+<!-- Expanded Thumbs-Down Reason Chips -->
+<div class="pt-1.5 border-t border-outline-variant/20 flex flex-col gap-1.5">
+<span class="font-label-sm text-[10px] text-on-surface-variant/80">Tell us what needs calibration:</span>
+<div class="flex flex-wrap gap-1.5">
+<button class="px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/50 text-on-surface font-label-sm text-label-sm hover:border-primary transition-colors">
+              Too vague
+            </button>
+<button class="px-2 py-0.5 rounded-full bg-surface-container-high border border-tertiary text-tertiary font-label-sm text-label-sm">
+              Gave too much
+            </button>
+<button class="px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/50 text-on-surface font-label-sm text-label-sm hover:border-primary transition-colors">
+              Wrong direction
+            </button>
+<button class="px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/50 text-on-surface font-label-sm text-label-sm hover:border-primary transition-colors">
+              Other
+            </button>
+</div>
+</div>
+</section>
+<!-- 5. L4 LOCKED & CONFIRMATION GUARD PREVIEW -->
+<section class="bg-surface-container-lowest border border-tertiary/30 rounded-xl p-3 flex flex-col gap-2.5 relative overflow-hidden">
+<!-- Guarded Banner -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-tertiary">
+<span class="material-symbols-outlined text-[16px]" data-icon="lock">lock</span>
+<span class="font-label-sm text-label-sm font-semibold">L4: Full Solution — Guarded</span>
+</div>
+<span class="px-1.5 py-0.2 rounded bg-tertiary/10 border border-tertiary/30 text-tertiary font-label-sm text-[10px]">
+            Final Step
+          </span>
+</div>
+<!-- Warning Dialog Confirmation Preview Container -->
+<div class="bg-surface-container-low border border-outline-variant/40 rounded-lg p-2.5 flex flex-col gap-2">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-tertiary text-[16px] mt-0.5" data-icon="psychology">psychology</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-sm text-headline-sm text-on-surface">Are you sure?</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                You've only explored 2 of 4 scaffolding levels. Figuring out the data structure yourself locks in long-term memory.
+              </p>
+</div>
+</div>
+<!-- Modal Action Buttons -->
+<div class="flex items-center justify-end gap-2 pt-1 border-t border-outline-variant/20">
+<button class="px-2.5 py-1 rounded-md text-on-surface bg-surface-container-high border border-outline-variant hover:bg-surface-variant font-label-sm text-label-sm transition-colors">
+              Keep trying
+            </button>
+<button class="px-2.5 py-1 rounded-md text-tertiary bg-tertiary/10 border border-tertiary/40 hover:bg-tertiary/20 font-label-sm text-label-sm transition-colors">
+              I really want the answer
+            </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Chrome Side Panel Bottom Context Status Bar -->
+<footer class="bg-surface-container-low border-t border-outline-variant/40 px-3 py-1.5 flex items-center justify-between text-[11px] font-label-sm text-on-surface-variant">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span>Side Panel Companion</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-on-surface-variant/60">⌘+Shift+U</span>
+<span class="hover:text-on-surface cursor-pointer">v1.4.2</span>
+</div>
+</footer>
+</div>
+</body></html>

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck — Chrome Extension Popup States</title>
+<!-- Google Fonts: JetBrains Mono & IBM Plex Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface": "#0b1326",
+            "on-primary-fixed": "#002109",
+            "surface-dim": "#0b1326",
+            "on-error-container": "#ffdad6",
+            "error": "#ffb4ab",
+            "secondary-fixed": "#c4e7ff",
+            "secondary-fixed-dim": "#7bd0ff",
+            "surface-container-low": "#131b2e",
+            "on-secondary": "#00354a",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-primary-container": "#004b1e",
+            "surface-container-highest": "#2d3449",
+            "on-surface-variant": "#bccbb9",
+            "surface-container-lowest": "#060e20",
+            "on-primary-fixed-variant": "#005321",
+            "secondary-container": "#00a6e0",
+            "surface-bright": "#31394d",
+            "inverse-primary": "#006e2f",
+            "tertiary": "#ffba61",
+            "primary": "#4be277",
+            "surface-container-high": "#222a3d",
+            "on-background": "#dae2fd",
+            "primary-fixed": "#6bff8f",
+            "on-primary": "#003915",
+            "on-secondary-fixed-variant": "#004c69",
+            "background": "#0b1326",
+            "surface-tint": "#4ae176",
+            "secondary": "#7bd0ff",
+            "on-tertiary-container": "#5c3800",
+            "on-secondary-fixed": "#001e2c",
+            "on-surface": "#dae2fd",
+            "surface-container": "#171f33",
+            "on-tertiary-fixed-variant": "#653e00",
+            "tertiary-container": "#ef9900",
+            "primary-fixed-dim": "#4ae176",
+            "inverse-surface": "#dae2fd",
+            "error-container": "#93000a",
+            "on-tertiary": "#472a00",
+            "primary-container": "#22c55e",
+            "on-tertiary-fixed": "#2a1700",
+            "tertiary-fixed": "#ffddb8",
+            "on-secondary-container": "#00374d",
+            "on-error": "#690005",
+            "inverse-on-surface": "#283044",
+            "outline-variant": "#3d4a3d",
+            "outline": "#869585",
+            "surface-variant": "#2d3449"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xl": "1.5rem",
+            "space-md": "0.75rem",
+            "space-xs": "0.25rem",
+            "margin": "1rem",
+            "space-lg": "1rem",
+            "gutter": "0.75rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "code-sm": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "headline-sm": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"],
+            "code-md": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-surface text-on-surface min-h-screen selection:bg-primary selection:text-on-primary font-body-md text-body-md antialiased p-space-lg lg:p-space-xl">
+<!-- Showcase Canvas Header -->
+<header class="max-w-7xl mx-auto mb-space-xl border-b border-outline-variant/30 pb-space-lg">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm">
+<!-- Brand Mark: Intertwined knot / recursive loop symbol -->
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/40 text-primary">
+<span class="material-symbols-outlined text-[20px]">all_inclusive</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h1 class="font-headline-md text-headline-md text-on-surface tracking-tight">Unstuck</h1>
+<span class="font-code-sm text-code-sm px-2 py-0.5 rounded-full bg-surface-container-high text-primary border border-primary/20">Extension Popup States</span>
+</div>
+<p class="font-body-sm text-body-sm text-outline">Chrome action popup preview matrices • Viewport spec 360px × auto</p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm font-code-sm text-code-sm text-outline">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-low border border-outline-variant/30">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+          Engine: Socratic v1.2
+        </span>
+<span class="px-2.5 py-1 rounded bg-surface-container-low border border-outline-variant/30">
+          Target: sidePanel API
+        </span>
+</div>
+</div>
+</header>
+<!-- Popup Grid Showcase: 4 Realistic Frames Side-by-Side -->
+<main class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-lg items-start">
+<!-- ========================================================================= -->
+<!-- VARIANT 1: Normal / Active State                                          -->
+<!-- ========================================================================= -->
+<section class="flex flex-col">
+<div class="mb-2 flex items-center justify-between px-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">State 01</span>
+<span class="font-code-sm text-code-sm text-primary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> ACTIVE
+        </span>
+</div>
+<!-- Popup Frame Window (Chrome Extension standard ~360px) -->
+<div class="w-full max-w-[360px] mx-auto bg-surface-container-low rounded-xl border border-outline-variant/40 shadow-2xl overflow-hidden flex flex-col">
+<!-- Top Header (Docked full-width, compliant with TopNavBar anchor) -->
+<header class="bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between px-space-md py-space-sm w-full sticky top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">all_inclusive</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">Unstuck</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-bright/20 transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+</button>
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-bright/20 transition-colors" title="Close">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</header>
+<!-- Body Content Stack -->
+<div class="p-space-md flex flex-col gap-space-md">
+<!-- Status Block: Watching Active -->
+<div class="bg-surface-container rounded-xl p-3 border border-outline-variant/30 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary-container"></span>
+</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold text-xs">Watching this page</span>
+</div>
+<!-- Switched ON Toggle -->
+<div class="flex items-center gap-1.5 cursor-pointer" title="Toggle site status">
+<span class="font-label-sm text-label-sm text-outline text-[10px]">Pause</span>
+<div class="w-8 h-4.5 bg-primary-container rounded-full p-0.5 flex items-center justify-end transition-colors">
+<div class="w-3.5 h-3.5 rounded-full bg-on-primary shadow-sm"></div>
+</div>
+</div>
+</div>
+<!-- Site Domain Pill -->
+<div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20 font-code-sm text-code-sm text-on-surface-variant overflow-hidden text-ellipsis whitespace-nowrap">
+<span class="material-symbols-outlined text-[14px] text-primary">terminal</span>
+<span class="truncate">leetcode.com/problems/two-sum</span>
+</div>
+</div>
+<!-- 3 Stat Tiles Grid -->
+<div class="grid grid-cols-3 gap-2">
+<!-- Stat 1 -->
+<div class="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
+<span class="font-label-sm text-label-sm text-outline text-[9px] uppercase tracking-wider truncate">Nudges</span>
+<span class="font-code-md text-code-md text-on-surface font-semibold mt-0.5">4</span>
+<span class="font-label-sm text-label-sm text-primary text-[9px] mt-0.5">Tier 1</span>
+</div>
+<!-- Stat 2 -->
+<div class="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
+<span class="font-label-sm text-label-sm text-outline text-[9px] uppercase tracking-wider truncate">Accepted</span>
+<span class="font-code-md text-code-md text-on-surface font-semibold mt-0.5">3</span>
+<span class="font-label-sm text-label-sm text-outline text-[9px] mt-0.5">75% rate</span>
+</div>
+<!-- Stat 3 -->
+<div class="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
+<span class="font-label-sm text-label-sm text-outline text-[9px] uppercase tracking-wider truncate">Hints</span>
+<span class="font-code-md text-code-md text-on-surface font-semibold mt-0.5">2<span class="text-outline text-xs font-normal">/6</span></span>
+<span class="font-label-sm text-label-sm text-outline text-[9px] mt-0.5">4 left</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-2 pt-1">
+<!-- Primary Action -->
+<button class="w-full bg-primary-container text-on-primary font-body-md text-body-md font-semibold rounded-lg px-3 py-2 flex items-center justify-between hover:bg-primary transition-colors active:scale-[0.98]">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">dock_to_left</span>
+                Open side panel
+              </span>
+<div class="flex items-center gap-1.5">
+<kbd class="font-code-sm text-code-sm text-[10px] bg-on-primary/20 px-1.5 py-0.5 rounded font-mono">⌥S</kbd>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</div>
+</button>
+<!-- Secondary Action -->
+<button class="w-full bg-surface-container-high text-on-surface font-body-sm text-body-sm rounded-lg px-3 py-1.5 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px] text-outline">timer</span>
+              Pause for 1 hour
+            </button>
+</div>
+</div>
+<!-- Footer Action Dock -->
+<footer class="bg-surface-container-low border-t border-outline-variant/30 px-space-md py-2 flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span class="truncate">v1.2.0 • Local LLM / Gemini</span>
+<a class="text-outline hover:text-primary transition-colors flex items-center gap-1" href="#">
+            Settings
+          </a>
+</footer>
+</div>
+</section>
+<!-- ========================================================================= -->
+<!-- VARIANT 2: Paused State                                                   -->
+<!-- ========================================================================= -->
+<section class="flex flex-col">
+<div class="mb-2 flex items-center justify-between px-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">State 02</span>
+<span class="font-code-sm text-code-sm text-tertiary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> PAUSED
+        </span>
+</div>
+<!-- Popup Frame Window -->
+<div class="w-full max-w-[360px] mx-auto bg-surface-container-low rounded-xl border border-outline-variant/40 shadow-2xl overflow-hidden flex flex-col">
+<!-- Top Header -->
+<header class="bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between px-space-md py-space-sm w-full sticky top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]">all_inclusive</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">Unstuck</span>
+<span class="font-code-sm text-code-sm text-[10px] px-1.5 py-0.2 rounded bg-tertiary-container/20 text-tertiary border border-tertiary/30">PAUSED</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-bright/20 transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+</button>
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-bright/20 transition-colors" title="Close">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</header>
+<!-- Body Content Stack -->
+<div class="p-space-md flex flex-col gap-space-md">
+<!-- Status Block: Paused Warning Tone -->
+<div class="bg-surface-container rounded-xl p-3 border border-tertiary/30 flex flex-col gap-2.5">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px] mt-0.5">pause_circle</span>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold text-xs leading-none">Paused on leetcode.com</h2>
+<p class="font-body-sm text-body-sm text-outline text-[11px] mt-1">Resumes in 42m or click below</p>
+</div>
+</div>
+<!-- Switched OFF Toggle -->
+<div class="w-8 h-4.5 bg-surface-bright rounded-full p-0.5 flex items-center justify-start transition-colors cursor-pointer" title="Toggle site status">
+<div class="w-3.5 h-3.5 rounded-full bg-outline shadow-sm"></div>
+</div>
+</div>
+<!-- Countdown Bar -->
+<div class="flex flex-col gap-1 mt-1">
+<div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full w-[30%] rounded-full"></div>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-outline text-[9px]">
+<span>18m elapsed</span>
+<span>42m remaining</span>
+</div>
+</div>
+</div>
+<!-- Dimmed Stat Tiles Grid -->
+<div class="grid grid-cols-3 gap-2 opacity-60">
+<div class="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
+<span class="font-label-sm text-label-sm text-outline text-[9px] uppercase tracking-wider truncate">Nudges</span>
+<span class="font-code-md text-code-md text-on-surface font-semibold mt-0.5">4</span>
+<span class="font-label-sm text-label-sm text-outline text-[9px] mt-0.5">Suspended</span>
+</div>
+<div class="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
+<span class="font-label-sm text-label-sm text-outline text-[9px] uppercase tracking-wider truncate">Accepted</span>
+<span class="font-code-md text-code-md text-on-surface font-semibold mt-0.5">3</span>
+<span class="font-label-sm text-label-sm text-outline text-[9px] mt-0.5">75% rate</span>
+</div>
+<div class="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
+<span class="font-label-sm text-label-sm text-outline text-[9px] uppercase tracking-wider truncate">Hints</span>
+<span class="font-code-md text-code-md text-on-surface font-semibold mt-0.5">2<span class="text-outline text-xs font-normal">/6</span></span>
+<span class="font-label-sm text-label-sm text-outline text-[9px] mt-0.5">Suspended</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-2 pt-1">
+<!-- Primary Action: Resume -->
+<button class="w-full bg-primary-container text-on-primary font-body-md text-body-md font-semibold rounded-lg px-3 py-2 flex items-center justify-center gap-2 hover:bg-primary transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+              Resume watching
+            </button>
+<!-- Secondary Action -->
+<button class="w-full bg-surface-container-high text-on-surface font-body-sm text-body-sm rounded-lg px-3 py-1.5 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px] text-outline">bedtime</span>
+              Keep paused for today
+            </button>
+</div>
+</div>
+<!-- Footer Action Dock -->
+<footer class="bg-surface-container-low border-t border-outline-variant/30 px-space-md py-2 flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span class="text-tertiary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Auto-resume active
+          </span>
+<a class="text-outline hover:text-on-surface transition-colors flex items-center gap-1" href="#">
+            Settings
+          </a>
+</footer>
+</div>
+</section>
+<!-- ========================================================================= -->
+<!-- VARIANT 3: Unsupported Page State                                         -->
+<!-- ========================================================================= -->
+<section class="flex flex-col">
+<div class="mb-2 flex items-center justify-between px-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">State 03</span>
+<span class="font-code-sm text-code-sm text-outline flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span> INACTIVE
+        </span>
+</div>
+<!-- Popup Frame Window -->
+<div class="w-full max-w-[360px] mx-auto bg-surface-container-low rounded-xl border border-outline-variant/40 shadow-2xl overflow-hidden flex flex-col">
+<!-- Top Header -->
+<header class="bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between px-space-md py-space-sm w-full sticky top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]">all_inclusive</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">Unstuck</span>
+<span class="font-code-sm text-code-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container-highest text-outline border border-outline-variant/40">INACTIVE</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-bright/20 transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+</button>
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-bright/20 transition-colors" title="Close">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</header>
+<!-- Body Content Stack -->
+<div class="p-space-md flex flex-col gap-space-md">
+<!-- Status Block: Unsupported Notice -->
+<div class="bg-surface-container rounded-xl p-3 border border-outline-variant/30 flex flex-col gap-2">
+<div class="flex items-start gap-2.5">
+<div class="w-6 h-6 rounded-md bg-surface-container-highest flex items-center justify-center text-secondary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">info</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold text-xs">I can't run on this page</h2>
+<p class="font-body-sm text-body-sm text-outline text-[11px] leading-relaxed mt-1">
+                  Unstuck only activates on supported problem pages and programming documentation.
+                </p>
+</div>
+</div>
+<!-- Target Domain Pill (Restricted) -->
+<div class="mt-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20 font-code-sm text-code-sm text-outline">
+<span class="material-symbols-outlined text-[14px] text-error">lock</span>
+<span class="truncate">Target: chrome://extensions (Restricted scheme)</span>
+</div>
+</div>
+<!-- Supported Sites Badge Row -->
+<div class="flex flex-col gap-1.5">
+<span class="font-label-sm text-label-sm text-outline text-[10px] uppercase tracking-wider">Supported out-of-the-box:</span>
+<div class="flex flex-wrap gap-1.5">
+<span class="font-code-sm text-code-sm text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-on-surface-variant">LeetCode</span>
+<span class="font-code-sm text-code-sm text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-on-surface-variant">HackerRank</span>
+<span class="font-code-sm text-code-sm text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-on-surface-variant">Codeforces</span>
+<span class="font-code-sm text-code-sm text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-secondary">+ docs</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-2 pt-1">
+<!-- Custom Domain Button -->
+<button class="w-full bg-surface-container-high text-on-surface font-body-sm text-body-sm rounded-lg px-3 py-2 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px] text-primary">add_circle</span>
+              Add custom domain / localhost
+            </button>
+<!-- Scratchpad Panel -->
+<button class="w-full bg-surface-container text-on-surface font-body-sm text-body-sm rounded-lg px-3 py-1.5 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px] text-outline">edit_note</span>
+              Open scratchpad panel
+            </button>
+</div>
+</div>
+<!-- Footer Action Dock -->
+<footer class="bg-surface-container-low border-t border-outline-variant/30 px-space-md py-2 flex items-center justify-between font-label-sm text-label-sm text-outline">
+<a class="text-outline hover:text-on-surface transition-colors flex items-center gap-1" href="#">
+            Docs &amp; Rules
+          </a>
+<a class="text-outline hover:text-on-surface transition-colors flex items-center gap-1" href="#">
+            Settings
+          </a>
+</footer>
+</div>
+</section>
+<!-- ========================================================================= -->
+<!-- VARIANT 4: Contest Mode State                                             -->
+<!-- ========================================================================= -->
+<section class="flex flex-col">
+<div class="mb-2 flex items-center justify-between px-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">State 04</span>
+<span class="font-code-sm text-code-sm text-secondary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> FAIR PLAY
+        </span>
+</div>
+<!-- Popup Frame Window -->
+<div class="w-full max-w-[360px] mx-auto bg-surface-container-low rounded-xl border border-outline-variant/40 shadow-2xl overflow-hidden flex flex-col">
+<!-- Top Header -->
+<header class="bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between px-space-md py-space-sm w-full sticky top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">all_inclusive</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface tracking-tight">Unstuck</span>
+<span class="font-code-sm text-code-sm text-[10px] px-1.5 py-0.2 rounded bg-secondary-container/20 text-secondary border border-secondary/30">FAIR PLAY</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-bright/20 transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+</button>
+<button class="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-bright/20 transition-colors" title="Close">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</header>
+<!-- Body Content Stack -->
+<div class="p-space-md flex flex-col gap-space-md">
+<!-- Status Block: Contest Banner -->
+<div class="bg-surface-container rounded-xl p-3 border border-secondary/30 flex flex-col gap-2.5">
+<div class="flex items-start gap-2.5">
+<div class="w-6 h-6 rounded-md bg-secondary/15 flex items-center justify-center text-secondary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">military_tech</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold text-xs">Contest detected</h2>
+<p class="font-body-sm text-body-sm text-outline text-[11px] leading-relaxed mt-1">
+                  Live contest active. Hints are strictly off so you stay fair.
+                </p>
+</div>
+</div>
+<!-- Timer Lock Badge -->
+<div class="flex items-center gap-2 p-2 rounded-lg bg-surface-container-lowest border border-outline-variant/20">
+<span class="material-symbols-outlined text-[16px] text-secondary">lock_clock</span>
+<span class="font-code-sm text-code-sm text-[11px] text-on-surface-variant">
+                Auto-locked until ends in <strong class="text-secondary font-semibold">1h 14m</strong>
+</span>
+</div>
+</div>
+<!-- Integrity Checks -->
+<div class="bg-surface-container rounded-lg p-2.5 border border-outline-variant/20 flex flex-col gap-1.5">
+<span class="font-label-sm text-label-sm text-outline text-[9px] uppercase tracking-wider">Integrity Enforcement:</span>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-[11px]">
+<span class="text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary">check</span>
+                Solution scraping disabled
+              </span>
+<span class="font-code-sm text-code-sm text-[9px] text-primary bg-primary/10 px-1 rounded">Enforced</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-[11px]">
+<span class="text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary">check</span>
+                AI interception paused
+              </span>
+<span class="font-code-sm text-code-sm text-[9px] text-primary bg-primary/10 px-1 rounded">Enforced</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-2 pt-1">
+<!-- Scratchpad button -->
+<button class="w-full bg-surface-container-high text-on-surface font-body-sm text-body-sm rounded-lg px-3 py-2 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px] text-secondary">edit_note</span>
+              Open clean scratchpad only
+            </button>
+<!-- Rules button -->
+<button class="w-full bg-surface-container text-outline font-body-sm text-body-sm rounded-lg px-3 py-1.5 border border-outline-variant/20 flex items-center justify-center gap-2 hover:text-on-surface hover:bg-surface-bright transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+              View contest fair-play rules
+            </button>
+</div>
+</div>
+<!-- Footer Action Dock -->
+<footer class="bg-surface-container-low border-t border-outline-variant/30 px-space-md py-2 flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span class="text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">shield</span> Anti-cheat: ACTIVE
+          </span>
+<a class="text-outline hover:text-on-surface transition-colors flex items-center gap-1" href="#">
+            Settings
+          </a>
+</footer>
+</div>
+</section>
+</main>
+<!-- Technical Spec & Implementation Meta -->
+<section class="max-w-7xl mx-auto mt-space-xl p-space-md bg-surface-container-low border border-outline-variant/30 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-surface-container rounded-lg border border-outline-variant/30 text-primary">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm text-on-surface text-sm">Chrome Action Popup Specification</p>
+<p class="font-body-sm text-body-sm text-outline text-xs">Tested against Manifest V3 standard action sizing (360px × 480px nominal). Realtime background service worker hooks directly into `chrome.sidePanel.open`.</p>
+</div>
+</div>
+<div class="flex items-center gap-2 self-end md:self-auto font-code-sm text-code-sm text-outline text-xs">
+<span class="px-2 py-1 rounded bg-surface-container border border-outline-variant/30">OLED Dark #0B1326</span>
+<span class="px-2 py-1 rounded bg-surface-container border border-outline-variant/30 text-primary">Accent #22C55E</span>
+</div>
+</section>
+</body></html>

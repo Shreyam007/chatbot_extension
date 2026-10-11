@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Restricted Page</title>
+<!-- Material Symbols Outlined font -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts: IBM Plex Sans & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with custom theme config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed": "#2a1700",
+            "surface-container-high": "#222a3d",
+            "on-surface-variant": "#bccbb9",
+            "on-surface": "#dae2fd",
+            "primary": "#4be277",
+            "on-primary-fixed": "#002109",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface": "#0b1326",
+            "on-primary-container": "#004b1e",
+            "outline-variant": "#3d4a3d",
+            "primary-fixed": "#6bff8f",
+            "on-background": "#dae2fd",
+            "error-container": "#93000a",
+            "surface-dim": "#0b1326",
+            "surface-variant": "#2d3449",
+            "primary-fixed-dim": "#4ae176",
+            "secondary-fixed-dim": "#7bd0ff",
+            "primary-container": "#22c55e",
+            "surface-container-low": "#131b2e",
+            "on-tertiary": "#472a00",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#ef9900",
+            "on-secondary-container": "#00374d",
+            "surface-container-lowest": "#060e20",
+            "secondary-container": "#00a6e0",
+            "surface-tint": "#4ae176",
+            "background": "#0b1326",
+            "on-secondary-fixed": "#001e2c",
+            "error": "#ffb4ab",
+            "inverse-on-surface": "#283044",
+            "surface-container": "#171f33",
+            "inverse-primary": "#006e2f",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-primary-fixed-variant": "#005321",
+            "on-secondary": "#00354a",
+            "surface-container-highest": "#2d3449",
+            "tertiary-fixed": "#ffddb8",
+            "surface-bright": "#31394d",
+            "on-primary": "#003915",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-error": "#690005",
+            "tertiary": "#ffba61",
+            "secondary-fixed": "#c4e7ff",
+            "inverse-surface": "#dae2fd",
+            "on-tertiary-container": "#5c3800",
+            "secondary": "#7bd0ff",
+            "outline": "#869585"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1rem",
+            "space-xl": "1.5rem",
+            "gutter": "0.75rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "0.75rem",
+            "margin": "1rem"
+          },
+          "fontFamily": {
+            "body-sm": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "code-md": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface antialiased font-body-md min-h-screen flex items-center justify-center p-0 md:p-6 select-none">
+<!-- Side Panel Container Shell (400px fixed width constrained stack) -->
+<div class="w-full max-w-[400px] h-screen md:h-[680px] bg-surface flex flex-col border border-outline-variant/30 md:rounded-xl shadow-2xl overflow-hidden relative">
+<!-- TopNavBar (Shared Component implementation) -->
+<!-- Matches Shared Components JSON: docked sticky top-0, h-12, border-b border-outline-variant, flex items-center justify-between -->
+<header class="bg-surface docked full-width top-0 sticky z-50 border-b border-outline-variant flex justify-between items-center w-full px-margin py-space-sm h-12">
+<!-- Brand Logo / Product Name -->
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-md text-headline-md text-primary tracking-tight font-semibold flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-primary inline-block animate-pulse"></span>
+          Unstuck
+        </span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container-high text-outline border border-outline-variant/40">
+          v1.4.2
+        </span>
+</div>
+<!-- Trailing Icon Actions: terminal & close as specified in JSON -->
+<div class="flex items-center gap-1">
+<button aria-label="Terminal Console" class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container-high text-on-surface transition-colors duration-150 ease-in-out flex items-center justify-center" title="Terminal" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="terminal">terminal</span>
+</button>
+<button aria-label="Close Side Panel" class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container-high text-on-surface transition-colors duration-150 ease-in-out flex items-center justify-center" title="Close" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="close">close</span>
+</button>
+</div>
+</header>
+<!-- Sub-header disabled tabs indicator (shows restricted state context) -->
+<div class="px-margin pt-2 pb-0 flex items-center gap-4 border-b border-outline-variant/20 bg-surface-container-lowest/50">
+<div class="pb-2 text-on-surface-variant/40 font-code-md text-code-md flex items-center gap-1 cursor-not-allowed border-b-2 border-transparent">
+<span class="material-symbols-outlined text-[14px]" data-icon="chat">chat</span>
+        Tutor
+      </div>
+<div class="pb-2 text-on-surface-variant/40 font-code-md text-code-md flex items-center gap-1 cursor-not-allowed border-b-2 border-transparent">
+<span class="material-symbols-outlined text-[14px]" data-icon="bug_report">bug_report</span>
+        Debug
+      </div>
+<div class="pb-2 text-on-surface-variant/40 font-code-md text-code-md flex items-center gap-1 cursor-not-allowed border-b-2 border-transparent">
+<span class="material-symbols-outlined text-[14px]" data-icon="psychology">psychology</span>
+        Hints
+      </div>
+<div class="ml-auto pb-2 flex items-center">
+<span class="w-1.5 h-1.5 rounded-full bg-error mr-1.5"></span>
+<span class="font-label-sm text-label-sm text-error/80">INACTIVE</span>
+</div>
+</div>
+<!-- Centered Full-Panel Restricted Page Body -->
+<main class="flex-1 overflow-y-auto px-margin py-space-xl flex flex-col items-center justify-center text-center">
+<!-- Restriction Shield / Block Icon Container -->
+<div class="relative mb-5 flex items-center justify-center">
+<!-- Subtle back glow -->
+<div class="absolute inset-0 bg-secondary/10 rounded-full blur-xl transform scale-150 pointer-events-none"></div>
+<!-- Outer tactile badge border -->
+<div class="w-16 h-16 rounded-2xl bg-surface-container border border-outline-variant/50 flex items-center justify-center shadow-lg relative">
+<!-- Icon glyph -->
+<span class="material-symbols-outlined text-[32px] text-secondary" data-icon="extension_off">extension_off</span>
+<!-- Small amber indicator chip in the corner -->
+<div class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-surface-container-high border border-tertiary/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-tertiary" data-icon="lock">lock</span>
+</div>
+</div>
+</div>
+<!-- One-line Title -->
+<h1 class="font-headline-sm text-headline-sm font-semibold text-on-surface max-w-xs mb-2">
+        I can't run on browser pages like this one
+      </h1>
+<!-- One line of explanation -->
+<p class="font-body-sm text-body-sm text-on-surface-variant/80 max-w-xs mb-5">
+        Chrome security policies prevent extensions from reading <span class="font-code-sm text-code-sm text-on-surface bg-surface-container px-1 py-0.5 rounded border border-outline-variant/30">chrome://</span> or Web Store pages.
+      </p>
+<!-- Current URL Indicator Pill with Crossed-Out Badge -->
+<div class="mb-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant/40 max-w-full">
+<span class="material-symbols-outlined text-[16px] text-error flex-shrink-0" data-icon="block">block</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant line-through truncate max-w-[200px]" title="chrome://extensions">
+          chrome://extensions
+        </span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-error/15 text-error border border-error/30 flex-shrink-0">
+          RESTRICTED
+        </span>
+</div>
+<!-- Primary Action Recommendation Button -->
+<a class="w-full max-w-[280px] bg-primary-container text-on-primary-container font-headline-sm text-headline-sm px-6 py-2.5 rounded-lg hover:bg-primary transition-all duration-150 active:scale-95 flex items-center justify-center gap-2 shadow-sm mb-6 cursor-pointer font-semibold" href="https://leetcode.com/problemset/" rel="noopener noreferrer" target="_blank">
+<span>Open a problem page</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="open_in_new">open_in_new</span>
+</a>
+<!-- Quick Launch Navigation Section -->
+<div class="w-full max-w-[320px] pt-4 border-t border-outline-variant/30 flex flex-col items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant/70 mb-3 tracking-wider">
+          TRY ON SUPPORTED SITES
+        </span>
+<div class="w-full flex flex-col gap-1.5">
+<!-- LeetCode Chip -->
+<a class="group w-full flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 hover:border-outline-variant transition-colors duration-150 text-left" href="https://leetcode.com/problems/two-sum/" rel="noopener noreferrer" target="_blank">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="font-code-md text-code-md text-on-surface">LeetCode Two Sum</span>
+</div>
+<span class="font-code-md text-code-md text-on-surface-variant group-hover:text-primary transition-colors">→</span>
+</a>
+<!-- HackerRank Chip -->
+<a class="group w-full flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 hover:border-outline-variant transition-colors duration-150 text-left" href="https://www.hackerrank.com/domains/algorithms" rel="noopener noreferrer" target="_blank">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-code-md text-code-md text-on-surface">HackerRank Practice</span>
+</div>
+<span class="font-code-md text-code-md text-on-surface-variant group-hover:text-primary transition-colors">→</span>
+</a>
+<!-- Codeforces Chip -->
+<a class="group w-full flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 hover:border-outline-variant transition-colors duration-150 text-left" href="https://codeforces.com/problemset" rel="noopener noreferrer" target="_blank">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-code-md text-code-md text-on-surface">Codeforces</span>
+</div>
+<span class="font-code-md text-code-md text-on-surface-variant group-hover:text-primary transition-colors">→</span>
+</a>
+</div>
+</div>
+</main>
+<!-- Bottom Docked Status Banner (Tactile developer status footer) -->
+<footer class="h-10 px-margin bg-surface-container-lowest border-t border-outline-variant/30 flex items-center justify-between text-on-surface-variant font-label-md text-label-md">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-tertiary" data-icon="info">info</span>
+<span>Side Panel Sandbox</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-code-sm text-code-sm px-1.5 py-0.5 rounded bg-surface border border-outline-variant/40 text-on-surface-variant">⌥ + U</span>
+</div>
+</footer>
+</div>
+</body></html>

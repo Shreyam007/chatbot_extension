@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck v1.0 • Setup</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: JetBrains Mono & IBM Plex Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-tint": "#4ae176",
+            "outline-variant": "#3d4a3d",
+            "primary-container": "#22c55e",
+            "on-tertiary-container": "#5c3800",
+            "on-tertiary-fixed": "#2a1700",
+            "surface": "#0b1326",
+            "secondary-fixed": "#c4e7ff",
+            "surface-container-highest": "#2d3449",
+            "secondary": "#7bd0ff",
+            "tertiary-container": "#ef9900",
+            "surface-bright": "#31394d",
+            "background": "#0b1326",
+            "on-primary-fixed-variant": "#005321",
+            "secondary-container": "#00a6e0",
+            "on-surface": "#dae2fd",
+            "tertiary-fixed-dim": "#ffb95f",
+            "surface-container-low": "#131b2e",
+            "on-secondary": "#00354a",
+            "secondary-fixed-dim": "#7bd0ff",
+            "inverse-surface": "#dae2fd",
+            "on-error-container": "#ffdad6",
+            "tertiary-fixed": "#ffddb8",
+            "error": "#ffb4ab",
+            "surface-container-high": "#222a3d",
+            "on-secondary-fixed": "#001e2c",
+            "on-background": "#dae2fd",
+            "error-container": "#93000a",
+            "inverse-primary": "#006e2f",
+            "on-secondary-container": "#00374d",
+            "on-tertiary": "#472a00",
+            "outline": "#869585",
+            "surface-container-lowest": "#060e20",
+            "surface-container": "#171f33",
+            "on-primary-container": "#004b1e",
+            "on-primary": "#003915",
+            "on-primary-fixed": "#002109",
+            "surface-dim": "#0b1326",
+            "primary-fixed": "#6bff8f",
+            "on-tertiary-fixed-variant": "#653e00",
+            "primary-fixed-dim": "#4ae176",
+            "on-error": "#690005",
+            "on-surface-variant": "#bccbb9",
+            "tertiary": "#ffba61",
+            "inverse-on-surface": "#283044",
+            "surface-variant": "#2d3449",
+            "primary": "#4be277",
+            "on-secondary-fixed-variant": "#004c69"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "margin": "0.75rem",
+            "space-xl": "1.5rem",
+            "space-sm": "0.5rem",
+            "gutter": "0.5rem",
+            "space-md": "0.75rem",
+            "space-xs": "0.25rem",
+            "space-lg": "1rem"
+          },
+          "fontFamily": {
+            "code-md": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "headline-md": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"],
+            "headline-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "500" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "body-sm": ["0.75rem", { "lineHeight": "1.125rem", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "0em", "fontWeight": "600" }]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    /* Custom Scrollbar for side panel */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1326;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2d3449;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    /* Focus visible rings */
+    *:focus-visible {
+      outline: 2px solid #ffffff;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased min-h-screen flex items-center justify-center p-0 md:p-6 select-none font-body-md text-body-md">
+<!-- Side Panel Host Container (440px wide typical Chrome Side Panel viewport) -->
+<main class="w-full max-w-[460px] h-screen md:h-[920px] max-h-[960px] bg-surface flex flex-col border border-outline-variant rounded-none md:rounded-xl shadow-2xl overflow-hidden relative">
+<!-- TopNavBar (Shared Component JSON Blueprint Executed) -->
+<header class="bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant docked full-width top-0 sticky z-50 flex justify-between items-center w-full px-margin py-space-sm h-12">
+<!-- Product identity and branding -->
+<div class="flex items-center gap-space-sm">
+<!-- Knot loosening to straight vector line SVG -->
+<svg class="w-5 h-5 text-primary-container" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4 19c2.5-4 5-9 8-9s3 6 6 3 2-7 2-7"></path>
+<path d="M4 12c1.5-1 4-1 6 1s4 4 6 2l4-4" stroke-opacity="0.5"></path>
+</svg>
+<span class="font-headline-md text-headline-md text-primary dark:text-primary tracking-tight font-semibold">Unstuck</span>
+<span class="font-code-sm text-code-sm uppercase px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant">dev-preview</span>
+</div>
+<!-- Action items: terminal, close -->
+<div class="flex items-center gap-space-xs">
+<button aria-label="Open debug terminal" class="p-1 rounded text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high text-on-surface dark:text-on-surface transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</button>
+<button aria-label="Dismiss side panel" class="p-1 rounded text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high text-on-surface dark:text-on-surface transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</header>
+<!-- Side Panel Sub-header Context / Breadcrumb Bar -->
+<div class="px-space-md py-1.5 bg-surface-container-low border-b border-outline-variant/60 flex items-center justify-between text-on-surface-variant">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">Setup wizard • Step 1 of 3</span>
+</div>
+<div class="flex items-center gap-1 font-code-sm text-code-sm text-secondary">
+<span class="material-symbols-outlined text-[14px]">push_pin</span>
+<span>Docked</span>
+</div>
+</div>
+<!-- Scrollable Main Content Stream -->
+<div class="flex-1 overflow-y-auto px-margin py-space-md space-y-space-lg">
+<!-- Hero & Value Proposition -->
+<section class="space-y-space-xs">
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary-container/15 border border-primary-container/30 text-primary-container">
+<span class="material-symbols-outlined text-[13px]">psychology</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">AI Engineering Co-Pilot</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">
+          Stuck? I'll notice.
+        </h1>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Unstuck gives you hints, not answers, right when you need them.
+        </p>
+</section>
+<!-- Three Benefit Rows -->
+<section aria-label="Core Capabilities" class="space-y-space-xs">
+<!-- Row 1: Stuck Detection -->
+<div class="p-space-md rounded-xl bg-surface-container border border-outline-variant hover:border-outline transition-colors flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center flex-shrink-0 text-secondary border border-outline-variant/50">
+<span class="material-symbols-outlined text-[20px]">radar</span>
+</div>
+<div class="space-y-0.5 min-w-0">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Spots when you're stuck</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Detects long idle pauses, debug loop churn, and repeated failed test runs.
+            </p>
+</div>
+</div>
+<!-- Row 2: Graded hints -->
+<div class="p-space-md rounded-xl bg-surface-container border border-outline-variant hover:border-outline transition-colors flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center flex-shrink-0 text-tertiary border border-outline-variant/50">
+<span class="material-symbols-outlined text-[20px]">layers</span>
+</div>
+<div class="space-y-1 min-w-0">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Graded hints: direction first, answer last</h2>
+<div class="flex items-center gap-1 font-code-sm text-code-sm text-primary-container">
+<span class="bg-surface-container-high px-1 py-0.5 rounded text-on-surface">L1 Direction</span>
+<span class="text-on-surface-variant">→</span>
+<span class="bg-surface-container-high px-1 py-0.5 rounded text-on-surface">L2 Approach</span>
+<span class="text-on-surface-variant">→</span>
+<span class="bg-surface-container-high px-1 py-0.5 rounded text-on-surface">L3 Code</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pt-0.5">
+              Preserves your cognitive flow and problem-solving agency.
+            </p>
+</div>
+</div>
+<!-- Row 3: Device Security -->
+<div class="p-space-md rounded-xl bg-surface-container border border-outline-variant hover:border-outline transition-colors flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center flex-shrink-0 text-primary-container border border-outline-variant/50">
+<span class="material-symbols-outlined text-[20px]">shield</span>
+</div>
+<div class="space-y-0.5 min-w-0">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Your browsing stays on your device</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Zero background tracking, telemetry stays local.
+            </p>
+</div>
+</div>
+</section>
+<!-- High-Integrity Privacy Card -->
+<section class="rounded-xl bg-surface-container-low border border-outline-variant p-space-md space-y-space-md relative overflow-hidden">
+<div class="flex items-center justify-between pb-space-xs border-b border-outline-variant/60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">verified_user</span>
+<span class="font-code-md text-code-md text-on-surface font-semibold">Privacy architecture</span>
+</div>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant">SANDBOXED</span>
+</div>
+<!-- Structured Comparison Grid -->
+<div class="grid grid-cols-2 gap-space-sm pt-0.5">
+<!-- What I watch -->
+<div class="space-y-1.5 bg-surface-container/60 p-2.5 rounded-lg border border-outline-variant/40">
+<div class="flex items-center gap-1.5 text-secondary font-code-sm text-code-sm font-medium">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span>What I watch</span>
+</div>
+<ul class="space-y-1 font-body-sm text-body-sm text-on-surface-variant">
+<li class="flex items-start gap-1">
+<span class="text-primary-container">•</span>
+<span>Active time on problem</span>
+</li>
+<li class="flex items-start gap-1">
+<span class="text-primary-container">•</span>
+<span>Scroll &amp; friction loops</span>
+</li>
+<li class="flex items-start gap-1">
+<span class="text-primary-container">•</span>
+<span>Failed test submissions</span>
+</li>
+</ul>
+</div>
+<!-- What I never do -->
+<div class="space-y-1.5 bg-surface-container/60 p-2.5 rounded-lg border border-outline-variant/40">
+<div class="flex items-center gap-1.5 text-tertiary-container font-code-sm text-code-sm font-medium">
+<span class="material-symbols-outlined text-[14px]">visibility_off</span>
+<span>What I never do</span>
+</div>
+<ul class="space-y-1 font-body-sm text-body-sm text-on-surface-variant">
+<li class="flex items-start gap-1">
+<span class="text-error">×</span>
+<span>Record your screen</span>
+</li>
+<li class="flex items-start gap-1">
+<span class="text-error">×</span>
+<span>Read tabs or cookies</span>
+</li>
+<li class="flex items-start gap-1">
+<span class="text-error">×</span>
+<span>Store browsing history</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Highlight Note -->
+<div class="p-2.5 rounded bg-surface-container-high/80 border-l-2 border-secondary text-on-surface-variant flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">info</span>
+<p class="font-body-sm text-body-sm leading-relaxed">
+            Only the problem text (and your code if you allow) is sent to the AI to write a hint.
+          </p>
+</div>
+</section>
+<!-- Opt-in Permission Toggle Row -->
+<section class="p-space-md rounded-xl bg-surface-container border border-outline-variant space-y-space-sm">
+<label class="flex items-start justify-between gap-space-sm cursor-pointer select-none" for="friction-toggle">
+<div class="space-y-0.5 pr-2">
+<div class="flex items-center gap-2">
+<span class="font-code-md text-code-md text-on-surface font-semibold">Allow stuck-detection</span>
+<span class="font-label-sm text-label-sm uppercase px-1.5 py-0.2 rounded bg-tertiary/15 text-tertiary border border-tertiary/30" id="toggle-badge">
+                OFF
+              </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Background telemetry looks for coding friction while you solve. Default off.
+            </p>
+</div>
+<!-- Switch Element -->
+<div class="relative inline-flex items-center flex-shrink-0 mt-1">
+<input aria-describedby="toggle-status-desc" class="sr-only peer" id="friction-toggle" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface-variant after:border-surface after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container peer-checked:after:bg-surface-container-lowest border border-outline-variant"></div>
+</div>
+</label>
+<span class="sr-only" id="toggle-status-desc">Toggle background coding friction telemetry</span>
+</section>
+</div>
+<!-- Sticky Bottom Navigation & Action Footer -->
+<footer class="p-margin bg-surface-container-lowest border-t border-outline-variant space-y-space-md">
+<!-- Action Buttons -->
+<div class="space-y-2">
+<button class="w-full py-2.5 px-space-md rounded-lg bg-primary-container text-on-primary-container font-code-md text-code-md font-semibold flex items-center justify-center gap-2 hover:bg-surface-tint focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2 transition-all shadow-sm active:scale-[0.99]" id="btn-continue" type="button">
+<span>Continue</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<div class="text-center">
+<button class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface underline underline-offset-4 decoration-outline-variant hover:decoration-on-surface transition-colors" id="btn-skip" type="button">
+            Use as a normal chatbot only
+          </button>
+</div>
+</div>
+<!-- Step dots & Microcopy Bar -->
+<div class="pt-1 border-t border-outline-variant/40 flex items-center justify-between">
+<!-- Progress Indicators -->
+<div aria-label="Step 1 of 3" class="flex items-center gap-1.5">
+<span class="w-6 h-2 rounded-full bg-primary-container transition-all" title="Step 1: Detection"></span>
+<span class="w-2 h-2 rounded-full bg-surface-container-highest border border-outline-variant" title="Step 2: Key Bindings"></span>
+<span class="w-2 h-2 rounded-full bg-surface-container-highest border border-outline-variant" title="Step 3: Verification"></span>
+<span class="font-code-sm text-code-sm text-on-surface-variant ml-1.5 font-medium">1 / 3</span>
+</div>
+<!-- Shortcut hints -->
+<div class="font-code-sm text-code-sm text-on-surface-variant flex items-center gap-1">
+<kbd class="px-1 py-0.5 text-[10px] rounded bg-surface-container border border-outline-variant">Tab</kbd>
+<span>to cycle</span>
+<span class="mx-0.5">•</span>
+<kbd class="px-1 py-0.5 text-[10px] rounded bg-surface-container border border-outline-variant">Esc</kbd>
+<span>exit</span>
+</div>
+</div>
+</footer>
+</main>
+<script>
+    // Micro-interactions and reactive state
+    const toggle = document.getElementById('friction-toggle');
+    const badge = document.getElementById('toggle-badge');
+    const continueBtn = document.getElementById('btn-continue');
+    const skipBtn = document.getElementById('btn-skip');
+
+    // Dynamic state management
+    toggle.addEventListener('change', (e) => {
+      const isChecked = e.target.checked;
+      if (isChecked) {
+        badge.textContent = 'ACTIVE';
+        badge.className = 'font-label-sm text-label-sm uppercase px-1.5 py-0.2 rounded bg-primary-container/15 text-primary-container border border-primary-container/30';
+        continueBtn.innerHTML = `<span>Enable & Continue</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>`;
+      } else {
+        badge.textContent = 'OFF';
+        badge.className = 'font-label-sm text-label-sm uppercase px-1.5 py-0.2 rounded bg-tertiary/15 text-tertiary border border-tertiary/30';
+        continueBtn.innerHTML = `<span>Continue</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>`;
+      }
+    });
+
+    continueBtn.addEventListener('click', () => {
+      continueBtn.classList.add('opacity-80', 'scale-[0.98]');
+      setTimeout(() => {
+        continueBtn.classList.remove('opacity-80', 'scale-[0.98]');
+        // Visual indicator of step navigation
+        const stepCounter = document.querySelector('span.ml-1\\.5');
+        if (stepCounter) stepCounter.textContent = '2 / 3';
+      }, 150);
+    });
+
+    skipBtn.addEventListener('click', () => {
+      if (toggle.checked) {
+        toggle.checked = false;
+        toggle.dispatchEvent(new Event('change'));
+      }
+    });
+
+    // Keyboard navigation dismissal listener
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const header = document.querySelector('header');
+        header.classList.add('bg-error-container/20');
+        setTimeout(() => header.classList.remove('bg-error-container/20'), 300);
+      }
+    });
+  </script>
+</body></html>

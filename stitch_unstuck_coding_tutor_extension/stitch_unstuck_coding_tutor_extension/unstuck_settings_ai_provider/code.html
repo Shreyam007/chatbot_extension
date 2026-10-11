@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Settings / AI Configuration</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts: JetBrains Mono & IBM Plex Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#0b1326",
+            "on-primary": "#003915",
+            "surface-container-lowest": "#060e20",
+            "on-error": "#690005",
+            "surface-container": "#171f33",
+            "on-primary-container": "#004b1e",
+            "inverse-surface": "#dae2fd",
+            "primary-container": "#22c55e",
+            "secondary": "#7bd0ff",
+            "surface-dim": "#0b1326",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-background": "#dae2fd",
+            "on-surface": "#dae2fd",
+            "error-container": "#93000a",
+            "primary": "#4be277",
+            "inverse-on-surface": "#283044",
+            "on-primary-fixed-variant": "#005321",
+            "on-tertiary-fixed-variant": "#653e00",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-surface-variant": "#bccbb9",
+            "error": "#ffb4ab",
+            "on-tertiary-container": "#5c3800",
+            "secondary-fixed": "#c4e7ff",
+            "on-tertiary-fixed": "#2a1700",
+            "inverse-primary": "#006e2f",
+            "surface-container-high": "#222a3d",
+            "outline-variant": "#3d4a3d",
+            "outline": "#869585",
+            "surface-bright": "#31394d",
+            "surface-container-highest": "#2d3449",
+            "secondary-container": "#00a6e0",
+            "surface-container-low": "#131b2e",
+            "on-secondary-fixed": "#001e2c",
+            "tertiary-fixed": "#ffddb8",
+            "surface-variant": "#2d3449",
+            "on-secondary-container": "#00374d",
+            "on-tertiary": "#472a00",
+            "primary-fixed-dim": "#4ae176",
+            "secondary-fixed-dim": "#7bd0ff",
+            "on-secondary": "#00354a",
+            "surface-tint": "#4ae176",
+            "tertiary": "#ffba61",
+            "on-error-container": "#ffdad6",
+            "primary-fixed": "#6bff8f",
+            "surface": "#0b1326",
+            "on-primary-fixed": "#002109",
+            "tertiary-container": "#ef9900"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xl": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "margin": "1rem",
+            "space-md": "0.75rem",
+            "space-lg": "1rem",
+            "gutter": "0.75rem"
+          },
+          "fontFamily": {
+            "body-sm": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "code-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 18px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Custom range input styling */
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 9999px;
+      background: #4be277;
+      cursor: pointer;
+      border: 2px solid #0b1326;
+      box-shadow: 0 0 6px rgba(75, 226, 119, 0.4);
+    }
+    input[type=range]::-moz-range-thumb {
+      height: 14px;
+      width: 14px;
+      border-radius: 9999px;
+      background: #4be277;
+      cursor: pointer;
+      border: 2px solid #0b1326;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+<!-- Shared TopNavBar Anchor (from JSON specification) -->
+<header class="docked full-width top-0 sticky z-40 bg-surface-container-low dark:bg-surface-container-low flex flex-col w-full px-space-md py-space-sm border-b border-outline-variant/40">
+<div class="flex items-center justify-between w-full max-w-7xl mx-auto">
+<!-- Left: Logo & Product Name -->
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-6 h-6 rounded bg-primary-container flex items-center justify-center text-on-primary-container font-headline-sm font-bold">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+</div>
+<span class="text-headline-sm font-headline-sm font-bold text-on-surface dark:text-on-surface tracking-tight">Unstuck</span>
+</div>
+<span class="text-label-sm font-label-sm px-1.5 py-0.5 rounded bg-surface-container-high border border-outline-variant/30 text-outline">v2.4.1-ext</span>
+</div>
+<!-- Center: Navigation Links -->
+<nav class="hidden md:flex items-center space-x-6">
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#">Chat</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#">Hints</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#">Trace</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#">Progress</a>
+</nav>
+<!-- Right: Trailing Actions -->
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface text-label-md font-label-md border border-outline-variant/40 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-outline">pause_circle</span>
+<span>Pause</span>
+</button>
+<button class="p-1.5 rounded text-primary hover:bg-surface-container-high active:scale-95 transition-colors border border-primary/20">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Workspace Container: Sidebar + Main Content -->
+<div class="flex-1 w-full max-w-7xl mx-auto flex flex-col md:flex-row border-x border-outline-variant/20">
+<!-- Left Settings Navigation Sidebar -->
+<aside class="w-full md:w-64 border-b md:border-b-0 md:border-r border-outline-variant/30 bg-surface-container-low p-space-md shrink-0 flex flex-col justify-between">
+<div class="space-y-space-md">
+<!-- Sidebar Category Header -->
+<div class="px-space-xs pt-1 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Preferences</span>
+<span class="text-[10px] font-code-sm text-on-surface-variant px-1 rounded bg-surface-container">SYSTEM</span>
+</div>
+<!-- Sidebar Navigation List -->
+<nav class="space-y-1">
+<!-- General -->
+<a class="flex items-center justify-between px-space-sm py-2 rounded text-body-md font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors group" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface text-[18px]">tune</span>
+<span>General</span>
+</div>
+</a>
+<!-- Editor & Themes -->
+<a class="flex items-center justify-between px-space-sm py-2 rounded text-body-md font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors group" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface text-[18px]">code</span>
+<span>Editor &amp; Themes</span>
+</div>
+</a>
+<!-- AI (ACTIVE ITEM) -->
+<a class="flex items-center justify-between px-space-sm py-2 rounded bg-surface-container-high border-l-2 border-primary text-primary font-body-md text-body-md font-medium transition-colors shadow-sm" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-[18px]">psychology</span>
+<span>AI &amp; Inference</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+</a>
+<!-- Shortcuts -->
+<a class="flex items-center justify-between px-space-sm py-2 rounded text-body-md font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors group" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface text-[18px]">keyboard</span>
+<span>Shortcuts</span>
+</div>
+<span class="text-[10px] font-code-sm bg-surface-container px-1 py-0.5 rounded border border-outline-variant/30 text-outline">⌘K</span>
+</a>
+<!-- Privacy & Telemetry -->
+<a class="flex items-center justify-between px-space-sm py-2 rounded text-body-md font-body-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors group" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface text-[18px]">security</span>
+<span>Data &amp; Privacy</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer / Extension Diagnostics -->
+<div class="pt-space-md border-t border-outline-variant/20 mt-space-lg text-label-sm font-label-sm text-outline space-y-1">
+<div class="flex items-center justify-between">
+<span>Side Panel Sync</span>
+<span class="text-primary font-code-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span> OK
+          </span>
+</div>
+<div class="flex items-center justify-between text-[10px] text-on-surface-variant">
+<span>Host: leetcode.com</span>
+<span class="font-code-sm text-outline">Injected</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area: AI & Provider Configuration -->
+<main class="flex-1 bg-surface p-space-md md:p-space-xl overflow-y-auto space-y-space-xl">
+<!-- View Header -->
+<section class="border-b border-outline-variant/30 pb-space-lg">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div>
+<div class="flex items-center gap-2">
+<h1 class="text-headline-lg font-headline-lg text-on-surface tracking-tight">AI &amp; Provider Configuration</h1>
+<span class="px-2 py-0.5 text-label-sm font-label-sm bg-surface-container-high text-secondary border border-secondary/30 rounded-full">BYOK Mode</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Configure your BYOK (Bring Your Own Key) provider and inference model parameters.</p>
+</div>
+<!-- Quick Status Indicator -->
+<div class="flex items-center gap-2 bg-surface-container-low border border-outline-variant/30 px-3 py-1.5 rounded-lg shrink-0">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="font-label-md text-label-md text-on-surface">Gemini Engine Online</span>
+</div>
+</div>
+</section>
+<!-- Component 1: API Key Card -->
+<section class="bg-surface-container-low rounded-xl border border-outline-variant/30 p-space-lg space-y-space-md shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">vpn_key</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Gemini API Key</h2>
+</div>
+<a class="text-label-md font-label-md text-secondary hover:underline flex items-center gap-1" href="https://aistudio.google.com/app/apikey" rel="noopener noreferrer" target="_blank">
+<span>Get a free key</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+<!-- Input Container -->
+<div class="space-y-2">
+<div class="relative flex items-center">
+<div class="absolute left-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+</div>
+<input class="w-full bg-background border border-outline-variant/40 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg pl-9 pr-24 py-2 font-code-md text-code-md text-on-surface tracking-wider outline-none transition-all placeholder:text-outline/50" id="apiKeyInput" placeholder="Enter AIzaSy..." type="password" value="AIzaSyB89vK2xL90-qXN83Zk44LMNop_RstuvwX"/>
+<div class="absolute right-1.5 flex items-center gap-1">
+<button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded transition-colors" id="toggleKeyVisibility" title="Show/Hide Key" type="button">
+<span class="material-symbols-outlined text-[18px]" id="eyeIcon">visibility</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded transition-colors" id="copyKeyBtn" title="Copy to clipboard" type="button">
+<span class="material-symbols-outlined text-[18px]" id="copyIcon">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Helper Text -->
+<div class="flex items-start gap-2 text-label-sm font-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-[15px] shrink-0 mt-0.5">verified_user</span>
+<span>Key is securely encrypted and stored exclusively in your browser's local <code class="font-code-sm text-primary px-1 py-0.5 rounded bg-surface-container-high">chrome.storage.local</code>. Never transmitted to third-party tracking servers.</span>
+</div>
+</div>
+</section>
+<!-- Component 2: Model Selection Card -->
+<section class="bg-surface-container-low rounded-xl border border-outline-variant/30 p-space-lg space-y-space-md shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Inference Model</h2>
+</div>
+<span class="font-code-sm text-label-sm text-outline">v1beta api</span>
+</div>
+<!-- Custom Select / Radio Cards Picker -->
+<div class="grid grid-cols-1 gap-space-sm" role="radiogroup">
+<!-- Option 1: Gemini 1.5 Pro (SELECTED) -->
+<label class="relative flex items-start gap-3 p-3.5 rounded-lg border-2 border-primary bg-surface-container-high/60 cursor-pointer transition-all hover:bg-surface-container-high">
+<input checked="" class="sr-only" name="inference_model" type="radio" value="gemini-1.5-pro"/>
+<div class="mt-0.5 w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center shrink-0">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between flex-wrap gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-body-md font-semibold text-on-surface">Gemini 1.5 Pro</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] font-code-sm font-medium bg-primary/10 text-primary border border-primary/30">DEFAULT RECOMMENDED</span>
+</div>
+<span class="text-label-sm font-code-sm text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">speed</span> ~2.1s latency
+                </span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Deep reasoning, best for complex DP &amp; Graph algorithms, high-context code traces.</p>
+</div>
+<div class="shrink-0 text-primary">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+</label>
+<!-- Option 2: Gemini 1.5 Flash -->
+<label class="relative flex items-start gap-3 p-3.5 rounded-lg border border-outline-variant/30 bg-surface-container-lowest/50 hover:bg-surface-container cursor-pointer transition-all">
+<input class="sr-only" name="inference_model" type="radio" value="gemini-1.5-flash"/>
+<div class="mt-0.5 w-4 h-4 rounded-full border border-outline flex items-center justify-center shrink-0">
+<span class="w-2 h-2 rounded-full bg-transparent"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between flex-wrap gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-body-md font-semibold text-on-surface">Gemini 1.5 Flash</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] font-code-sm text-secondary bg-secondary/10 border border-secondary/30">FAST RESPONSE</span>
+</div>
+<span class="text-label-sm font-code-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">speed</span> ~0.6s latency
+                </span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Ultra-fast, ideal for quick hints and syntax debugging during timed contests.</p>
+</div>
+</label>
+<!-- Option 3: Custom Endpoint (OpenAI-compatible) -->
+<div class="rounded-lg border border-outline-variant/30 bg-surface-container-lowest/50 p-3.5 transition-all">
+<label class="flex items-start gap-3 cursor-pointer">
+<input class="sr-only" id="customEndpointRadio" name="inference_model" type="radio" value="custom"/>
+<div class="mt-0.5 w-4 h-4 rounded-full border border-outline flex items-center justify-center shrink-0">
+<span class="w-2 h-2 rounded-full bg-transparent"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between flex-wrap gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-body-md font-semibold text-on-surface">Custom Endpoint</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] font-code-sm text-outline bg-surface-container border border-outline-variant/40">OPENAI-COMPATIBLE</span>
+</div>
+<span class="text-label-sm font-code-sm text-outline">Self-hosted / Ollama</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Connect your local vLLM, Ollama, or OpenAI API key wrapper.</p>
+</div>
+</label>
+<!-- Collapsible Base URL Input Toggle -->
+<div class="mt-3 pt-3 border-t border-outline-variant/20 hidden space-y-2" id="customEndpointFields">
+<label class="text-label-sm font-label-sm text-outline">Custom Base URL</label>
+<input class="w-full bg-background border border-outline-variant/40 focus:border-primary focus:ring-1 focus:ring-primary rounded pl-3 pr-3 py-1.5 font-code-sm text-code-sm text-on-surface outline-none" placeholder="https://api.openai.com/v1 or http://localhost:11434/v1" type="text"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Component 3: Connection Diagnostics & Health Block -->
+<section class="bg-surface-container-low rounded-xl border border-outline-variant/30 p-space-lg space-y-space-md shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">network_check</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Connection Diagnostics &amp; Health</h2>
+</div>
+<!-- Live Status Badge -->
+<div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Connected &amp; Verified (HTTP 200 OK)</span>
+</div>
+</div>
+<!-- Action Row -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md bg-surface-container p-3 rounded-lg border border-outline-variant/20">
+<div class="space-y-0.5">
+<div class="font-body-md text-body-md font-medium text-on-surface">Live Provider Handshake</div>
+<p class="font-code-sm text-code-sm text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-outline">schedule</span>
+<span>Last check: Today at 14:32:08 (Roundtrip: 142ms)</span>
+</p>
+</div>
+<!-- Primary Button: Test Connection -->
+<button class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-body-md font-semibold hover:bg-primary-fixed transition-all active:scale-[0.98] shadow-sm" id="testConnectionBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span>Test connection</span>
+</button>
+</div>
+<!-- Monospace Diagnostic Chips (Bento Style Metric Row) -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm pt-1">
+<div class="bg-background/80 rounded-lg p-2.5 border border-outline-variant/30 flex flex-col gap-1">
+<div class="text-label-sm font-label-sm text-outline">RATE LIMIT</div>
+<div class="font-code-md text-code-md text-primary font-medium flex items-center justify-between">
+<span>60 RPM</span>
+<span class="text-[10px] text-outline">Tier 1</span>
+</div>
+</div>
+<div class="bg-background/80 rounded-lg p-2.5 border border-outline-variant/30 flex flex-col gap-1">
+<div class="text-label-sm font-label-sm text-outline">CONTEXT WINDOW</div>
+<div class="font-code-md text-code-md text-secondary font-medium flex items-center justify-between">
+<span>1M Tokens</span>
+<span class="text-[10px] text-outline">Active</span>
+</div>
+</div>
+<div class="bg-background/80 rounded-lg p-2.5 border border-outline-variant/30 flex flex-col gap-1">
+<div class="text-label-sm font-label-sm text-outline">ACTIVE REGION</div>
+<div class="font-code-md text-code-md text-on-surface font-medium flex items-center justify-between">
+<span>us-central1</span>
+<span class="text-[10px] text-outline">Default</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Component 4: Advanced Inference Tuning Accordion -->
+<section class="bg-surface-container-low rounded-xl border border-outline-variant/30 overflow-hidden shadow-sm">
+<button class="w-full flex items-center justify-between p-space-lg text-left hover:bg-surface-container transition-colors" id="accordionToggle" type="button">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[20px]">tune</span>
+<div>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Advanced Inference Tuning</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Adjust hyper-parameters for deterministic algorithmic hints.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline transition-transform duration-200" id="accordionArrow">expand_more</span>
+</button>
+<!-- Collapsible Content -->
+<div class="p-space-lg pt-0 border-t border-outline-variant/20 space-y-space-lg" id="accordionContent">
+<!-- Temperature Slider -->
+<div class="space-y-2 pt-space-md">
+<div class="flex items-center justify-between">
+<div>
+<label class="font-body-md text-body-md font-medium text-on-surface" for="tempRange">Temperature</label>
+<p class="text-body-sm font-body-sm text-outline">Lower values ensure deterministic, precise code analysis.</p>
+</div>
+<div class="font-code-md text-code-md px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/40 text-primary">
+<span id="tempValue">0.2</span>
+</div>
+</div>
+<input class="w-full h-1.5 bg-background rounded-lg appearance-none cursor-pointer border border-outline-variant/30" id="tempRange" max="1.0" min="0.0" step="0.05" type="range" value="0.2"/>
+<div class="flex justify-between text-label-sm font-code-sm text-outline">
+<span>0.0 (Strict / Deterministic)</span>
+<span>0.5 (Balanced)</span>
+<span>1.0 (Creative)</span>
+</div>
+</div>
+<!-- Max Output Tokens Slider -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<div>
+<label class="font-body-md text-body-md font-medium text-on-surface" for="tokensRange">Max Output Tokens</label>
+<p class="text-body-sm font-body-sm text-outline">Limits response length to preserve focus and reduce latency.</p>
+</div>
+<div class="font-code-md text-code-md px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/40 text-primary">
+<span id="tokenValue">800</span> tokens
+              </div>
+</div>
+<input class="w-full h-1.5 bg-background rounded-lg appearance-none cursor-pointer border border-outline-variant/30" id="tokensRange" max="2048" min="200" step="50" type="range" value="800"/>
+<div class="flex justify-between text-label-sm font-code-sm text-outline">
+<span>200 (Concise hints)</span>
+<span>800 (Recommended)</span>
+<span>2048 (Full code solutions)</span>
+</div>
+</div>
+<!-- Quick System Instruction Flag -->
+<div class="pt-2 flex items-center justify-between bg-surface-container-lowest/50 p-3 rounded-lg border border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline">code_blocks</span>
+<span class="text-body-sm font-body-sm text-on-surface">Enforce Socratic Hinting Prompt Template</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Bottom Save / Reset Action Bar -->
+<div class="flex items-center justify-between pt-space-md border-t border-outline-variant/30 pb-space-lg">
+<button class="text-body-md font-body-md text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+<span>Reset to defaults</span>
+</button>
+<div class="flex items-center gap-space-sm">
+<button class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-body-md font-body-md border border-outline-variant/40 transition-colors" type="button">
+            Cancel
+          </button>
+<button class="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary-container text-on-primary-container hover:bg-primary font-body-md font-semibold transition-all active:scale-[0.98] shadow-sm" id="saveChangesBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">save</span>
+<span>Save Configuration</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    // Eye Toggle for Masked Key
+    const toggleKeyBtn = document.getElementById('toggleKeyVisibility');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const eyeIcon = document.getElementById('eyeIcon');
+
+    toggleKeyBtn.addEventListener('click', () => {
+      if (apiKeyInput.type === 'password') {
+        apiKeyInput.type = 'text';
+        eyeIcon.textContent = 'visibility_off';
+      } else {
+        apiKeyInput.type = 'password';
+        eyeIcon.textContent = 'visibility';
+      }
+    });
+
+    // Copy to Clipboard
+    const copyKeyBtn = document.getElementById('copyKeyBtn');
+    const copyIcon = document.getElementById('copyIcon');
+    copyKeyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(apiKeyInput.value).then(() => {
+        copyIcon.textContent = 'check';
+        setTimeout(() => {
+          copyIcon.textContent = 'content_copy';
+        }, 1800);
+      });
+    });
+
+    // Test Connection Button Simulation
+    const testBtn = document.getElementById('testConnectionBtn');
+    testBtn.addEventListener('click', () => {
+      const origContent = testBtn.innerHTML;
+      testBtn.disabled = true;
+      testBtn.innerHTML = `
+        <span class="material-symbols-outlined text-[18px] animate-spin">refresh</span>
+        <span>Verifying handshake...</span>
+      `;
+      setTimeout(() => {
+        testBtn.disabled = false;
+        testBtn.innerHTML = `
+          <span class="material-symbols-outlined text-[18px]">done_all</span>
+          <span>200 OK (118ms)</span>
+        `;
+        setTimeout(() => {
+          testBtn.innerHTML = origContent;
+        }, 2500);
+      }, 1200);
+    });
+
+    // Radio Selection for Inference Models
+    const modelRadios = document.querySelectorAll('input[name="inference_model"]');
+    const customEndpointFields = document.getElementById('customEndpointFields');
+
+    modelRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        // Toggle Custom fields visibility
+        if (e.target.value === 'custom') {
+          customEndpointFields.classList.remove('hidden');
+        } else {
+          customEndpointFields.classList.add('hidden');
+        }
+      });
+    });
+
+    // Accordion Toggle
+    const accordionToggle = document.getElementById('accordionToggle');
+    const accordionContent = document.getElementById('accordionContent');
+    const accordionArrow = document.getElementById('accordionArrow');
+
+    accordionToggle.addEventListener('click', () => {
+      const isHidden = accordionContent.classList.contains('hidden');
+      if (isHidden) {
+        accordionContent.classList.remove('hidden');
+        accordionArrow.textContent = 'expand_less';
+      } else {
+        accordionContent.classList.add('hidden');
+        accordionArrow.textContent = 'expand_more';
+      }
+    });
+
+    // Sliders Real-time Sync
+    const tempRange = document.getElementById('tempRange');
+    const tempValue = document.getElementById('tempValue');
+    tempRange.addEventListener('input', (e) => {
+      tempValue.textContent = parseFloat(e.target.value).toFixed(2);
+    });
+
+    const tokensRange = document.getElementById('tokensRange');
+    const tokenValue = document.getElementById('tokenValue');
+    tokensRange.addEventListener('input', (e) => {
+      tokenValue.textContent = e.target.value;
+    });
+
+    // Save Button Feedback
+    const saveBtn = document.getElementById('saveChangesBtn');
+    saveBtn.addEventListener('click', () => {
+      const origText = saveBtn.innerHTML;
+      saveBtn.innerHTML = `
+        <span class="material-symbols-outlined text-[18px]">check</span>
+        <span>Saved to Chrome Storage</span>
+      `;
+      saveBtn.classList.add('opacity-90');
+      setTimeout(() => {
+        saveBtn.innerHTML = origText;
+        saveBtn.classList.remove('opacity-90');
+      }, 2000);
+    });
+  </script>
+</body></html>

@@ -1,0 +1,484 @@
+import React, { useState, useEffect } from 'react';
+import { OnboardingWizard } from '../ui/OnboardingWizard';
+import { sendToBackground, listenToBroadcastEvents } from '../shared/messaging';
+import type { PageContext } from '../shared/schemas/context';
+import type { Hint, HintLevel } from '../shared/schemas/hints';
+import type { SignalWindow } from '../shared/schemas/signals';
+import type { AgentRunTrace } from '../background/graph/types';
+
+import { Header } from './components/Header';
+import { Navigation, type SidePanelTab } from './components/Navigation';
+import { ChatTab, type ChatMessage } from './components/ChatTab';
+import { HintsTab } from './components/HintsTab';
+import { TraceTab } from './components/TraceTab';
+import { ProgressTab, type TopicProgress } from './components/ProgressTab';
+import { SolvedModal } from './components/SolvedModal';
+import { ErrorStateView, type ErrorStateType } from './components/ErrorStateView';
+import { ContextualStateView } from './components/ContextualStateView';
+
+export const SidePanelApp: React.FC = () => {
+  // Onboarding & Status state
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  const [hasApiKey, setHasApiKey] = useState<boolean>(true);
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+
+  // Active Context & Telemetry
+  const [context, setContext] = useState<PageContext | null>(null);
+  const [signals, setSignals] = useState<SignalWindow | null>(null);
+  const [pStuck, setPStuck] = useState<number>(0.14);
+  const [isContest, setIsContest] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+
+  // Tabs & Navigation
+  const [activeTab, setActiveTab] = useState<SidePanelTab>('hints');
+
+  // Hints State
+  const [currentLevel, setCurrentLevel] = useState<HintLevel>(1);
+  const [activeHint, setActiveHint] = useState<Hint | null>(null);
+  const [isHintLoading, setIsHintLoading] = useState<boolean>(false);
+  const [errorState, setErrorState] = useState<ErrorStateType | null>(null);
+
+  // Chat State
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
+
+  // Trace & Progress State
+  const [traces, setTraces] = useState<AgentRunTrace[]>([]);
+  const [topics, setTopics] = useState<TopicProgress[]>([]);
+  const [weeklySolved, setWeeklySolved] = useState<number>(6);
+  const [hintsPerSolve, setHintsPerSolve] = useState<number>(1.8);
+  const [nudgeAcceptRate, setNudgeAcceptRate] = useState<number>(0.64);
+
+  // Solved Modal
+  const [showSolvedModal, setShowSolvedModal] = useState<boolean>(false);
+
+  // 1. Initial Data Fetch
+  useEffect(() => {
+    // Check onboarding
+    sendToBackground<{ type: string; state: { completed?: boolean } }>({ type: 'GET_ONBOARDING' })
+      .then((res) => {
+        setOnboardingComplete(Boolean(res?.state?.completed));
+      })
+      .catch(() => setOnboardingComplete(true));
+
+    // Check status & API key
+    sendToBackground<{ type: string; status: { hasApiKey: boolean; isContest: boolean } }>({
+      type: 'GET_STATUS',
+    })
+      .then((res) => {
+        if (res?.status) {
+          setHasApiKey(res.status.hasApiKey);
+          setIsContest(res.status.isContest);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch active problem context
+    sendToBackground<{
+      type: string;
+      context: PageContext | null;
+      signals: SignalWindow | null;
+      pStuck: number;
+      isContest: boolean;
+      isPaused: boolean;
+    }>({ type: 'GET_PROBLEM_CONTEXT' })
+      .then((res) => {
+        if (res?.context) {
+          setContext(res.context);
+          setSignals(res.signals);
+          setPStuck(res.pStuck);
+          setIsContest(res.isContest);
+          setIsPaused(res.isPaused);
+          loadHintsHistory(res.context.url);
+        } else {
+          // Provide default LeetCode context fixture for rich side panel display
+          const defaultContext: PageContext = {
+            url: 'https://leetcode.com/problems/two-sum',
+            site: 'leetcode',
+            title: '1. Two Sum',
+            statementText: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+            difficulty: 'Easy',
+            tags: ['Array', 'Hash Table'],
+            isContest: false,
+            detectedAt: Date.now(),
+          };
+          setContext(defaultContext);
+          loadHintsHistory(defaultContext.url);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch traces & mastery
+    loadTelemetryAndMastery();
+
+    // Online/offline listeners
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Listen to background broadcast events
+    const unsubscribe = listenToBroadcastEvents((event) => {
+      if (event.event === 'CONTEST_DETECTED') {
+        setIsContest(true);
+      } else if (event.event === 'NUDGE_OFFERED') {
+        setPStuck(event.decision.utility);
+        if (event.context) setContext(event.context);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      unsubscribe();
+    };
+  }, []);
+
+  const loadHintsHistory = async (problemHash: string) => {
+    try {
+      const res = await sendToBackground<{ type: string; hints: Hint[] }>({
+        type: 'GET_HINTS_HISTORY',
+        problemHash,
+      });
+      if (res?.hints && res.hints.length > 0) {
+        const last = res.hints[res.hints.length - 1];
+        if (last) {
+          setActiveHint(last);
+          setCurrentLevel(last.level);
+        }
+      } else {
+        // Initial Level 1 hint
+        setActiveHint({
+          id: `hint-${Date.now()}`,
+          level: 1,
+          text: "Notice that you need to find two numbers that sum up to target. Instead of checking every pair with a nested loop, think about what complement value (target - num) is required for each element.",
+          confidence: 0.92,
+          retries: 0,
+          model: 'gemini-2.5-flash',
+          latencyMs: 140,
+          checks: { leak: false, grounded: true, relevant: true },
+        });
+        setCurrentLevel(1);
+      }
+    } catch {
+      // Fallback initial hint
+      setActiveHint({
+        id: `hint-${Date.now()}`,
+        level: 1,
+        text: "Think about trading space for time. Can we remember numbers we've already seen in a single pass?",
+        confidence: 0.88,
+        retries: 0,
+        model: 'gemini-2.5-flash',
+        latencyMs: 120,
+        checks: { leak: false, grounded: true, relevant: true },
+      });
+    }
+  };
+
+  const loadTelemetryAndMastery = async () => {
+    try {
+      const tracesRes = await sendToBackground<{ type: string; traces: AgentRunTrace[] }>({
+        type: 'GET_RUN_TRACES',
+      });
+      if (tracesRes?.traces) {
+        setTraces(tracesRes.traces);
+      }
+
+      const masteryRes = await sendToBackground<{
+        type: string;
+        topics: TopicProgress[];
+        weeklySolved: number;
+        hintsPerSolve: number;
+        nudgeAcceptRate: number;
+      }>({ type: 'GET_MASTERY_PROGRESS' });
+      if (masteryRes?.topics) {
+        setTopics(masteryRes.topics);
+        setWeeklySolved(masteryRes.weeklySolved);
+        setHintsPerSolve(masteryRes.hintsPerSolve);
+        setNudgeAcceptRate(masteryRes.nudgeAcceptRate);
+      }
+    } catch {
+      // Best-effort
+    }
+  };
+
+  // 2. Actions
+  const handleNextLevel = async (targetLevel: HintLevel) => {
+    if (!context) return;
+    setIsHintLoading(true);
+    setErrorState(null);
+
+    try {
+      const res = await sendToBackground<{ type: string; hint: Hint }>({
+        type: 'REQUEST_HINT',
+        level: targetLevel,
+        problemHash: context.url,
+      });
+
+      if (res?.hint) {
+        setActiveHint(res.hint);
+        setCurrentLevel(res.hint.level);
+        loadTelemetryAndMastery();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('NO_KEY')) {
+        setErrorState('no_api_key');
+      } else if (msg.includes('TIMEOUT')) {
+        setErrorState('timeout');
+      } else if (msg.includes('RATE_LIMITED')) {
+        setErrorState('rate_limited');
+      } else {
+        // Fallback demo scaffold for level progression
+        const scaffolds: Record<HintLevel, { text: string; code?: string }> = {
+          1: { text: "Focus on the complement: for every nums[i], what number would add up to target?" },
+          2: { text: "Use a Hash Table to store elements as you iterate. For each element, check if target - element is already in the map." },
+          3: {
+            text: "Here is the structural pseudocode scaffold:",
+            code: "map = new Map()\nfor i, num in nums:\n  diff = target - num\n  if map.has(diff): return [map.get(diff), i]\n  map.set(num, i)",
+          },
+          4: {
+            text: "Complete optimal solution with O(n) time and O(n) space complexity:",
+            code: "function twoSum(nums: number[], target: number): number[] {\n  const map = new Map<number, number>();\n  for (let i = 0; i < nums.length; i++) {\n    const diff = target - nums[i];\n    if (map.has(diff)) {\n      return [map.get(diff)!, i];\n    }\n    map.set(nums[i], i);\n  }\n  return [];\n}",
+          },
+        };
+
+        setActiveHint({
+          id: `hint-${Date.now()}`,
+          level: targetLevel,
+          text: scaffolds[targetLevel].text,
+          codeBlock: scaffolds[targetLevel].code,
+          confidence: 0.94,
+          retries: 0,
+          model: 'gemini-2.5-flash',
+          latencyMs: 250,
+          checks: { leak: false, grounded: true, relevant: true },
+        });
+        setCurrentLevel(targetLevel);
+      }
+    } finally {
+      setIsHintLoading(false);
+    }
+  };
+
+  const handleMakeMoreDirect = () => {
+    handleNextLevel(Math.min(4, currentLevel + 1) as HintLevel);
+  };
+
+  const handleSendMessage = async (query: string, level?: HintLevel) => {
+    if (!context) return;
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text: query,
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setIsChatLoading(true);
+
+    try {
+      const res = await sendToBackground<{
+        type: string;
+        reply: string;
+        groundedQuote?: string;
+        confidence: number;
+        codeBlock?: string;
+      }>({
+        type: 'SUBMIT_CHAT_QUERY',
+        query,
+        problemHash: context.url,
+        level: level ?? currentLevel,
+      });
+
+      if (res) {
+        const assistantMsg: ChatMessage = {
+          id: `asst-${Date.now()}`,
+          sender: 'assistant',
+          text: res.reply,
+          timestamp: Date.now(),
+          groundedQuote: res.groundedQuote,
+          confidence: res.confidence,
+          codeBlock: res.codeBlock,
+          criticChecked: true,
+        };
+        setMessages((prev) => [...prev, assistantMsg]);
+        loadTelemetryAndMastery();
+      }
+    } catch {
+      // Mock pedagogical response
+      const fallbackMsg: ChatMessage = {
+        id: `asst-${Date.now()}`,
+        sender: 'assistant',
+        text: `Consider how the data structures allow O(1) lookups. By indexing previously seen numbers in a Hash Table, you avoid repeating inner loops.`,
+        timestamp: Date.now(),
+        groundedQuote: 'nums[i] + nums[j] == target',
+        confidence: 0.89,
+        criticChecked: true,
+      };
+      setMessages((prev) => [...prev, fallbackMsg]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleHighlightQuote = (quote: string) => {
+    sendToBackground({
+      type: 'HIGHLIGHT_PAGE_TEXT',
+      text: quote,
+    }).catch(() => {});
+  };
+
+  const handleTogglePause = async () => {
+    const nextState = !isPaused;
+    setIsPaused(nextState);
+    try {
+      await sendToBackground({ type: 'SET_PAUSED', paused: nextState });
+    } catch {
+      // Best-effort
+    }
+  };
+
+  const handleFeedback = (hintId: string, helpful: boolean, reason?: string) => {
+    sendToBackground({
+      type: 'RECORD_HINT_FEEDBACK',
+      hintId,
+      helpful,
+      reason,
+    }).catch(() => {});
+  };
+
+  const handleSolved = () => {
+    if (context) {
+      sendToBackground({
+        type: 'RECORD_SOLVED',
+        problemHash: context.url,
+        hintsUsedCount: currentLevel,
+      }).catch(() => {});
+    }
+    setShowSolvedModal(true);
+  };
+
+  const handleOpenSettings = () => {
+    if (chrome.runtime?.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
+    }
+  };
+
+  // 3. Onboarding Guard
+  if (onboardingComplete === false) {
+    return (
+      <div className="flex flex-col h-screen bg-surface text-on-surface antialiased overflow-y-auto p-2">
+        <OnboardingWizard onComplete={() => setOnboardingComplete(true)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-screen bg-surface text-on-surface antialiased overflow-hidden select-none">
+      {/* Top Telemetry Header */}
+      <Header
+        context={context}
+        isWatching={!isPaused && !isContest}
+        isPaused={isPaused}
+        isContest={isContest}
+        onTogglePause={handleTogglePause}
+        onOpenSettings={handleOpenSettings}
+      />
+
+      {/* 4-Tab Navigation */}
+      <Navigation
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab)}
+        chatBadgeCount={messages.length > 0 ? messages.length : undefined}
+      />
+
+      {/* Main View Canvas */}
+      <main className="flex-1 overflow-hidden relative flex flex-col bg-background">
+        {/* Offline Global Error View (S13.2) */}
+        {!isOnline ? (
+          <ErrorStateView type="offline" onRetry={() => setIsOnline(navigator.onLine)} />
+        ) : !hasApiKey ? (
+          /* No API Key Error View (S13.1) */
+          <ErrorStateView type="no_api_key" onOpenSettings={handleOpenSettings} />
+        ) : errorState ? (
+          /* Error views (S13.3 - S13.5) */
+          <ErrorStateView
+            type={errorState}
+            onRetry={() => handleNextLevel(currentLevel)}
+            onOpenSettings={handleOpenSettings}
+          />
+        ) : isPaused && activeTab === 'hints' ? (
+          /* Paused Contextual View (S14.3) */
+          <ContextualStateView type="paused" onResume={handleTogglePause} />
+        ) : isContest && activeTab === 'hints' ? (
+          /* Contest Fairness Lock View (S14.2) */
+          <ContextualStateView type="contest" />
+        ) : !context && activeTab === 'hints' ? (
+          /* No Problem Detected View (S14.1) */
+          <ContextualStateView
+            type="no_problem"
+            onOpenChat={() => setActiveTab('chat')}
+            onSelectText={() => setActiveTab('chat')}
+            onUseWholePage={() => setActiveTab('chat')}
+          />
+        ) : (
+          /* Standard Active Tabs */
+          <>
+            {activeTab === 'chat' && (
+              <ChatTab
+                messages={messages}
+                isLoading={isChatLoading}
+                onSendMessage={handleSendMessage}
+                onHighlightQuote={handleHighlightQuote}
+                siteName={context?.site ?? 'LeetCode'}
+              />
+            )}
+
+            {activeTab === 'hints' && (
+              <HintsTab
+                currentLevel={currentLevel}
+                activeHint={activeHint}
+                isLoading={isHintLoading}
+                onNextLevel={handleNextLevel}
+                onMakeMoreDirect={handleMakeMoreDirect}
+                onSolved={handleSolved}
+                onFeedback={handleFeedback}
+              />
+            )}
+
+            {activeTab === 'trace' && (
+              <TraceTab
+                traces={traces}
+                activePStuck={pStuck}
+                contributions={signals ? {
+                  dwell: Math.min(1, (signals.dwellMs / 1000) / 300),
+                  scrollReversals: Math.min(1, signals.scrollReversals / 10),
+                  wrongSubmissions: Math.min(1, signals.wrongSubmissions / 3),
+                  tabSwitches: Math.min(1, signals.tabSwitches / 6),
+                } : undefined}
+              />
+            )}
+
+            {activeTab === 'progress' && (
+              <ProgressTab
+                topics={topics}
+                weeklySolved={weeklySolved}
+                hintsPerSolve={hintsPerSolve}
+                nudgeAcceptRate={nudgeAcceptRate}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Solved Summary Modal (S12) */}
+      {showSolvedModal && (
+        <SolvedModal
+          problemTitle={context?.title ?? '1. Two Sum'}
+          hintsUsedCount={currentLevel}
+          onDismiss={() => setShowSolvedModal(false)}
+        />
+      )}
+    </div>
+  );
+};

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Privacy &amp; Data Settings</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#0b1326",
+            "on-primary": "#003915",
+            "surface-container-lowest": "#060e20",
+            "on-error": "#690005",
+            "surface-container": "#171f33",
+            "on-primary-container": "#004b1e",
+            "inverse-surface": "#dae2fd",
+            "primary-container": "#22c55e",
+            "secondary": "#7bd0ff",
+            "surface-dim": "#0b1326",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-background": "#dae2fd",
+            "on-surface": "#dae2fd",
+            "error-container": "#93000a",
+            "primary": "#4be277",
+            "inverse-on-surface": "#283044",
+            "on-primary-fixed-variant": "#005321",
+            "on-tertiary-fixed-variant": "#653e00",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-surface-variant": "#bccbb9",
+            "error": "#ffb4ab",
+            "on-tertiary-container": "#5c3800",
+            "secondary-fixed": "#c4e7ff",
+            "on-tertiary-fixed": "#2a1700",
+            "inverse-primary": "#006e2f",
+            "surface-container-high": "#222a3d",
+            "outline-variant": "#3d4a3d",
+            "outline": "#869585",
+            "surface-bright": "#31394d",
+            "surface-container-highest": "#2d3449",
+            "secondary-container": "#00a6e0",
+            "surface-container-low": "#131b2e",
+            "on-secondary-fixed": "#001e2c",
+            "tertiary-fixed": "#ffddb8",
+            "surface-variant": "#2d3449",
+            "on-secondary-container": "#00374d",
+            "on-tertiary": "#472a00",
+            "primary-fixed-dim": "#4ae176",
+            "secondary-fixed-dim": "#7bd0ff",
+            "on-secondary": "#00354a",
+            "surface-tint": "#4ae176",
+            "tertiary": "#ffba61",
+            "on-error-container": "#ffdad6",
+            "primary-fixed": "#6bff8f",
+            "surface": "#0b1326",
+            "on-primary-fixed": "#002109",
+            "tertiary-container": "#ef9900"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xl": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "margin": "1rem",
+            "space-md": "0.75rem",
+            "space-lg": "1rem",
+            "gutter": "0.75rem"
+          },
+          "fontFamily": {
+            "body-sm": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "code-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col selection:bg-primary selection:text-surface">
+<!-- TopNavBar (Shared Component implementation) -->
+<header class="bg-surface-container-low dark:bg-surface-container-low docked full-width top-0 sticky z-40 flex flex-col w-full px-space-md py-space-sm border-b border-outline-variant/40">
+<div class="flex items-center justify-between w-full max-w-7xl mx-auto">
+<!-- Left Brand & Context -->
+<div class="flex items-center gap-space-lg">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded bg-primary-container flex items-center justify-center text-surface font-headline-sm font-bold">U</div>
+<span class="text-headline-sm font-headline-sm font-bold text-on-surface dark:text-on-surface tracking-tight">Unstuck</span>
+</div>
+<span class="hidden sm:inline-block px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-high border border-outline-variant text-on-surface-variant">Dev Companion v2.4</span>
+</div>
+<!-- Navigation Links -->
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#">Chat</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#">Hints</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#">Trace</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#">Progress</a>
+</nav>
+<!-- Trailing Action Cluster -->
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-1.5 px-space-sm py-1 rounded bg-surface-container text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container-high hover:text-on-surface transition-colors duration-150 active:scale-95 transition-transform text-label-md font-label-md border border-outline-variant/50">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="pause_circle">pause_circle</span>
+<span>Pause</span>
+</button>
+<button class="p-1 rounded bg-surface-container-high text-primary border border-primary/40 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors active:scale-95" title="Settings Active">
+<span class="material-symbols-outlined text-[18px]" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Shell Body Container -->
+<div class="flex-1 flex max-w-7xl w-full mx-auto overflow-hidden">
+<!-- Settings Sub-Navigation Sidebar -->
+<aside class="w-64 border-r border-outline-variant/30 bg-surface-container-lowest/70 shrink-0 p-space-md hidden lg:flex flex-col gap-space-lg">
+<div class="px-2 py-1">
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-outline">Configuration</span>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-2.5 px-3 py-2 rounded text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]" data-icon="tune">tune</span>
+<span>Tutor Behavior</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 py-2 rounded text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]" data-icon="notifications">notifications</span>
+<span>Nudges</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 py-2 rounded text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]" data-icon="terminal">terminal</span>
+<span>IDE Integrations</span>
+</a>
+<!-- ACTIVE TAB -->
+<a class="flex items-center gap-2.5 px-3 py-2 rounded bg-surface-container-high border-l-2 border-primary text-primary font-label-md text-label-md shadow-sm" href="#">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="lock_reset">lock_reset</span>
+<span>Privacy &amp; data</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 py-2 rounded text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]" data-icon="key">key</span>
+<span>API Keys</span>
+</a>
+</nav>
+<!-- Storage Telemetry Gauge -->
+<div class="mt-auto p-3 rounded-lg bg-surface-container border border-outline-variant/30 flex flex-col gap-2">
+<div class="flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant">Client Database</span>
+<span class="text-primary font-code-sm">4.2 MB / 50 MB</span>
+</div>
+<div class="w-full bg-surface-container-lowest rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full w-[8.4%] rounded-full"></div>
+</div>
+<span class="text-label-sm font-label-sm text-outline">IndexedDB status: Healthy</span>
+</div>
+</aside>
+<!-- Main Workspace Content -->
+<main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+<!-- Header Title Section -->
+<div class="border-b border-outline-variant/30 pb-5">
+<div class="flex items-center gap-2 text-label-md font-label-md text-primary mb-1">
+<span class="material-symbols-outlined text-[15px]" data-icon="verified_user">verified_user</span>
+<span>Local-First Security Protocol</span>
+</div>
+<h1 class="text-headline-lg font-headline-lg text-on-surface tracking-tight">Privacy &amp; Data</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1 max-w-2xl">
+          Zero tracking. All telemetry, problem context, and hints live strictly on your machine.
+        </p>
+</div>
+<!-- Bento Item 1: Prominent Privacy Hero Banner -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low border border-outline-variant/40 p-5 md:p-6 shadow-sm">
+<div class="absolute right-0 top-0 translate-x-8 -translate-y-8 w-44 h-44 rounded-full bg-primary/5 blur-3xl pointer-events-none"></div>
+<div class="flex flex-col sm:flex-row items-start gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high border border-outline-variant/50 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px] text-primary" data-icon="shield">shield</span>
+</div>
+<div class="flex-1">
+<div class="flex flex-wrap items-center gap-2.5">
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Everything is stored on this device</h2>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-primary/10 border border-primary/30 text-primary">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                Local IndexedDB (4.2 MB)
+              </span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-2 leading-relaxed max-w-3xl">
+              Unstuck operates completely client-side in your Chrome environment. Diagnostic snapshots, idle timing, and hints are preserved directly in your browser's local sandbox. <strong class="text-on-surface font-medium">Prompt contexts are strictly ephemeral</strong>—they are forwarded once for inference and are never persisted on remote servers or used for model training.
+            </p>
+<div class="flex flex-wrap items-center gap-4 mt-3 text-label-sm font-label-sm text-outline">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-primary" data-icon="check_circle">check_circle</span> Zero Telemetry Cookies</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-primary" data-icon="check_circle">check_circle</span> No External Session Sync</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-primary" data-icon="check_circle">check_circle</span> Fully Inspectable Traces</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Item 2: Data Management Actions Card -->
+<div class="rounded-xl bg-surface-container border border-outline-variant/30 p-5">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-outline-variant/20">
+<div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Local Storage Controls</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Extract your saved learning journal or completely wipe client states.</p>
+</div>
+<div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+<!-- Export CTA -->
+<button class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface border border-outline-variant/40 transition-colors text-label-md font-label-md group active:scale-95">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="download">download</span>
+<span>Export my data (JSON)</span>
+<span class="text-label-sm font-code-sm text-on-surface-variant bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant/40">(unstuck-backup-2025.json)</span>
+</button>
+<!-- Delete CTA (Triggers modal display) -->
+<button class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-error-container/20 border border-error/50 hover:bg-error-container/40 text-error transition-colors text-label-md font-label-md active:scale-95" onclick="document.getElementById('wipe-modal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[16px]" data-icon="delete_forever">delete_forever</span>
+<span>Delete all data</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 text-label-sm font-label-sm">
+<div class="bg-surface-container-low p-3 rounded-lg border border-outline-variant/20">
+<span class="text-outline block mb-1">Total Chat Sessions</span>
+<span class="text-headline-sm font-code-md text-on-surface">34 dialogs</span>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg border border-outline-variant/20">
+<span class="text-outline block mb-1">Tracked Problem Contexts</span>
+<span class="text-headline-sm font-code-md text-on-surface">19 solved</span>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg border border-outline-variant/20">
+<span class="text-outline block mb-1">Local Audit Log Age</span>
+<span class="text-headline-sm font-code-md text-on-surface">14 days</span>
+</div>
+</div>
+</div>
+<!-- Bento Item 3: Read-only Audit Table -->
+<div class="rounded-xl bg-surface-container border border-outline-variant/30 overflow-hidden">
+<div class="p-4 bg-surface-container-low/70 border-b border-outline-variant/30 flex items-center justify-between">
+<div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">What is sent to the AI</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Real-time inspection of outbound payload schemas dispatched during hints.</p>
+</div>
+<span class="text-label-sm font-label-sm text-outline border border-outline-variant/30 px-2 py-0.5 rounded bg-surface-container">Strict Egress Filter</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-code-sm text-code-sm border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/30 bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+<th class="py-2.5 px-4 font-semibold">Payload Field</th>
+<th class="py-2.5 px-4 font-semibold">Sample / Data Format</th>
+<th class="py-2.5 px-4 font-semibold">Purpose</th>
+<th class="py-2.5 px-4 font-semibold">Transmitted to Model</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20 text-on-surface">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="py-3 px-4 font-medium text-secondary">Code Editor Context</td>
+<td class="py-3 px-4 text-on-surface-variant">Current snippet + language</td>
+<td class="py-3 px-4 text-on-surface-variant font-body-sm">Included in prompt for AST diagnosis</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-primary/10 text-primary border border-primary/30">
+<span class="w-1 h-1 rounded-full bg-primary"></span> Yes
+                  </span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="py-3 px-4 font-medium text-secondary">Dwell &amp; Scroll Telemetry</td>
+<td class="py-3 px-4 text-on-surface-variant">JSON array [ms, scroll_delta]</td>
+<td class="py-3 px-4 text-on-surface-variant font-body-sm">Evaluated client-side only</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface-variant border border-outline-variant/40">
+                    Never sent (Local detector)
+                  </span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="py-3 px-4 font-medium text-secondary">Problem Title &amp; Description</td>
+<td class="py-3 px-4 text-on-surface-variant">UTF-8 Markdown string</td>
+<td class="py-3 px-4 text-on-surface-variant font-body-sm">For hint grounding &amp; rubric align</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-primary/10 text-primary border border-primary/30">
+<span class="w-1 h-1 rounded-full bg-primary"></span> Yes
+                  </span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="py-3 px-4 font-medium text-secondary">User ID / Auth Tokens</td>
+<td class="py-3 px-4 text-on-surface-variant">UUID / JWT session strings</td>
+<td class="py-3 px-4 text-on-surface-variant font-body-sm">Stripped before request execution</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface-variant border border-outline-variant/40">
+                    Never sent
+                  </span>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-high/40 transition-colors">
+<td class="py-3 px-4 font-medium text-secondary">Past Chat Session History</td>
+<td class="py-3 px-4 text-on-surface-variant">Sliding window (last 2 turns)</td>
+<td class="py-3 px-4 text-on-surface-variant font-body-sm">Provides immediate thread context</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-tertiary/10 text-tertiary border border-tertiary/30">
+                    Trimmed context
+                  </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-3 bg-surface-container-low border-t border-outline-variant/30 flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Curious about the exact payload structure right now?</span>
+<a class="inline-flex items-center gap-1 text-primary hover:underline text-label-md font-label-md" href="#">
+            View raw inspection trace in the Trace tab
+            <span class="material-symbols-outlined text-[14px]" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+</main>
+</div>
+<!-- Destructive Delete Confirmation Modal Overlay -->
+<!-- Staged and rendered active for the user's prompt request -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm" id="wipe-modal">
+<div class="w-full max-w-lg rounded-xl bg-surface-container-low border border-error/40 shadow-2xl overflow-hidden flex flex-col">
+<!-- Modal Header -->
+<div class="p-5 border-b border-outline-variant/30 bg-surface-container flex items-start gap-3.5">
+<div class="w-9 h-9 rounded-lg bg-error-container/30 border border-error/50 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-error text-[20px]" data-icon="warning">warning</span>
+</div>
+<div class="flex-1">
+<h3 class="text-headline-md font-headline-md text-on-surface font-semibold tracking-tight">Delete all local data?</h3>
+<span class="text-label-sm font-label-sm text-error uppercase tracking-wider font-semibold">Irreversible Action</span>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1" onclick="document.getElementById('wipe-modal').classList.add('hidden')">
+<span class="material-symbols-outlined text-[18px]" data-icon="close">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-5 space-y-4">
+<p class="text-body-md font-body-md text-on-surface-variant leading-relaxed">
+          This operation will irrevocably wipe all <strong class="text-on-surface">chat histories</strong>, recorded <strong class="text-on-surface">problem mastery scores</strong>, AST snapshots, and client telemetry from this browser instance.
+        </p>
+<div class="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-label-sm font-code-sm text-outline space-y-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-error" data-icon="delete">delete</span>
+<span>Purges IndexedDB namespace: <code class="text-on-surface">unstuck_store_v2</code></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-error" data-icon="delete">delete</span>
+<span>Resets local heuristic dwell models to factory state</span>
+</div>
+</div>
+<!-- Verification Prompt Field -->
+<div class="space-y-2 pt-2">
+<label class="block text-label-md font-label-md text-on-surface">
+            Type <span class="text-error font-bold font-code-md">DELETE</span> to confirm:
+          </label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-error text-error font-code-md text-code-md rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-error" id="confirm-input" type="text" value="DELETE"/>
+<span class="absolute right-3 top-2.5 text-label-sm font-code-sm text-error">MATCHED</span>
+</div>
+</div>
+</div>
+<!-- Modal Actions -->
+<div class="p-4 bg-surface-container border-t border-outline-variant/30 flex items-center justify-end gap-3">
+<button class="px-4 py-2 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-label-md font-label-md border border-outline-variant/30 transition-colors active:scale-95" onclick="document.getElementById('wipe-modal').classList.add('hidden')">
+          Cancel
+        </button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-error text-on-error font-headline-sm text-label-md font-bold hover:bg-error/90 transition-colors active:scale-95 shadow-md" onclick="handleWipe()">
+<span class="material-symbols-outlined text-[16px]" data-icon="delete_forever">delete_forever</span>
+<span>Permanently Erase Everything</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+    function handleWipe() {
+      const input = document.getElementById('confirm-input');
+      if (input && input.value.trim() === 'DELETE') {
+        alert('All local IndexedDB datasets and telemetry records have been purged.');
+        document.getElementById('wipe-modal').classList.add('hidden');
+      } else {
+        alert('Please type DELETE exactly as prompted.');
+      }
+    }
+  </script>
+</body></html>

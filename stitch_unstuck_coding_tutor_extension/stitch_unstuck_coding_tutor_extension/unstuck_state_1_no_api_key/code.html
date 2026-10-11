@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - API Key Setup</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts: JetBrains Mono & IBM Plex Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed": "#2a1700",
+            "surface-container-high": "#222a3d",
+            "on-surface-variant": "#bccbb9",
+            "on-surface": "#dae2fd",
+            "primary": "#4be277",
+            "on-primary-fixed": "#002109",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface": "#0b1326",
+            "on-primary-container": "#004b1e",
+            "outline-variant": "#3d4a3d",
+            "primary-fixed": "#6bff8f",
+            "on-background": "#dae2fd",
+            "error-container": "#93000a",
+            "surface-dim": "#0b1326",
+            "surface-variant": "#2d3449",
+            "primary-fixed-dim": "#4ae176",
+            "secondary-fixed-dim": "#7bd0ff",
+            "primary-container": "#22c55e",
+            "surface-container-low": "#131b2e",
+            "on-tertiary": "#472a00",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#ef9900",
+            "on-secondary-container": "#00374d",
+            "surface-container-lowest": "#060e20",
+            "secondary-container": "#00a6e0",
+            "surface-tint": "#4ae176",
+            "background": "#0b1326",
+            "on-secondary-fixed": "#001e2c",
+            "error": "#ffb4ab",
+            "inverse-on-surface": "#283044",
+            "surface-container": "#171f33",
+            "inverse-primary": "#006e2f",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-primary-fixed-variant": "#005321",
+            "on-secondary": "#00354a",
+            "surface-container-highest": "#2d3449",
+            "tertiary-fixed": "#ffddb8",
+            "surface-bright": "#31394d",
+            "on-primary": "#003915",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-error": "#690005",
+            "tertiary": "#ffba61",
+            "secondary-fixed": "#c4e7ff",
+            "inverse-surface": "#dae2fd",
+            "on-tertiary-container": "#5c3800",
+            "secondary": "#7bd0ff",
+            "outline": "#869585"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1rem",
+            "space-xl": "1.5rem",
+            "gutter": "0.75rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "0.75rem",
+            "margin": "1rem"
+          },
+          "fontFamily": {
+            "body-sm": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "code-md": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased min-h-screen flex items-center justify-center p-0 md:p-6 select-none">
+<!-- Side Panel Shell: 400px fixed width simulating Chrome Side Panel Viewport -->
+<div class="w-full max-w-[400px] h-[680px] bg-surface flex flex-col rounded-xl overflow-hidden shadow-2xl relative border border-outline-variant/30">
+<!-- TopNavBar Shared Component Anchor -->
+<header class="bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant flex justify-between items-center w-full px-margin py-space-sm h-12 docked full-width top-0 sticky z-50">
+<div class="flex items-center gap-2">
+<!-- Logo Knot / Brand Icon & Name -->
+<div class="w-5 h-5 rounded bg-surface-container-high border border-outline-variant/50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[14px]">all_inclusive</span>
+</div>
+<span class="font-headline-md text-headline-md text-primary dark:text-primary tracking-tight font-semibold flex items-center gap-2">
+          Unstuck
+          <!-- Green status indicator dot -->
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary ring-2 ring-primary/20"></span>
+</span>
+</div>
+<!-- Trailing Action Icons -->
+<div class="flex items-center gap-1 text-on-surface-variant dark:text-on-surface-variant">
+<button aria-label="Open Terminal" class="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high text-on-surface dark:text-on-surface transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+</button>
+<button aria-label="Close Panel" class="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container-high dark:hover:bg-surface-container-high text-on-surface dark:text-on-surface transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+</header>
+<!-- Muted & Disabled Navigation Tabs -->
+<nav class="flex items-center px-space-sm bg-surface-container-lowest/60 border-b border-outline-variant/20 h-9">
+<div class="grid grid-cols-4 w-full gap-1">
+<button class="flex items-center justify-center py-1 rounded text-on-surface-variant/40 font-code-sm text-code-sm cursor-not-allowed select-none" disabled="">
+          Chat
+        </button>
+<button class="flex items-center justify-center py-1 rounded text-on-surface-variant/40 font-code-sm text-code-sm cursor-not-allowed select-none" disabled="">
+          Hints
+        </button>
+<button class="flex items-center justify-center py-1 rounded text-on-surface-variant/40 font-code-sm text-code-sm cursor-not-allowed select-none" disabled="">
+          Trace
+        </button>
+<button class="flex items-center justify-center py-1 rounded text-on-surface-variant/40 font-code-sm text-code-sm cursor-not-allowed select-none" disabled="">
+          Progress
+        </button>
+</div>
+</nav>
+<!-- Main Content Canvas: Centered Full-Panel State -->
+<main class="flex-1 flex flex-col items-center justify-center px-6 py-6 text-center relative overflow-hidden bg-radial from-surface-container-low/50 to-surface">
+<!-- Subtle Tactical Grid Backdrop Overlay -->
+<div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-size: 16px 16px; background-image: linear-gradient(to right, #dae2fd 1px, transparent 1px), linear-gradient(to bottom, #dae2fd 1px, transparent 1px);"></div>
+<!-- Centered Icon Illustration Container -->
+<div class="relative mb-6">
+<!-- Radial Glow Ambient Accent -->
+<div class="absolute -inset-2 rounded-full bg-primary/10 blur-xl"></div>
+<div class="absolute -inset-4 rounded-full bg-tertiary-container/10 blur-2xl"></div>
+<!-- Key / Shield Lock Glow Container -->
+<div class="relative w-20 h-20 rounded-2xl bg-surface-container-low border border-surface-bright flex items-center justify-center shadow-lg">
+<!-- Subtle Nested Concentric Edge -->
+<div class="w-14 h-14 rounded-xl bg-surface-container-high/60 border border-outline-variant/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-[28px] text-primary" data-icon="key">key</span>
+</div>
+<!-- Secondary Micro Lock Emblem -->
+<div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-surface-container-highest border border-outline-variant flex items-center justify-center text-tertiary shadow-sm">
+<span class="material-symbols-outlined text-[15px]" data-icon="lock">lock</span>
+</div>
+</div>
+</div>
+<!-- State Title -->
+<h1 class="font-headline-sm text-headline-sm text-white font-semibold tracking-tight mb-2">
+        Add your AI key to get hints
+      </h1>
+<!-- Explanation Body -->
+<p class="font-body-sm text-body-sm text-slate-400 max-w-xs mb-4 leading-relaxed">
+        Your API key stays encrypted locally on this device only.
+      </p>
+<!-- Reassurance Micro-badge -->
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high border border-outline-variant/40 mb-7 shadow-inner">
+<span class="material-symbols-outlined text-[13px] text-primary" data-icon="shield">shield</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium tracking-normal">
+          Zero telemetry • Client-side only
+        </span>
+</div>
+<!-- Primary Action CTA -->
+<div class="w-full max-w-[280px] flex flex-col items-center gap-3.5">
+<button class="w-full bg-primary-container text-surface-container-lowest font-body-md font-medium px-6 py-2.5 rounded-lg hover:bg-primary active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="settings">settings</span>
+<span>Open settings</span>
+</button>
+<!-- Secondary Link -->
+<a class="font-code-sm text-code-sm text-slate-400 hover:text-white transition-colors duration-150 flex items-center gap-1" href="#get-key">
+<span>Get a free Gemini API key</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</main>
+<!-- Bottom Developer Status Pill / System Info Indicator -->
+<footer class="h-8 bg-surface-container-lowest border-t border-outline-variant/20 px-3 flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-code-sm text-code-sm text-on-surface-variant/70 text-[10px]">AUTH_REQUIRED</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="font-code-sm text-[10px] text-on-surface-variant/60 bg-surface-container px-1.5 py-0.5 rounded border border-outline-variant/30">⌥ S</kbd>
+</div>
+</footer>
+</div>
+</body></html>

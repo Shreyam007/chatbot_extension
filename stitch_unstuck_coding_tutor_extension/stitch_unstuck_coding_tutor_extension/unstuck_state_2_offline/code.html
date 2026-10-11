@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck — Offline State</title>
+<!-- Material Symbols Outlined font -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Brand Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed": "#2a1700",
+            "surface-container-high": "#222a3d",
+            "on-surface-variant": "#bccbb9",
+            "on-surface": "#dae2fd",
+            "primary": "#4be277",
+            "on-primary-fixed": "#002109",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface": "#0b1326",
+            "on-primary-container": "#004b1e",
+            "outline-variant": "#3d4a3d",
+            "primary-fixed": "#6bff8f",
+            "on-background": "#dae2fd",
+            "error-container": "#93000a",
+            "surface-dim": "#0b1326",
+            "surface-variant": "#2d3449",
+            "primary-fixed-dim": "#4ae176",
+            "secondary-fixed-dim": "#7bd0ff",
+            "primary-container": "#22c55e",
+            "surface-container-low": "#131b2e",
+            "on-tertiary": "#472a00",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#ef9900",
+            "on-secondary-container": "#00374d",
+            "surface-container-lowest": "#060e20",
+            "secondary-container": "#00a6e0",
+            "surface-tint": "#4ae176",
+            "background": "#0b1326",
+            "on-secondary-fixed": "#001e2c",
+            "error": "#ffb4ab",
+            "inverse-on-surface": "#283044",
+            "surface-container": "#171f33",
+            "inverse-primary": "#006e2f",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-primary-fixed-variant": "#005321",
+            "on-secondary": "#00354a",
+            "surface-container-highest": "#2d3449",
+            "tertiary-fixed": "#ffddb8",
+            "surface-bright": "#31394d",
+            "on-primary": "#003915",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-error": "#690005",
+            "tertiary": "#ffba61",
+            "secondary-fixed": "#c4e7ff",
+            "inverse-surface": "#dae2fd",
+            "on-tertiary-container": "#5c3800",
+            "secondary": "#7bd0ff",
+            "outline": "#869585"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1rem",
+            "space-xl": "1.5rem",
+            "gutter": "0.75rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "0.75rem",
+            "margin": "1rem"
+          },
+          "fontFamily": {
+            "body-sm": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "code-md": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    /* Subtle spinning state for retry action */
+    @keyframes spin-once {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .animate-spin-custom {
+      animation: spin-once 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex items-center justify-center p-0 sm:p-4 select-none">
+<!-- Side Panel Host Container: Standard Chrome 400px Side Panel viewport -->
+<div class="w-full max-w-[400px] h-screen sm:h-[640px] bg-surface flex flex-col border border-outline-variant/40 sm:rounded-xl shadow-2xl overflow-hidden relative">
+<!-- TopNavBar (Shared Component implementation) -->
+<header class="bg-surface flex justify-between items-center w-full px-margin py-space-sm h-12 docked full-width top-0 sticky z-50 border-b border-outline-variant transition-colors duration-150 ease-in-out">
+<div class="flex items-center space-x-2">
+<span class="font-headline-md text-headline-md text-primary tracking-tight font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">terminal</span>
+          Unstuck
+        </span>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-label-sm text-outline border border-outline-variant/50">
+          v1.4.2
+        </span>
+</div>
+<div class="flex items-center space-x-1 text-on-surface-variant">
+<button aria-label="Terminal status" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors duration-150 ease-in-out flex items-center justify-center" type="button">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</button>
+<button aria-label="Close side panel" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors duration-150 ease-in-out flex items-center justify-center" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</header>
+<!-- Muted Navigation Tab Row -->
+<nav class="flex items-center px-margin bg-surface-container-lowest border-b border-outline-variant/30 text-code-sm font-code-sm gap-2">
+<button class="py-2 px-2.5 text-on-surface-variant/50 cursor-not-allowed border-b-2 border-transparent flex items-center gap-1.5" disabled="">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+        Hints
+      </button>
+<button class="py-2 px-2.5 text-on-surface-variant/50 cursor-not-allowed border-b-2 border-transparent flex items-center gap-1.5" disabled="">
+<span class="material-symbols-outlined text-[14px]">history</span>
+        Timeline
+      </button>
+<button class="py-2 px-2.5 text-primary border-b-2 border-primary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">shield</span>
+        Diagnostics
+      </button>
+</nav>
+<!-- Main Content Area: Centered Full-Panel Fallback State -->
+<main class="flex-1 flex flex-col items-center justify-center px-margin py-6 text-center relative overflow-y-auto">
+<!-- Ambient Glow Behind Status Container -->
+<div class="absolute w-44 h-44 rounded-full bg-surface-container-high/40 blur-3xl pointer-events-none -z-0"></div>
+<!-- Icon Ring Container -->
+<div class="relative z-10 mb-5">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant shadow-inner relative">
+<!-- Disconnected Indicator Badge -->
+<span class="material-symbols-outlined text-outline text-[32px] select-none" data-icon="wifi_off">wifi_off</span>
+<span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-surface-container-high border-2 border-surface flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+</span>
+</div>
+</div>
+<!-- Title & Explanation -->
+<div class="relative z-10 space-y-2 max-w-xs">
+<h1 class="font-headline-sm text-headline-sm text-on-surface">
+          You're offline
+        </h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-[270px] mx-auto leading-relaxed">
+          Detection still works locally, but hints need an internet connection.
+        </p>
+</div>
+<!-- Status Pill: Local detector active (passive) -->
+<div class="relative z-10 my-5">
+<div class="inline-flex items-center gap-1.5 bg-surface-container-high/80 border border-outline-variant/60 rounded-full px-3 py-1 shadow-sm">
+<span class="text-primary text-[12px] flex items-center">⚡</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+            Local detector active <span class="text-outline text-[10px] font-normal">(passive)</span>
+</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary/80 animate-pulse ml-0.5"></span>
+</div>
+</div>
+<!-- Action Button: Retry connection -->
+<div class="relative z-10 w-full max-w-[240px]">
+<button class="w-full inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-surface-container border border-primary/40 hover:border-primary text-primary hover:bg-surface-container-high font-body-md text-body-md transition-all duration-150 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary/40 group" id="retry-btn" onclick="handleRetry(this)" type="button">
+<span class="material-symbols-outlined text-[16px] group-hover:rotate-45 transition-transform duration-200" data-icon="refresh" id="retry-icon">refresh</span>
+<span class="font-medium tracking-tight" id="retry-text">Retry connection</span>
+</button>
+</div>
+<!-- Helper Subtext -->
+<p class="relative z-10 mt-3 font-label-md text-label-md text-on-surface-variant/60 text-xs">
+        Will automatically reconnect when network resumes.
+      </p>
+<!-- Local Cache Snapshot Card (Low-key reassurance) -->
+<div class="relative z-10 mt-8 w-full max-w-xs bg-surface-container-low/70 border border-outline-variant/30 rounded-lg p-2.5 text-left flex items-start gap-2.5">
+<span class="material-symbols-outlined text-outline text-[16px] mt-0.5">folder_open</span>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-code-sm text-code-sm text-on-surface-variant">ast_cache_v2</span>
+<span class="font-label-sm text-[10px] text-primary">Cached</span>
+</div>
+<p class="font-body-sm text-[11px] text-on-surface-variant/70 truncate mt-0.5">
+            4 patterns stored for offline syntax verification
+          </p>
+</div>
+</div>
+</main>
+<!-- Bottom Docked Status Bar -->
+<footer class="h-9 px-margin bg-surface-container-lowest border-t border-outline-variant/30 flex items-center justify-between font-code-sm text-[11px] text-on-surface-variant/60">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+<span>Gateway unreachable</span>
+</div>
+<div class="flex items-center gap-1">
+<kbd class="px-1 py-0.5 rounded bg-surface border border-outline-variant/40 text-[9px] font-code-sm">Ctrl+R</kbd>
+</div>
+</footer>
+</div>
+<script>
+    function handleRetry(btn) {
+      const icon = document.getElementById('retry-icon');
+      const text = document.getElementById('retry-text');
+      
+      icon.classList.add('animate-spin-custom');
+      text.innerText = 'Checking...';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        icon.classList.remove('animate-spin-custom');
+        text.innerText = 'Retry connection';
+        btn.disabled = false;
+      }, 1200);
+    }
+  </script>
+</body></html>

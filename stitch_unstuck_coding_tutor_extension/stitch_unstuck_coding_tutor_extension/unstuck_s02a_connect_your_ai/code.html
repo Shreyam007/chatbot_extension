@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck — Connect your AI</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts: JetBrains Mono & IBM Plex Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-lowest": "#060e20",
+            "primary-fixed": "#6bff8f",
+            "surface-tint": "#4ae176",
+            "tertiary-container": "#ef9900",
+            "primary-container": "#22c55e",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface": "#0b1326",
+            "surface-bright": "#31394d",
+            "on-secondary": "#00354a",
+            "secondary-fixed-dim": "#7bd0ff",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-primary-fixed": "#002109",
+            "inverse-on-surface": "#283044",
+            "on-primary-fixed-variant": "#005321",
+            "tertiary": "#ffba61",
+            "error": "#ffb4ab",
+            "surface-container": "#171f33",
+            "primary": "#4be277",
+            "background": "#0b1326",
+            "surface-container-highest": "#2d3449",
+            "secondary-fixed": "#c4e7ff",
+            "on-error-container": "#ffdad6",
+            "on-error": "#690005",
+            "secondary-container": "#00a6e0",
+            "inverse-surface": "#dae2fd",
+            "primary-fixed-dim": "#4ae176",
+            "outline-variant": "#3d4a3d",
+            "error-container": "#93000a",
+            "surface-variant": "#2d3449",
+            "inverse-primary": "#006e2f",
+            "tertiary-fixed": "#ffddb8",
+            "outline": "#869585",
+            "on-secondary-container": "#00374d",
+            "surface-container-low": "#131b2e",
+            "on-background": "#dae2fd",
+            "on-tertiary-container": "#5c3800",
+            "on-tertiary": "#472a00",
+            "surface-dim": "#0b1326",
+            "on-primary": "#003915",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-tertiary-fixed": "#2a1700",
+            "on-surface": "#dae2fd",
+            "surface-container-high": "#222a3d",
+            "on-secondary-fixed": "#001e2c",
+            "secondary": "#7bd0ff",
+            "on-surface-variant": "#bccbb9",
+            "on-primary-container": "#004b1e"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1rem",
+            "space-xl": "1.5rem",
+            "space-md": "0.75rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "margin": "1rem",
+            "gutter": "0.75rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["JetBrains Mono"],
+            "headline-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "code-md": ["JetBrains Mono"],
+            "code-sm": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    /* Precision developer focus ring */
+    .focus-terminal:focus-within,
+    .focus-terminal:focus {
+      outline: 2px solid #FFFFFF !important;
+      outline-offset: 2px !important;
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md text-body-md antialiased min-h-screen flex items-center justify-center p-2 sm:p-4">
+<!-- Chrome Extension Side Panel Container (Standard 400px width target) -->
+<main class="w-full max-w-[420px] bg-surface rounded-xl border border-outline-variant/30 flex flex-col shadow-2xl overflow-hidden relative">
+<!-- TopNavBar (Shared Component JSON anchor) -->
+<header class="bg-surface-container-low dark:bg-surface-container-low docked full-width top-0 sticky z-50 border-b border-outline-variant/30 dark:border-outline-variant/30 flat no shadows flex items-center justify-between px-space-md py-space-sm w-full max-w-full">
+<div class="flex items-center space-x-2">
+<!-- Brand Mark: knot loosening into clean line -->
+<div class="w-6 h-6 flex items-center justify-center text-primary-container">
+<svg class="w-5 h-5 stroke-current fill-none stroke-[1.8]" viewbox="0 0 24 24">
+<path d="M3.75 12h3.5a2.5 2.5 0 0 1 2.5 2.5v0a2.5 2.5 0 0 1-2.5 2.5h-1a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h8a3 3 0 0 1 3 3v2a3 3 0 0 0 3 3h3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface dark:text-on-surface tracking-tight">Unstuck</span>
+<span class="bg-surface-container-high text-outline text-label-sm font-label-sm px-1.5 py-0.5 rounded border border-outline-variant/30 ml-1">v0.9</span>
+</div>
+<!-- Extension side-panel frame utility actions -->
+<div class="flex items-center space-x-1">
+<button class="p-1 text-outline hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150 active:scale-95 rounded" title="Pin side panel" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="keep">keep</span>
+</button>
+<button class="p-1 text-outline hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150 active:scale-95 rounded" title="Close side panel" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="close">close</span>
+</button>
+</div>
+</header>
+<!-- State Demonstrator / Tester Switcher Bar -->
+<div class="bg-surface-container-low/70 px-space-md py-2 border-b border-outline-variant/20 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="terminal">terminal</span>
+        STATE PREVIEW:
+      </span>
+<div class="inline-flex bg-surface-container-high rounded p-0.5 border border-outline-variant/30 text-label-sm font-label-sm" role="tablist">
+<button class="state-pill px-2 py-0.5 rounded text-on-surface bg-surface-bright font-medium transition-all" id="btn-idle" onclick="switchState('idle')" role="tab">Idle</button>
+<button class="state-pill px-2 py-0.5 rounded text-outline hover:text-on-surface transition-all" id="btn-testing" onclick="switchState('testing')" role="tab">Testing</button>
+<button class="state-pill px-2 py-0.5 rounded text-outline hover:text-on-surface transition-all" id="btn-success" onclick="switchState('success')" role="tab">Success</button>
+<button class="state-pill px-2 py-0.5 rounded text-outline hover:text-on-surface transition-all" id="btn-error" onclick="switchState('error')" role="tab">Error</button>
+</div>
+</div>
+<!-- Interior Scrollable Canvas -->
+<div class="p-space-md flex-1 flex flex-col space-y-space-md overflow-y-auto">
+<!-- Top Step Header & Counter -->
+<section class="space-y-1.5">
+<div class="flex items-center justify-between">
+<div class="inline-flex items-center space-x-1.5 bg-surface-container-high/80 px-2.5 py-1 rounded-full border border-outline-variant/40">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Step 02 of 03</span>
+</div>
+<div class="flex items-center space-x-1.5">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-container ring-2 ring-primary/20"></span>
+<span class="w-2 h-2 rounded-full border border-outline"></span>
+</div>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Connect your AI</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-start gap-1.5 pt-0.5 leading-relaxed">
+<span class="material-symbols-outlined text-[15px] text-outline shrink-0 mt-0.5" data-icon="lock">lock</span>
+<span>Your Gemini API key stays on this device only — never sent to our servers.</span>
+</p>
+</section>
+<!-- API Configuration Form Bento Card -->
+<section class="bg-surface-container rounded-xl border border-outline-variant/30 p-space-md space-y-space-md">
+<!-- Input Group -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface flex items-center gap-1.5" for="gemini-key">
+<span>Gemini API key</span>
+<span class="text-tertiary font-label-sm text-label-sm">*</span>
+</label>
+<a class="font-label-sm text-label-sm text-secondary hover:underline inline-flex items-center gap-1" href="https://aistudio.google.com/app/apikey" rel="noopener noreferrer" target="_blank">
+<span>Where do I get a key?</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="open_in_new">open_in_new</span>
+</a>
+</div>
+<div class="relative focus-terminal rounded-lg border border-outline-variant/40 bg-surface-container-lowest transition-all">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[16px]" data-icon="key">key</span>
+</div>
+<input class="w-full pl-9 pr-10 py-2 bg-transparent text-on-surface font-code-sm text-code-sm placeholder-outline border-0 focus:ring-0 rounded-lg selection:bg-primary-container selection:text-on-primary-container" id="gemini-key" placeholder="Paste AIzaSy... key" type="password" value="AIzaSyB3_k9X0Q7wE91mZ_Xy88LmOp120qP"/>
+<button class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-outline hover:text-on-surface transition-colors" id="toggle-vis-btn" onclick="toggleKeyVisibility()" title="Toggle visibility" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="visibility" id="vis-icon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Connection Action Trigger -->
+<div class="pt-0.5 flex items-center justify-between gap-2">
+<button class="inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md rounded-lg border border-outline-variant/40 active:scale-95 transition-all w-full" id="test-action-btn" onclick="simulateCheck()" type="button">
+<span class="material-symbols-outlined text-[15px] text-primary" data-icon="bolt">bolt</span>
+<span id="test-btn-label">Test connection</span>
+<kbd class="ml-1 text-[10px] font-code-sm bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant/50 text-outline">⌘T</kbd>
+</button>
+</div>
+<!-- Dynamic State Containers (Interactive display driven by switchState()) -->
+<!-- STATE 1: Idle -->
+<div class="block space-y-2 pt-1 border-t border-outline-variant/20" id="state-idle">
+<div class="flex items-center gap-2 p-2 rounded-lg bg-surface-container-lowest/50 text-outline text-body-sm font-body-sm border border-outline-variant/20">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="info">info</span>
+<span>Key entered. Click <strong>Test connection</strong> to authenticate.</span>
+</div>
+</div>
+<!-- STATE 2: Testing / Progress -->
+<div class="hidden space-y-2 pt-1 border-t border-outline-variant/20" id="state-testing">
+<div class="flex items-center gap-2.5 p-2.5 rounded-lg bg-surface-container-lowest border border-secondary/30">
+<svg class="animate-spin h-4 w-4 text-secondary shrink-0" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" fill="currentColor"></path>
+</svg>
+<div class="flex-1">
+<p class="font-code-sm text-code-sm text-secondary">Checking connection with Gemini 1.5 Pro...</p>
+<p class="font-label-sm text-label-sm text-outline">Handshaking with Google AI API gateway</p>
+</div>
+</div>
+</div>
+<!-- STATE 3: Success -->
+<div class="hidden space-y-2 pt-1 border-t border-outline-variant/20" id="state-success">
+<div class="p-2.5 rounded-lg bg-primary-container/10 border border-primary-container/40 space-y-1.5">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1.5 text-primary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Connected — Gemini Flash &amp; Pro ready
+              </span>
+<span class="text-label-sm font-label-sm text-primary font-mono">142ms</span>
+</div>
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-on-surface-variant font-code-sm">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-primary">models/gemini-1.5-pro</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-primary">models/gemini-1.5-flash</span>
+</div>
+</div>
+</div>
+<!-- STATE 4: Failure / Error -->
+<div class="hidden space-y-2 pt-1 border-t border-outline-variant/20" id="state-error">
+<div class="p-2.5 rounded-lg bg-error-container/20 border border-error/40 space-y-1">
+<div class="flex items-center gap-1.5 text-error font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px] text-error" data-icon="warning">warning</span>
+              Key rejected. Check it and try again.
+            </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pl-5 text-[12px]">
+              API Error: <span class="font-code-sm text-error">PERMISSION_DENIED (HTTP 403)</span>. Please verify that Generative Language API is enabled in your Google Cloud Project.
+            </p>
+</div>
+</div>
+</section>
+<!-- Technical Guarantee Micro-Card -->
+<section class="bg-surface-container-low rounded-lg p-space-sm border border-outline-variant/25 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined text-[18px]" data-icon="shield">shield</span>
+</div>
+<div class="text-left">
+<h2 class="font-label-md text-label-md text-on-surface">Zero Data Retention</h2>
+<p class="font-body-sm text-body-sm text-outline text-[11px] leading-tight">Stored in <code class="font-code-sm text-on-surface-variant">chrome.storage.local</code>. Never synced or shared.</p>
+</div>
+</section>
+</div>
+<!-- Footer Dock (Shared Component JSON anchor) -->
+<footer class="bg-surface-container-low dark:bg-surface-container-low docked full-width bottom-0 sticky z-50 border-t border-outline-variant/30 dark:border-outline-variant/30 flat no shadows flex items-center justify-between px-space-md py-space-md w-full max-w-full">
+<!-- Back Link Action -->
+<button class="text-outline dark:text-outline hover:text-on-surface px-3 py-2 text-label-md font-label-md flex items-center gap-1 transition-colors duration-150 active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_back">arrow_back</span>
+        Back
+      </button>
+<!-- Center Step Dots Indicator -->
+<div class="flex items-center space-x-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="w-2.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+</div>
+<!-- Primary Next Button (Active only on Success) -->
+<div class="relative group">
+<button class="opacity-40 cursor-not-allowed bg-surface-container-high text-outline font-semibold rounded-lg px-4 py-2 text-label-md font-label-md flex items-center gap-1 transition-all duration-150" disabled="" id="dock-next-btn" type="button">
+<span>Next</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<!-- Tooltip for Disabled State -->
+<div class="absolute bottom-full right-0 mb-2 hidden group-hover:block z-50 pointer-events-none" id="disabled-tooltip">
+<div class="bg-surface-container-highest border border-outline-variant/50 text-on-surface text-label-sm font-label-sm px-2 py-1 rounded shadow-lg whitespace-nowrap">
+            Verify key to continue
+          </div>
+</div>
+</div>
+</footer>
+</main>
+<script>
+    // State Switcher Controller
+    const states = ['idle', 'testing', 'success', 'error'];
+    let currentState = 'idle';
+
+    function switchState(targetState) {
+      currentState = targetState;
+      
+      // Update preview pills
+      states.forEach(s => {
+        const btn = document.getElementById(`btn-${s}`);
+        const container = document.getElementById(`state-${s}`);
+        if (s === targetState) {
+          btn.className = "state-pill px-2 py-0.5 rounded text-on-surface bg-surface-bright font-medium transition-all";
+          container.classList.remove('hidden');
+          container.classList.add('block');
+        } else {
+          btn.className = "state-pill px-2 py-0.5 rounded text-outline hover:text-on-surface transition-all";
+          container.classList.remove('block');
+          container.classList.add('hidden');
+        }
+      });
+
+      // Update Next button & Test button based on state
+      const nextBtn = document.getElementById('dock-next-btn');
+      const tooltip = document.getElementById('disabled-tooltip');
+      const testBtnLabel = document.getElementById('test-btn-label');
+      
+      if (targetState === 'success') {
+        // Unlock Next
+        nextBtn.disabled = false;
+        nextBtn.className = "bg-primary text-on-primary font-semibold rounded-lg px-4 py-2 hover:bg-primary-container hover:text-on-primary-container text-label-md font-label-md flex items-center gap-1 active:scale-[0.98] transition-all shadow-sm cursor-pointer";
+        tooltip.classList.add('!hidden');
+        testBtnLabel.textContent = "Re-test key";
+      } else {
+        // Lock Next
+        nextBtn.disabled = true;
+        nextBtn.className = "opacity-40 cursor-not-allowed bg-surface-container-high text-outline font-semibold rounded-lg px-4 py-2 text-label-md font-label-md flex items-center gap-1 transition-all duration-150";
+        tooltip.classList.remove('!hidden');
+        testBtnLabel.textContent = targetState === 'testing' ? "Validating..." : "Test connection";
+      }
+    }
+
+    // Toggle password masking
+    function toggleKeyVisibility() {
+      const input = document.getElementById('gemini-key');
+      const icon = document.getElementById('vis-icon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility_off';
+      } else {
+        input.type = 'password';
+        icon.textContent = 'visibility';
+      }
+    }
+
+    // Simulate clicking test connection button
+    function simulateCheck() {
+      switchState('testing');
+      setTimeout(() => {
+        switchState('success');
+      }, 1200);
+    }
+  </script>
+</body></html>

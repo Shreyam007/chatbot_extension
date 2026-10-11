@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Chrome Extension</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: JetBrains Mono & IBM Plex Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed": "#2a1700",
+            "surface-container-high": "#222a3d",
+            "on-surface-variant": "#bccbb9",
+            "on-surface": "#dae2fd",
+            "primary": "#4be277",
+            "on-primary-fixed": "#002109",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface": "#0b1326",
+            "on-primary-container": "#004b1e",
+            "outline-variant": "#3d4a3d",
+            "primary-fixed": "#6bff8f",
+            "on-background": "#dae2fd",
+            "error-container": "#93000a",
+            "surface-dim": "#0b1326",
+            "surface-variant": "#2d3449",
+            "primary-fixed-dim": "#4ae176",
+            "secondary-fixed-dim": "#7bd0ff",
+            "primary-container": "#22c55e",
+            "surface-container-low": "#131b2e",
+            "on-tertiary": "#472a00",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#ef9900",
+            "on-secondary-container": "#00374d",
+            "surface-container-lowest": "#060e20",
+            "secondary-container": "#00a6e0",
+            "surface-tint": "#4ae176",
+            "background": "#0b1326",
+            "on-secondary-fixed": "#001e2c",
+            "error": "#ffb4ab",
+            "inverse-on-surface": "#283044",
+            "surface-container": "#171f33",
+            "inverse-primary": "#006e2f",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-primary-fixed-variant": "#005321",
+            "on-secondary": "#00354a",
+            "surface-container-highest": "#2d3449",
+            "tertiary-fixed": "#ffddb8",
+            "surface-bright": "#31394d",
+            "on-primary": "#003915",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-error": "#690005",
+            "tertiary": "#ffba61",
+            "secondary-fixed": "#c4e7ff",
+            "inverse-surface": "#dae2fd",
+            "on-tertiary-container": "#5c3800",
+            "secondary": "#7bd0ff",
+            "outline": "#869585"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1rem",
+            "space-xl": "1.5rem",
+            "gutter": "0.75rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "0.75rem",
+            "margin": "1rem"
+          },
+          "fontFamily": {
+            "body-sm": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "code-md": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex justify-center items-start selection:bg-primary selection:text-on-primary-fixed">
+<!-- Chrome Side Panel Mock Shell (Locked to 400px width constraint) -->
+<main class="w-full max-w-[400px] min-h-screen bg-surface border-x border-outline-variant flex flex-col justify-between relative shadow-2xl overflow-hidden">
+<!-- TopNavBar (Shared Component from JSON Blueprint) -->
+<header class="bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant docked full-width top-0 sticky z-50 flex justify-between items-center w-full px-margin py-space-sm h-12 select-none">
+<!-- Brand Cluster -->
+<div class="flex items-center gap-space-sm">
+<div class="w-6 h-6 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[15px]" data-icon="terminal">terminal</span>
+</div>
+<span class="font-headline-md text-headline-md text-primary dark:text-primary tracking-tight font-semibold flex items-center gap-1">
+          Unstuck
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-error animate-pulse"></span>
+</span>
+</div>
+<!-- Navigation & Trailing Actions -->
+<div class="flex items-center gap-space-xs">
+<nav class="flex items-center gap-2 mr-1">
+<span class="text-primary dark:text-primary font-code-md text-code-md px-1.5 py-0.5 rounded bg-surface-container-high/50 text-[11px]">Tutor</span>
+<span class="text-on-surface-variant dark:text-on-surface-variant font-code-md text-code-md px-1.5 py-0.5 text-[11px] hover:text-on-surface transition-colors cursor-pointer">Trace</span>
+</nav>
+<button aria-label="Terminal Options" class="w-7 h-7 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high text-on-surface dark:text-on-surface transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="terminal">terminal</span>
+</button>
+<button aria-label="Close Side Panel" class="w-7 h-7 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high text-on-surface dark:text-on-surface transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="close">close</span>
+</button>
+</div>
+</header>
+<!-- Context Meta Header Strip -->
+<div class="px-margin py-2 bg-surface-container-lowest border-b border-outline-variant/60 flex items-center justify-between text-on-surface-variant text-[11px] font-code-sm">
+<div class="flex items-center gap-1.5 truncate">
+<span class="w-2 h-2 rounded-full bg-surface-variant"></span>
+<span class="truncate">leetcode.com/problems/lru-cache</span>
+</div>
+<div class="flex items-center gap-1 shrink-0 bg-surface-container px-1.5 py-0.5 rounded border border-outline-variant/40">
+<span class="text-primary font-medium">Python 3</span>
+</div>
+</div>
+<!-- Centered Error State Canvas (Strictly Accessibility Compliant role="alert") -->
+<section aria-live="assertive" class="flex-1 px-margin py-6 flex flex-col items-center justify-center text-center relative" role="alert">
+<!-- Ambient Glow Backdrop -->
+<div class="absolute w-44 h-44 rounded-full bg-error-container/20 blur-3xl pointer-events-none -z-0"></div>
+<!-- Red Alert Container Box with Crimson Glow & Perimeter Border -->
+<div class="relative z-10 w-14 h-14 rounded-xl bg-[#2D151C] border border-[#7F1D1D] flex items-center justify-center mb-4 shadow-[0_0_24px_rgba(239,68,68,0.22)]">
+<span class="material-symbols-outlined text-[28px] text-[#EF4444]" data-icon="error_outline">error_outline</span>
+</div>
+<!-- Primary Error Title -->
+<h1 class="relative z-10 font-headline-sm text-headline-sm font-semibold text-red-100 tracking-tight mb-2">
+        Couldn't get a hint
+      </h1>
+<!-- Precise Explanation Copy -->
+<p class="relative z-10 font-body-sm text-body-sm text-slate-300 max-w-xs leading-relaxed mb-4">
+        The AI model took too long to respond. Your current problem state is saved.
+      </p>
+<!-- Diagnostic Code Chip -->
+<div class="relative z-10 inline-flex items-center gap-1.5 bg-red-950/60 border border-red-800/50 text-red-300 px-2.5 py-1 rounded font-code-sm text-xs mb-6 select-all shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#EF4444]"></span>
+<span>Error 504 • Gateway Timeout (15000ms)</span>
+</div>
+<!-- Action Cluster -->
+<div class="relative z-10 w-full max-w-[280px] flex flex-col items-center gap-3">
+<!-- Primary Retry Button -->
+<button class="w-full bg-primary-container text-on-primary-container font-headline-sm text-body-md font-semibold px-6 py-2.5 rounded-lg hover:bg-[#4ADE80] active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 shadow-[0_2px_12px_rgba(34,197,94,0.25)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-surface" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="refresh">refresh</span>
+<span>Try again</span>
+<kbd class="ml-1 font-code-sm text-[10px] bg-black/20 text-on-primary-container px-1 py-0.5 rounded border border-black/10">⌘R</kbd>
+</button>
+<!-- Secondary Reporting Link -->
+<a class="font-body-sm text-xs text-slate-400 hover:text-slate-200 underline transition-colors duration-150 py-1" href="#report">
+          Report an issue
+        </a>
+</div>
+<!-- Restored Session State Preview (Card Shell Level 1) -->
+<div class="w-full mt-6 bg-[#1B2336] rounded-xl border border-outline-variant/40 p-3 text-left">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary" data-icon="check_circle">check_circle</span>
+            PERSISTED CACHE
+          </span>
+<span class="font-code-sm text-[10px] text-on-surface-variant">2.4 KB cached</span>
+</div>
+<div class="bg-surface rounded-lg p-2 border border-outline-variant/30 font-code-sm text-xs text-on-surface truncate">
+<span class="text-tertiary">def</span> get(self, key: <span class="text-secondary">int</span>) -&gt; <span class="text-secondary">int</span>:
+        </div>
+</div>
+</section>
+<!-- Anchored Side-Panel Bottom Docked Toolbar -->
+<footer class="p-space-md bg-surface-container-lowest border-t border-outline-variant/50 flex flex-col gap-2">
+<div class="flex items-center justify-between text-on-surface-variant font-code-sm text-[11px]">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+<span>Engine Status: Retrying link</span>
+</div>
+<span class="text-on-surface-variant/70">Edge us-east</span>
+</div>
+<!-- Quick prompt fall-back input field -->
+<div class="flex items-center gap-2 bg-[#1B2336] rounded-lg border border-outline-variant/40 px-2.5 py-1.5 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+<span class="material-symbols-outlined text-slate-400 text-[16px]" data-icon="help_outline">help_outline</span>
+<input class="bg-transparent border-0 p-0 text-on-surface placeholder:text-slate-500 font-body-sm text-xs w-full focus:ring-0 focus:outline-none" placeholder="Or ask an offline question..." type="text"/>
+<button aria-label="Send query" class="text-slate-400 hover:text-primary transition-colors p-1" type="button">
+<span class="material-symbols-outlined text-[14px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</footer>
+</main>
+<script>
+    // Keyboard shortcut micro-interaction (Command/Ctrl + R)
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r') {
+        const tryAgainBtn = document.querySelector('button');
+        if (tryAgainBtn) {
+          tryAgainBtn.classList.add('scale-95');
+          setTimeout(() => tryAgainBtn.classList.remove('scale-95'), 150);
+        }
+      }
+    });
+  </script>
+</body></html>

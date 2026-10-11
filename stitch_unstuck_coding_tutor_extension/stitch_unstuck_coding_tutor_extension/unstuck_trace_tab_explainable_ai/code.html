@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Trace Telemetry</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts: JetBrains Mono & IBM Plex Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary": "#00354a",
+            "on-tertiary": "#472a00",
+            "on-primary-container": "#004b1e",
+            "surface-container-lowest": "#060e20",
+            "on-secondary-fixed-variant": "#004c69",
+            "tertiary-fixed-dim": "#ffb95f",
+            "inverse-on-surface": "#283044",
+            "on-error-container": "#ffdad6",
+            "surface-container-low": "#131b2e",
+            "primary-fixed-dim": "#4ae176",
+            "surface-container": "#171f33",
+            "on-secondary-fixed": "#001e2c",
+            "secondary-container": "#00a6e0",
+            "surface-container-high": "#222a3d",
+            "secondary-fixed": "#c4e7ff",
+            "on-primary": "#003915",
+            "primary": "#4be277",
+            "inverse-surface": "#dae2fd",
+            "primary-container": "#22c55e",
+            "on-background": "#dae2fd",
+            "background": "#0b1326",
+            "secondary-fixed-dim": "#7bd0ff",
+            "surface-variant": "#2d3449",
+            "inverse-primary": "#006e2f",
+            "error": "#ffb4ab",
+            "on-tertiary-container": "#5c3800",
+            "outline": "#869585",
+            "on-tertiary-fixed": "#2a1700",
+            "surface": "#0b1326",
+            "surface-tint": "#4ae176",
+            "on-secondary-container": "#00374d",
+            "secondary": "#7bd0ff",
+            "tertiary": "#ffba61",
+            "tertiary-container": "#ef9900",
+            "on-primary-fixed-variant": "#005321",
+            "primary-fixed": "#6bff8f",
+            "on-error": "#690005",
+            "outline-variant": "#3d4a3d",
+            "on-surface-variant": "#bccbb9",
+            "surface-bright": "#31394d",
+            "surface-dim": "#0b1326",
+            "error-container": "#93000a",
+            "on-surface": "#dae2fd",
+            "on-tertiary-fixed-variant": "#653e00",
+            "tertiary-fixed": "#ffddb8",
+            "surface-container-highest": "#2d3449",
+            "on-primary-fixed": "#002109"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-md": "0.75rem",
+            "space-xs": "0.25rem",
+            "margin": "0.75rem",
+            "space-sm": "0.5rem",
+            "gutter": "0.5rem",
+            "space-xl": "1.5rem",
+            "space-lg": "1rem"
+          },
+          "fontFamily": {
+            "code-inline": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"],
+            "headline-lg": ["JetBrains Mono"],
+            "headline-md": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "headline-sm": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "code-inline": ["0.75rem", { "lineHeight": "1rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "body-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "headline-md": ["1rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "headline-sm": ["0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "0em", "fontWeight": "600" }],
+            "body-md": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom subtle scrollbar styling for side panel ergonomics */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1326;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2d3449;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3d4a3d;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 1.125rem;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased font-body-sm text-body-sm selection:bg-primary selection:text-on-primary min-h-screen flex justify-center">
+<!-- Chrome Side Panel Mockup Container (max-w-[420px] fixed width constraint) -->
+<div class="w-full max-w-[420px] bg-background border-x border-outline-variant/30 flex flex-col min-h-screen relative shadow-2xl overflow-x-hidden">
+<!-- 1. TopNavBar (Shared Component Anchor) -->
+<header class="bg-surface-container-low dark:bg-surface-container-low docked full-width top-0 sticky z-40 flex flex-col w-full px-space-md py-space-sm border-b border-outline-variant/40 flat no shadows">
+<!-- Upper Logo & Live State Controls Row -->
+<div class="flex items-center justify-between gap-2 mb-2">
+<!-- Logo & Watching Pill -->
+<div class="flex items-center gap-2">
+<!-- Knot Logo Mark SVG (Minimalist continuous loop) -->
+<div class="w-5 h-5 rounded bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-primary">
+<svg class="w-3.5 h-3.5 fill-none stroke-current" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M12 2C6.477 2 2 6.477 2 12c0 2.237.734 4.305 1.974 5.974L16 6"></path>
+<path d="M12 22c5.523 0 10-4.477 10-10 0-2.237-.734-4.305-1.974-5.974L8 18"></path>
+</svg>
+</div>
+<span class="text-headline-sm font-headline-sm font-bold text-on-surface dark:text-on-surface tracking-tight font-headline-sm">Unstuck</span>
+<!-- Live Status Pill -->
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high border border-outline-variant/50">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-primary tracking-wider uppercase font-medium">Watching</span>
+</div>
+</div>
+<!-- Trailing Icon Actions -->
+<div class="flex items-center gap-1">
+<!-- Trailing Secondary: Pause action button -->
+<button class="flex items-center gap-1 px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high dark:hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant font-label-md text-label-md transition-colors duration-150 active:scale-95" title="Pause tutor tracking">
+<span class="material-symbols-outlined text-[16px]" data-icon="pause_circle">pause_circle</span>
+<span class="font-label-sm text-label-sm">Pause</span>
+</button>
+<!-- Settings Icon -->
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors active:scale-95" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+<!-- 4-Tab Navigation Bar: Chat, Hints, Trace (ACTIVE), Progress -->
+<nav class="flex items-center justify-between pt-1 border-t border-outline-variant/20">
+<!-- Chat Tab -->
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors hover:bg-surface-container-high/40 px-2 rounded-t">
+          Chat
+        </button>
+<!-- Hints Tab -->
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors hover:bg-surface-container-high/40 px-2 rounded-t flex items-center gap-1">
+          Hints
+          <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+</button>
+<!-- Trace Tab (ACTIVE MATCH based on page intent) -->
+<button class="border-b-2 border-primary text-primary dark:text-primary font-label-md text-label-md pb-1 px-2 font-semibold">
+          Trace
+        </button>
+<!-- Progress Tab -->
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors hover:bg-surface-container-high/40 px-2 rounded-t">
+          Progress
+        </button>
+</nav>
+</header>
+<!-- 2. Context Strip: Synced Problem Inspector -->
+<div class="px-space-md py-2 bg-surface-container-lowest border-b border-outline-variant/30 flex items-center justify-between text-body-sm font-body-sm">
+<div class="flex items-center gap-1.5 overflow-hidden">
+<span class="w-2 h-2 rounded-sm bg-secondary shrink-0"></span>
+<span class="font-code-inline text-code-inline text-secondary shrink-0">leetcode.com</span>
+<span class="text-outline shrink-0">/</span>
+<span class="font-code-inline text-code-inline text-on-surface truncate font-medium">1. Two Sum</span>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<span class="px-1.5 py-0.2 rounded text-[10px] font-label-sm bg-primary/10 text-primary border border-primary/30">Easy</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] font-label-sm bg-surface-container text-on-surface-variant border border-outline-variant/40">Hash Table</span>
+</div>
+</div>
+<!-- Main Content Canvas (Scrollable Single-Column Vertical Stack) -->
+<main class="flex-1 px-space-md py-3 flex flex-col gap-3 overflow-y-auto">
+<!-- 3. Trace Header & Controls -->
+<section class="flex flex-col gap-2">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<h1 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Trace</h1>
+<span class="font-label-sm text-label-sm text-outline">•</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Explainable AI Telemetry</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              Inspection pipeline for latest hint generated <span class="text-on-surface font-code-inline text-[11px] font-medium">42s ago</span>
+</p>
+</div>
+<!-- Top Action Bar: Show details Switch toggle -->
+<div class="flex items-center gap-1.5 bg-surface-container border border-outline-variant/40 rounded-lg p-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant pl-1">Details</span>
+<button class="relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-primary-container transition-colors duration-200 ease-in-out focus:outline-none" id="toggle-details-btn" onclick="toggleAllDetails()">
+<span class="translate-x-3 pointer-events-none inline-block h-3 w-3 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out" id="toggle-knob"></span>
+</button>
+</div>
+</div>
+<!-- Summary Stat Bar Bento -->
+<div class="grid grid-cols-3 gap-1.5 bg-surface-container-low border border-outline-variant/40 rounded-xl p-2.5">
+<div class="flex flex-col">
+<span class="font-label-sm text-[10px] uppercase text-outline">Latency</span>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-headline-sm text-headline-sm font-semibold text-primary">2.4s</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">total</span>
+</div>
+</div>
+<div class="flex flex-col border-x border-outline-variant/30 px-2">
+<span class="font-label-sm text-[10px] uppercase text-outline">Pipeline</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface">4/4</span>
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="font-label-sm text-[10px] text-primary">passed</span>
+</div>
+</div>
+<div class="flex flex-col pl-1">
+<span class="font-label-sm text-[10px] uppercase text-outline">Intervention</span>
+<div class="mt-0.5">
+<span class="inline-flex items-center font-code-inline text-[11px] font-medium text-tertiary px-1.5 py-0.5 rounded bg-tertiary/10 border border-tertiary/30">
+                L2 Approach
+              </span>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. Agent Pipeline Timeline (Vertical Tree) -->
+<section class="flex flex-col relative mt-1">
+<!-- Connecting Line through agents -->
+<div class="absolute left-[15px] top-6 bottom-6 w-[1.5px] bg-gradient-to-b from-primary via-primary to-primary-container opacity-40"></div>
+<!-- AGENT 1: DETECTOR -->
+<div class="agent-card relative flex flex-col gap-2 pb-3.5 group">
+<!-- Step Row Header -->
+<div class="flex items-start gap-2.5 cursor-pointer" onclick="toggleSection('agent-detector')">
+<!-- Node Icon Status Badge -->
+<div class="w-8 h-8 rounded-lg bg-surface-container-high border border-primary/60 flex items-center justify-center text-primary z-10 shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="radar" style="font-variation-settings: 'FILL' 1;">radar</span>
+</div>
+<!-- Summary Header Content -->
+<div class="flex-1 min-w-0 bg-surface-container border border-outline-variant/40 rounded-xl p-2.5 hover:border-outline hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface">1. Detector Agent</span>
+<span class="px-1.5 py-0.2 rounded-full font-label-sm text-[10px] bg-primary/10 text-primary border border-primary/30">Triggered</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="font-code-inline text-[11px] text-outline">180ms</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant transition-transform transform rotate-180 detail-chevron" id="chevron-agent-detector">expand_more</span>
+</div>
+</div>
+<div class="text-body-sm text-on-surface-variant flex items-center justify-between font-body-sm">
+<span>Stuck probability: <strong class="text-tertiary font-code-inline">0.78</strong> <span class="text-outline text-[11px]">(threshold &gt; 0.65)</span></span>
+<span class="font-label-sm text-[10px] text-primary bg-primary/10 px-1 rounded">Heuristics v2.1</span>
+</div>
+<!-- Expanded Detail Container -->
+<div class="agent-detail-body mt-2.5 pt-2.5 border-t border-outline-variant/30 flex flex-col gap-2" id="agent-detector">
+<!-- Visual Signal Weights Sparkbars -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2 flex flex-col gap-1.5">
+<span class="font-label-sm text-[10px] text-outline uppercase tracking-wider">Contributing Signal Weights</span>
+<!-- Dwell time -->
+<div class="flex items-center justify-between text-body-sm text-[11px]">
+<div class="flex items-center gap-1 text-on-surface-variant w-40 truncate">
+<span class="material-symbols-outlined text-[14px] text-tertiary" data-icon="timer">timer</span>
+<span>Dwell time: 4m 12s on loop</span>
+</div>
+<div class="flex items-center gap-2 flex-1 max-w-[130px]">
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 85%;"></div>
+</div>
+<span class="font-code-inline text-[10px] text-on-surface w-7 text-right">0.85</span>
+</div>
+</div>
+<!-- Scroll reversals -->
+<div class="flex items-center justify-between text-body-sm text-[11px]">
+<div class="flex items-center gap-1 text-on-surface-variant w-40 truncate">
+<span class="material-symbols-outlined text-[14px] text-secondary" data-icon="swap_vert">swap_vert</span>
+<span>Scroll reversals: 7 cycles</span>
+</div>
+<div class="flex items-center gap-2 flex-1 max-w-[130px]">
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 72%;"></div>
+</div>
+<span class="font-code-inline text-[10px] text-on-surface w-7 text-right">0.72</span>
+</div>
+</div>
+<!-- Wrong Submissions -->
+<div class="flex items-center justify-between text-body-sm text-[11px]">
+<div class="flex items-center gap-1 text-on-surface-variant w-40 truncate">
+<span class="material-symbols-outlined text-[14px] text-error" data-icon="error">error</span>
+<span>2 runtime index errors</span>
+</div>
+<div class="flex items-center gap-2 flex-1 max-w-[130px]">
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-error h-full rounded-full" style="width: 90%;"></div>
+</div>
+<span class="font-code-inline text-[10px] text-on-surface w-7 text-right">0.90</span>
+</div>
+</div>
+<!-- Tab switches -->
+<div class="flex items-center justify-between text-body-sm text-[11px]">
+<div class="flex items-center gap-1 text-on-surface-variant w-40 truncate">
+<span class="material-symbols-outlined text-[14px] text-outline" data-icon="tab">tab</span>
+<span>Tab switches: 4 visits</span>
+</div>
+<div class="flex items-center gap-2 flex-1 max-w-[130px]">
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-outline h-full rounded-full" style="width: 45%;"></div>
+</div>
+<span class="font-code-inline text-[10px] text-on-surface w-7 text-right">0.45</span>
+</div>
+</div>
+</div>
+<!-- Key/Value Telemetry Snippet -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2 font-code-inline text-code-inline text-[11px] leading-tight space-y-1">
+<div class="flex justify-between">
+<span class="text-outline">detector_model:</span>
+<span class="text-on-surface">heuristics-v2.1</span>
+</div>
+<div class="flex justify-between">
+<span class="text-outline">idle_window:</span>
+<span class="text-on-surface">250s (decay: 0.05)</span>
+</div>
+<div class="flex justify-between">
+<span class="text-outline">intervention:</span>
+<span class="text-primary font-medium">PROACTIVE_HINT</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AGENT 2: PLANNER -->
+<div class="agent-card relative flex flex-col gap-2 pb-3.5 group">
+<!-- Step Row Header -->
+<div class="flex items-start gap-2.5 cursor-pointer" onclick="toggleSection('agent-planner')">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-secondary z-10 shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="explore" style="font-variation-settings: 'FILL' 1;">explore</span>
+</div>
+<div class="flex-1 min-w-0 bg-surface-container border border-outline-variant/40 rounded-xl p-2.5 hover:border-outline hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface">2. Pedagogical Planner</span>
+<span class="px-1.5 py-0.2 rounded-full font-label-sm text-[10px] bg-primary/10 text-primary border border-primary/30">Complete</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="font-code-inline text-[11px] text-outline">120ms</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant transition-transform transform rotate-180 detail-chevron" id="chevron-agent-planner">expand_more</span>
+</div>
+</div>
+<div class="text-body-sm text-on-surface-variant flex items-center justify-between font-body-sm">
+<span class="truncate">Chose Level 2 (Approach) • Arrays mastery: <span class="font-code-inline text-on-surface">0.62</span></span>
+</div>
+<!-- Expanded Detail Container -->
+<div class="agent-detail-body mt-2.5 pt-2.5 border-t border-outline-variant/30 flex flex-col gap-2" id="agent-planner">
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2 font-code-inline text-code-inline text-[11px] space-y-1.5">
+<div class="flex justify-between">
+<span class="text-outline">target_level:</span>
+<span class="text-tertiary font-medium">L2_APPROACH</span>
+</div>
+<div>
+<span class="text-outline block mb-0.5">reasoning:</span>
+<p class="font-body-sm text-[11px] text-on-surface bg-surface-container-high/60 p-1.5 rounded border border-outline-variant/20 italic">
+                      "User demonstrated L1 syntax competence; needs conceptual bridge without spoiler."
+                    </p>
+</div>
+<div class="pt-1 border-t border-outline-variant/20">
+<span class="text-outline block mb-1">skill_profile:</span>
+<div class="grid grid-cols-3 gap-1 text-[10px]">
+<div class="bg-surface-container p-1 rounded">
+<span class="text-outline block">Arrays</span>
+<span class="text-primary font-medium">0.62 (Med)</span>
+</div>
+<div class="bg-surface-container p-1 rounded">
+<span class="text-outline block">Hash Map</span>
+<span class="text-tertiary font-medium">0.41 (Low)</span>
+</div>
+<div class="bg-surface-container p-1 rounded">
+<span class="text-outline block">Pointers</span>
+<span class="text-primary font-medium">0.70 (Hi)</span>
+</div>
+</div>
+</div>
+<div class="flex justify-between pt-1">
+<span class="text-outline">pedagogical_mode:</span>
+<span class="text-secondary font-medium">SOCRATIC_NUDGE</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AGENT 3: GENERATOR -->
+<div class="agent-card relative flex flex-col gap-2 pb-3.5 group">
+<!-- Step Row Header -->
+<div class="flex items-start gap-2.5 cursor-pointer" onclick="toggleSection('agent-generator')">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-primary z-10 shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="flex-1 min-w-0 bg-surface-container border border-outline-variant/40 rounded-xl p-2.5 hover:border-outline hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface">3. Hint Generator</span>
+<span class="px-1.5 py-0.2 rounded-full font-label-sm text-[10px] bg-primary/10 text-primary border border-primary/30">Complete</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="font-code-inline text-[11px] text-primary font-medium">1,840ms</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant transition-transform transform rotate-180 detail-chevron" id="chevron-agent-generator">expand_more</span>
+</div>
+</div>
+<div class="text-body-sm text-on-surface-variant flex items-center justify-between font-body-sm">
+<span class="truncate">Gemini 1.5 Pro • 312 tokens • TTFT: 340ms</span>
+</div>
+<!-- Expanded Detail Container -->
+<div class="agent-detail-body mt-2.5 pt-2.5 border-t border-outline-variant/30 flex flex-col gap-2" id="agent-generator">
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2 font-code-inline text-code-inline text-[11px] space-y-1.5">
+<div class="flex justify-between">
+<span class="text-outline">model:</span>
+<span class="text-secondary font-medium">gemini-1.5-pro-preview-0514</span>
+</div>
+<div class="flex justify-between">
+<span class="text-outline">tokens:</span>
+<span class="text-on-surface">prompt: 1,420 | comp: 186</span>
+</div>
+<div class="flex justify-between">
+<span class="text-outline">temperature:</span>
+<span class="text-on-surface">0.20</span>
+</div>
+<div class="pt-1">
+<span class="text-outline block mb-1">output_snippet:</span>
+<div class="bg-background border border-outline-variant/40 rounded p-2 text-on-surface text-[11px] font-code-inline overflow-x-auto whitespace-pre-wrap leading-relaxed">
+<span class="text-outline">// Approach hint formulated:</span>
+"Consider how a hash map lets you check if the complement (<span class="text-primary font-medium">target - nums[i]</span>) was already seen in <span class="text-secondary">O(1)</span> time during a single pass..."</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AGENT 4: CRITIC / SAFETY VERIFIER -->
+<div class="agent-card relative flex flex-col gap-2 group">
+<!-- Step Row Header -->
+<div class="flex items-start gap-2.5 cursor-pointer" onclick="toggleSection('agent-critic')">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high border border-primary/60 flex items-center justify-center text-primary z-10 shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div class="flex-1 min-w-0 bg-surface-container border border-outline-variant/40 rounded-xl p-2.5 hover:border-outline hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface">4. Critic &amp; Safety</span>
+<span class="px-1.5 py-0.2 rounded-full font-label-sm text-[10px] bg-primary/20 text-primary border border-primary/40 font-semibold">4/4 Passed</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="font-code-inline text-[11px] text-outline">260ms</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant transition-transform transform rotate-180 detail-chevron" id="chevron-agent-critic">expand_more</span>
+</div>
+</div>
+<div class="text-body-sm text-on-surface-variant flex items-center justify-between font-body-sm">
+<span class="truncate">No code leak • 82% confidence • 0 retries</span>
+</div>
+<!-- Expanded Detail Container -->
+<div class="agent-detail-body mt-2.5 pt-2.5 border-t border-outline-variant/30 flex flex-col gap-2" id="agent-critic">
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2 font-code-inline text-code-inline text-[11px] space-y-1.5">
+<div class="flex items-center justify-between py-0.5 border-b border-outline-variant/20">
+<span class="text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="check_circle">check_circle</span>
+                      no_direct_code_leak:
+                    </span>
+<span class="text-primary font-medium">PASS (0.98)</span>
+</div>
+<div class="flex items-center justify-between py-0.5 border-b border-outline-variant/20">
+<span class="text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="check_circle">check_circle</span>
+                      problem_alignment:
+                    </span>
+<span class="text-primary font-medium">PASS (sim: 0.94)</span>
+</div>
+<div class="flex items-center justify-between py-0.5 border-b border-outline-variant/20">
+<span class="text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="check_circle">check_circle</span>
+                      spoiler_level_adherence:
+                    </span>
+<span class="text-primary font-medium">PASS (L2 verified)</span>
+</div>
+<div class="flex items-center justify-between pt-0.5">
+<span class="text-outline">confidence_score:</span>
+<span class="text-primary font-semibold">82%</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-outline">retries_required:</span>
+<span class="text-on-surface">0</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. Empty State Indicator / Preview Trigger Drawer -->
+<section class="mt-2 border-t border-outline-variant/30 pt-3">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Telemetry State Drawer</span>
+<button class="font-label-sm text-label-sm text-secondary hover:underline flex items-center gap-1" onclick="toggleEmptyState()">
+<span id="preview-btn-text">Preview "Waiting" State</span>
+<span class="material-symbols-outlined text-[14px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+<!-- Collapsible Empty State Preview -->
+<div class="hidden bg-surface-container-low border border-dashed border-outline-variant/60 rounded-xl p-4 flex-col items-center text-center transition-all duration-200" id="empty-state-drawer">
+<!-- Radar Pulse Graphic -->
+<div class="relative w-12 h-12 flex items-center justify-center my-1">
+<div class="absolute inset-0 rounded-full border border-primary/20 animate-ping opacity-60"></div>
+<div class="absolute w-8 h-8 rounded-full border border-primary/40"></div>
+<div class="w-3 h-3 rounded-full bg-primary/70"></div>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold mt-2">Nothing to explain yet</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-[260px] mt-1">
+            Ask a question in Chat or keep coding until the tutor detects a moment to provide a gentle nudge.
+          </p>
+<div class="mt-3 flex items-center gap-2">
+<button class="px-2.5 py-1 bg-surface-container-high border border-outline-variant/50 rounded-lg text-on-surface font-label-md text-label-md hover:border-outline">
+              Simulate Stumble
+            </button>
+<button class="px-2.5 py-1 bg-transparent text-outline font-label-md text-label-md hover:text-on-surface" onclick="toggleEmptyState()">
+              Dismiss
+            </button>
+</div>
+</div>
+</section>
+<!-- Bottom Spacer for ergonomics -->
+<div class="h-4"></div>
+</main>
+<!-- Bottom Context Action Strip -->
+<footer class="p-2.5 bg-surface-container-low border-t border-outline-variant/40 flex items-center justify-between sticky bottom-0 z-30">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Active Pipeline: <span class="text-on-surface">Standard Socratic</span></span>
+</div>
+<button class="text-primary hover:text-primary-fixed-dim font-label-sm text-label-sm flex items-center gap-1 font-medium transition-colors">
+        Export JSON Trace
+        <span class="material-symbols-outlined text-[14px]" data-icon="download">download</span>
+</button>
+</footer>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    let detailsOpen = true;
+
+    function toggleSection(id) {
+      const el = document.getElementById(id);
+      const chevron = document.getElementById('chevron-' + id);
+      if (!el) return;
+      
+      if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
+      } else {
+        el.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+      }
+    }
+
+    function toggleAllDetails() {
+      detailsOpen = !detailsOpen;
+      const toggleKnob = document.getElementById('toggle-knob');
+      const toggleBtn = document.getElementById('toggle-details-btn');
+      const detailContainers = document.querySelectorAll('.agent-detail-body');
+      const chevrons = document.querySelectorAll('.detail-chevron');
+
+      if (detailsOpen) {
+        toggleKnob.classList.remove('translate-x-0');
+        toggleKnob.classList.add('translate-x-3');
+        toggleBtn.classList.add('bg-primary-container');
+        toggleBtn.classList.remove('bg-surface-variant');
+        detailContainers.forEach(el => el.classList.remove('hidden'));
+        chevrons.forEach(ch => ch.classList.add('rotate-180'));
+      } else {
+        toggleKnob.classList.remove('translate-x-3');
+        toggleKnob.classList.add('translate-x-0');
+        toggleBtn.classList.remove('bg-primary-container');
+        toggleBtn.classList.add('bg-surface-variant');
+        detailContainers.forEach(el => el.classList.add('hidden'));
+        chevrons.forEach(ch => ch.classList.remove('rotate-180'));
+      }
+    }
+
+    function toggleEmptyState() {
+      const drawer = document.getElementById('empty-state-drawer');
+      const text = document.getElementById('preview-btn-text');
+      if (drawer.classList.contains('hidden')) {
+        drawer.classList.remove('hidden');
+        drawer.classList.add('flex');
+        text.innerText = 'Hide Preview';
+      } else {
+        drawer.classList.add('hidden');
+        drawer.classList.remove('flex');
+        text.innerText = 'Preview "Waiting" State';
+      }
+    }
+  </script>
+</body></html>

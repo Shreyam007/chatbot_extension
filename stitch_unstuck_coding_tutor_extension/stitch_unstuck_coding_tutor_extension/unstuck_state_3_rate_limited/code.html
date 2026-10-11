@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Rate Limited</title>
+<!-- Google Fonts: JetBrains Mono & IBM Plex Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed": "#2a1700",
+            "surface-container-high": "#222a3d",
+            "on-surface-variant": "#bccbb9",
+            "on-surface": "#dae2fd",
+            "primary": "#4be277",
+            "on-primary-fixed": "#002109",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface": "#0b1326",
+            "on-primary-container": "#004b1e",
+            "outline-variant": "#3d4a3d",
+            "primary-fixed": "#6bff8f",
+            "on-background": "#dae2fd",
+            "error-container": "#93000a",
+            "surface-dim": "#0b1326",
+            "surface-variant": "#2d3449",
+            "primary-fixed-dim": "#4ae176",
+            "secondary-fixed-dim": "#7bd0ff",
+            "primary-container": "#22c55e",
+            "surface-container-low": "#131b2e",
+            "on-tertiary": "#472a00",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#ef9900",
+            "on-secondary-container": "#00374d",
+            "surface-container-lowest": "#060e20",
+            "secondary-container": "#00a6e0",
+            "surface-tint": "#4ae176",
+            "background": "#0b1326",
+            "on-secondary-fixed": "#001e2c",
+            "error": "#ffb4ab",
+            "inverse-on-surface": "#283044",
+            "surface-container": "#171f33",
+            "inverse-primary": "#006e2f",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-primary-fixed-variant": "#005321",
+            "on-secondary": "#00354a",
+            "surface-container-highest": "#2d3449",
+            "tertiary-fixed": "#ffddb8",
+            "surface-bright": "#31394d",
+            "on-primary": "#003915",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-error": "#690005",
+            "tertiary": "#ffba61",
+            "secondary-fixed": "#c4e7ff",
+            "inverse-surface": "#dae2fd",
+            "on-tertiary-container": "#5c3800",
+            "secondary": "#7bd0ff",
+            "outline": "#869585"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1rem",
+            "space-xl": "1.5rem",
+            "gutter": "0.75rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "0.75rem",
+            "margin": "1rem"
+          },
+          "fontFamily": {
+            "body-sm": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "code-md": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(0.98); }
+    }
+    .amber-glow {
+      box-shadow: 0 0 24px -2px rgba(239, 153, 0, 0.18);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface antialiased font-body-md min-h-screen flex items-center justify-center p-0 md:p-6 select-none">
+<!-- Side Panel Container (Standard Chrome Panel locked to 400px width) -->
+<div class="w-full max-w-[400px] h-screen md:h-[680px] bg-surface flex flex-col justify-between border border-outline-variant/30 md:rounded-xl overflow-hidden shadow-2xl relative">
+<!-- TopNavBar Component (Sourced directly from Shared Components JSON) -->
+<header class="bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant docked full-width top-0 sticky z-50 flex justify-between items-center w-full px-margin py-space-sm h-12">
+<!-- Brand Logo / Identity -->
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-md text-headline-md text-primary dark:text-primary tracking-tight font-semibold">Unstuck</span>
+<span class="h-2 w-2 rounded-full bg-tertiary-container animate-pulse inline-block" title="Rate Limited Cooldown Active"></span>
+</div>
+<!-- Navigation Tabs & Actions -->
+<div class="flex items-center gap-space-md">
+<!-- Sub-tabs -->
+<div class="flex items-center gap-space-sm">
+<button class="text-on-surface-variant dark:text-on-surface-variant font-code-md text-code-md hover:bg-surface-container-high dark:hover:bg-surface-container-high text-on-surface dark:text-on-surface transition-colors duration-150 ease-in-out px-space-xs py-0.5 rounded" type="button">
+            Chat
+          </button>
+<button class="text-primary dark:text-primary font-code-md text-code-md px-space-xs py-0.5 rounded bg-surface-container" type="button">
+            Debug
+          </button>
+</div>
+<!-- Trailing Icon Actions from JSON: terminal, close -->
+<div class="flex items-center gap-1 border-l border-outline-variant/40 pl-space-sm">
+<button aria-label="Terminal output" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+</button>
+<button aria-label="Close panel" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Context Status Indicator Bar -->
+<div class="px-margin py-1.5 bg-surface-container-low border-b border-outline-variant/20 flex items-center justify-between font-code-sm text-code-sm">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span>
+<span>api.unstuck.internal</span>
+</div>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-label-sm uppercase font-semibold bg-tertiary-container/15 text-tertiary border border-tertiary-container/30">
+        HTTP 429
+      </span>
+</div>
+<!-- Centered Full-Panel Rate-Limited Warning State -->
+<main class="flex-1 flex flex-col items-center justify-center px-margin py-space-lg text-center relative z-10">
+<!-- Ambient Glow Behind Warning Hub -->
+<div class="absolute w-44 h-44 rounded-full bg-tertiary-container/5 blur-3xl pointer-events-none"></div>
+<!-- Hourglass / Speed Gauge Icon Hub -->
+<div class="relative mb-space-lg">
+<div class="w-16 h-16 rounded-xl bg-surface-container border border-tertiary/30 amber-glow flex items-center justify-center transition-all duration-300">
+<span class="material-symbols-outlined text-tertiary !text-3xl" data-icon="hourglass_top" style="font-variation-settings: 'FILL' 1;">hourglass_top</span>
+</div>
+<!-- Minute live badge overlay -->
+<div class="absolute -bottom-2 -right-2 px-1.5 py-0.5 bg-surface-container-highest border border-outline-variant rounded text-[10px] font-code-sm text-tertiary font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span>
+<span>429</span>
+</div>
+</div>
+<!-- One-line Title -->
+<h1 class="font-headline-sm text-headline-sm font-semibold text-tertiary-fixed mb-space-xs tracking-tight">
+        Too many requests. Try again in <span class="font-code-md text-tertiary font-bold underline decoration-tertiary/40 underline-offset-4" id="countdown-text">0:42</span>
+</h1>
+<!-- One line of explanation -->
+<p class="font-body-sm text-body-sm text-on-surface-variant text-center max-w-xs mb-space-xl leading-relaxed">
+        Provider rate limit reached. Cool down in progress to preserve quota.
+      </p>
+<!-- Visual Countdown Progress Card -->
+<div class="w-full max-w-[320px] bg-surface-container-low border border-outline-variant/30 rounded-lg p-space-md mb-space-xl text-left">
+<div class="flex items-center justify-between font-label-md text-label-md text-on-surface-variant mb-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined !text-sm text-tertiary" data-icon="speed">speed</span>
+<span>Cooldown Buffer</span>
+</div>
+<span class="font-code-sm text-code-sm text-tertiary font-semibold" id="progress-percent">65% remaining</span>
+</div>
+<!-- Progress Track -->
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden p-0 relative">
+<div class="h-full bg-tertiary-container rounded-full transition-all duration-1000 ease-linear shadow-[0_0_8px_rgba(239,153,0,0.5)]" id="progress-bar" style="width: 65%;"></div>
+</div>
+<!-- Telemetry Details Strip -->
+<div class="flex items-center justify-between font-code-sm text-[11px] text-on-surface-variant/70 mt-2.5 pt-2 border-t border-outline-variant/20">
+<span>Tier: Free Community</span>
+<span>Reset in: <strong class="text-on-surface font-semibold" id="reset-counter">42s</strong></span>
+</div>
+</div>
+<!-- One Clear Action: Cooldown retry button -->
+<div class="w-full max-w-[320px] flex flex-col items-center gap-space-md">
+<button class="w-full py-2.5 px-6 rounded-lg font-code-md text-body-sm font-medium flex items-center justify-center gap-2 transition-all duration-200 opacity-50 cursor-not-allowed bg-surface-container-high text-on-surface-variant border border-outline-variant" disabled="" id="retry-btn" type="button">
+<span class="material-symbols-outlined !text-base" data-icon="refresh">refresh</span>
+<span id="button-label">Retry now (0:42)</span>
+</button>
+<!-- Micro-note linking to custom API Key -->
+<a class="font-body-sm text-label-md text-on-surface-variant hover:text-tertiary-fixed underline underline-offset-2 transition-colors duration-150 inline-flex items-center gap-1 group" href="#settings">
+<span>Or switch to your custom API key in Settings for higher limits.</span>
+<span class="material-symbols-outlined !text-xs group-hover:translate-x-0.5 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</main>
+<!-- Bottom Tool / Status Anchor (Compact Chrome Panel Footer) -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant/30 px-margin py-2 flex items-center justify-between font-code-sm text-code-sm text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+<span class="text-on-surface-variant text-[11px]">Throttling mode</span>
+</div>
+<div class="flex items-center gap-3 text-[11px]">
+<button class="hover:text-on-surface transition-colors" type="button">Docs</button>
+<span class="text-outline-variant">•</span>
+<button class="hover:text-on-surface transition-colors" type="button">Status</button>
+</div>
+</footer>
+</div>
+<!-- Micro-interaction countdown script -->
+<script>
+    (function() {
+      let secondsRemaining = 42;
+      const totalSeconds = 60;
+      const countdownText = document.getElementById('countdown-text');
+      const resetCounter = document.getElementById('reset-counter');
+      const buttonLabel = document.getElementById('button-label');
+      const progressBar = document.getElementById('progress-bar');
+      const progressPercent = document.getElementById('progress-percent');
+      const retryBtn = document.getElementById('retry-btn');
+
+      const timer = setInterval(() => {
+        if (secondsRemaining > 0) {
+          secondsRemaining--;
+          const formattedSeconds = secondsRemaining < 10 ? '0' + secondsRemaining : secondsRemaining;
+          const timeString = `0:${formattedSeconds}`;
+          
+          countdownText.textContent = timeString;
+          resetCounter.textContent = `${secondsRemaining}s`;
+          buttonLabel.textContent = `Retry now (${timeString})`;
+          
+          const percentage = Math.round((secondsRemaining / totalSeconds) * 100);
+          progressBar.style.width = `${percentage}%`;
+          progressPercent.textContent = `${percentage}% remaining`;
+        } else {
+          clearInterval(timer);
+          countdownText.textContent = "0:00";
+          buttonLabel.textContent = "Retry now";
+          progressPercent.textContent = "0% (Ready)";
+          progressBar.style.width = "0%";
+          
+          // Enable button
+          retryBtn.disabled = false;
+          retryBtn.className = "w-full py-2.5 px-6 rounded-lg font-code-md text-body-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 bg-primary-container text-on-primary-container hover:bg-primary cursor-pointer active:scale-95 shadow-md";
+        }
+      }, 1000);
+    })();
+  </script>
+</body></html>

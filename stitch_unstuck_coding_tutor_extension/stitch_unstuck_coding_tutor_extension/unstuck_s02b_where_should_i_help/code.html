@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck — Setup Platforms</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined (Literal Requirement) -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-lowest": "#060e20",
+            "primary-fixed": "#6bff8f",
+            "surface-tint": "#4ae176",
+            "tertiary-container": "#ef9900",
+            "primary-container": "#22c55e",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface": "#0b1326",
+            "surface-bright": "#31394d",
+            "on-secondary": "#00354a",
+            "secondary-fixed-dim": "#7bd0ff",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-primary-fixed": "#002109",
+            "inverse-on-surface": "#283044",
+            "on-primary-fixed-variant": "#005321",
+            "tertiary": "#ffba61",
+            "error": "#ffb4ab",
+            "surface-container": "#171f33",
+            "primary": "#4be277",
+            "background": "#0b1326",
+            "surface-container-highest": "#2d3449",
+            "secondary-fixed": "#c4e7ff",
+            "on-error-container": "#ffdad6",
+            "on-error": "#690005",
+            "secondary-container": "#00a6e0",
+            "inverse-surface": "#dae2fd",
+            "primary-fixed-dim": "#4ae176",
+            "outline-variant": "#3d4a3d",
+            "error-container": "#93000a",
+            "surface-variant": "#2d3449",
+            "inverse-primary": "#006e2f",
+            "tertiary-fixed": "#ffddb8",
+            "outline": "#869585",
+            "on-secondary-container": "#00374d",
+            "surface-container-low": "#131b2e",
+            "on-background": "#dae2fd",
+            "on-tertiary-container": "#5c3800",
+            "on-tertiary": "#472a00",
+            "surface-dim": "#0b1326",
+            "on-primary": "#003915",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-tertiary-fixed": "#2a1700",
+            "on-surface": "#dae2fd",
+            "surface-container-high": "#222a3d",
+            "on-secondary-fixed": "#001e2c",
+            "secondary": "#7bd0ff",
+            "on-surface-variant": "#bccbb9",
+            "on-primary-container": "#004b1e"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1rem",
+            "space-xl": "1.5rem",
+            "space-md": "0.75rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "margin": "1rem",
+            "gutter": "0.75rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["JetBrains Mono"],
+            "headline-md": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "code-md": ["JetBrains Mono"],
+            "code-sm": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+    /* Subtle custom scrollbar for constrained side-panel viewport */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0F172A;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #272F42;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3d4a3d;
+    }
+  </style>
+</head>
+<body class="bg-[#0F172A] text-on-surface antialiased min-h-screen flex items-center justify-center p-0 md:p-6 select-none font-body-md text-body-md">
+<!-- Side-Panel Container Shell (Targeted 400px width for Chrome Side Panel) -->
+<div class="w-full max-w-[420px] h-screen md:h-[720px] md:max-h-[860px] bg-[#0F172A] border-0 md:border md:border-outline-variant/30 md:rounded-xl shadow-2xl flex flex-col overflow-hidden relative">
+<!-- TopNavBar (Shared Component from JSON Blueprint) -->
+<header class="bg-surface-container-low dark:bg-surface-container-low docked full-width top-0 sticky z-50 border-b border-outline-variant/30 dark:border-outline-variant/30 flat no shadows flex items-center justify-between px-space-md py-space-sm w-full max-w-full">
+<!-- Brand & Knot Icon -->
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-[#1B2336] border border-outline-variant/40 flex items-center justify-center text-primary-container">
+<!-- Knot unraveling into line SVG logo -->
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4 19c3-1 5-4 5-8a4 4 0 0 1 8 0c0 4-3 7-5 7"></path>
+<path d="M12 12c1.5-2 3.5-3 6-3h3"></path>
+<circle cx="5" cy="19" fill="currentColor" r="1.5"></circle>
+</svg>
+</div>
+<div class="flex items-baseline gap-1.5">
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface dark:text-on-surface tracking-tight">Unstuck</span>
+<span class="font-label-sm text-label-sm text-outline px-1.5 py-0.5 rounded bg-[#1B2336] border border-outline-variant/30">v1.4</span>
+</div>
+</div>
+<!-- Header Trailing Actions (Close & Panel Dock) -->
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded-lg text-outline hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150 active:scale-95" title="Dock to Left">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewbox="0 0 24 24">
+<rect height="18" rx="2" width="18" x="3" y="3"></rect>
+<path d="M9 3v18"></path>
+</svg>
+</button>
+<button class="p-1.5 rounded-lg text-outline hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150 active:scale-95" title="Close Side Panel">
+<span class="material-symbols-outlined text-[18px] leading-none" data-icon="close">close</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<main class="flex-1 overflow-y-auto px-margin py-space-md space-y-space-md">
+<!-- Step Indicator Ribbon -->
+<section class="flex items-center justify-between pb-1">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-primary uppercase">Step 3 of 3</span>
+<span class="font-label-sm text-label-sm text-outline">• Configuration</span>
+</div>
+<!-- Micro Step Pills (All 3 complete/active) -->
+<div class="flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-primary-container"></div>
+<div class="w-2 h-2 rounded-full bg-primary-container"></div>
+<div class="w-5 h-2 rounded-full bg-primary-container transition-all"></div>
+</div>
+</section>
+<!-- Headline & Subtitle Anchor -->
+<section class="space-y-1">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">
+          Where should I help?
+        </h1>
+<p class="font-body-md text-body-md text-on-surface-variant">
+          Choose the platforms where Unstuck automatically observes pauses and stuck moments.
+        </p>
+</section>
+<!-- Interactive Platform Switch Cards -->
+<section class="space-y-2.5">
+<!-- Platform 1: LeetCode (ON) -->
+<article class="p-3 bg-[#1B2336] rounded-xl border border-[rgba(71,85,105,0.25)] hover:border-[rgba(71,85,105,0.5)] transition-all group">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-lg bg-[#272F42] border border-[rgba(71,85,105,0.3)] flex items-center justify-center shrink-0 text-[#FFA116] mt-0.5">
+<!-- Leetcode stylized emblem -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .618 4.703 5.432 5.432 0 0 0 4.09 2.378h.273c1.377 0 2.684-.543 3.65-1.51l3.571-3.571a1.382 1.382 0 0 0-.977-2.359H9.471a1.38 1.38 0 1 1 0-2.76h6.402a1.38 1.38 0 0 0 1.38-1.38 1.38 1.38 0 0 0-.404-.977L14.444.438A1.374 1.374 0 0 0 13.483 0z"></path>
+</svg>
+</div>
+<div class="space-y-0.5">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">LeetCode</h2>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded-full font-label-sm text-[10px] bg-[rgba(34,197,94,0.15)] text-[#22C55E] border border-[rgba(34,197,94,0.3)]">
+                    Auto-Track
+                  </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+<span class="font-code-sm text-code-sm text-secondary">leetcode.com/problems/*</span> — watches timer, submission attempts, failed test cases.
+                </p>
+</div>
+</div>
+<!-- Toggle Switch ON -->
+<button aria-checked="true" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-primary-container transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#0F172A] mt-0.5" role="switch">
+<span class="sr-only">Toggle LeetCode monitoring</span>
+<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[#0F172A] shadow-md ring-0 transition duration-200 ease-in-out translate-x-5"></span>
+</button>
+</div>
+</article>
+<!-- Platform 2: Codeforces (ON) -->
+<article class="p-3 bg-[#1B2336] rounded-xl border border-[rgba(71,85,105,0.25)] hover:border-[rgba(71,85,105,0.5)] transition-all group">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-lg bg-[#272F42] border border-[rgba(71,85,105,0.3)] flex items-center justify-center shrink-0 text-[#1890FF] mt-0.5">
+<!-- Codeforces triple bars logo -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<rect fill="#FFC107" height="11" rx="1" width="4.5" x="2" y="10"></rect>
+<rect fill="#2196F3" height="17" rx="1" width="4.5" x="9.5" y="4"></rect>
+<rect fill="#F44336" height="13" rx="1" width="4.5" x="17" y="8"></rect>
+</svg>
+</div>
+<div class="space-y-0.5">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Codeforces</h2>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded-full font-label-sm text-[10px] bg-[rgba(34,197,94,0.15)] text-[#22C55E] border border-[rgba(34,197,94,0.3)]">
+                    Auto-Track
+                  </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+<span class="font-code-sm text-code-sm text-secondary">codeforces.com/contest/*</span> &amp; problemset — detects repeated veredict delays and test failures.
+                </p>
+</div>
+</div>
+<!-- Toggle Switch ON -->
+<button aria-checked="true" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-primary-container transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#0F172A] mt-0.5" role="switch">
+<span class="sr-only">Toggle Codeforces monitoring</span>
+<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[#0F172A] shadow-md ring-0 transition duration-200 ease-in-out translate-x-5"></span>
+</button>
+</div>
+</article>
+<!-- Platform 3: Any other site I ask for (OFF) -->
+<article class="p-3 bg-[#1B2336] rounded-xl border border-[rgba(71,85,105,0.25)] hover:border-[rgba(71,85,105,0.5)] transition-all group opacity-85 hover:opacity-100">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-lg bg-[#272F42] border border-[rgba(71,85,105,0.3)] flex items-center justify-center shrink-0 text-outline mt-0.5">
+<!-- Globe / Web icon -->
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+<path d="M2 12h20"></path>
+</svg>
+</div>
+<div class="space-y-0.5">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Any other site I ask for</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                  On-demand permission prompt whenever you summon Unstuck on documentation or contest portals.
+                </p>
+</div>
+</div>
+<!-- Toggle Switch OFF -->
+<button aria-checked="false" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-[#272F42] transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#0F172A] mt-0.5" role="switch">
+<span class="sr-only">Toggle manual site trigger</span>
+<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[#94A3B8] shadow-md ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+</button>
+</div>
+</article>
+</section>
+<!-- Reassurance Note / Permission Callout -->
+<section class="p-3 bg-[#1B2336] rounded-xl border border-[rgba(71,85,105,0.3)] flex items-start gap-2.5">
+<div class="text-[#38BDF8] shrink-0 mt-0.5">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="M12 16v-4"></path>
+<path d="M12 8h.01"></path>
+</svg>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant leading-normal">
+<span>I'll ask permission per site. You can edit site rules anytime in Extension Settings </span>
+<kbd class="font-label-sm text-[10px] bg-[#0F172A] border border-[#475569] text-on-surface px-1.5 py-0.5 rounded ml-0.5 inline-block">Cmd/Ctrl + ,</kbd>
+</div>
+</section>
+<!-- Hint Level Reminder Preview Pill Bar -->
+<section class="bg-[#0F172A] p-2.5 rounded-lg border border-[rgba(71,85,105,0.2)] space-y-1.5">
+<div class="flex items-center justify-between text-outline">
+<span class="font-label-sm text-label-sm tracking-wider uppercase">Hint Escalation Model</span>
+<span class="font-label-sm text-label-sm text-primary">Pre-armed</span>
+</div>
+<div class="grid grid-cols-4 gap-1 text-center font-label-sm text-[10px]">
+<div class="p-1 rounded bg-[#1B2336] text-on-surface border border-[rgba(71,85,105,0.25)] truncate">L1 Direction</div>
+<div class="p-1 rounded bg-[#1B2336] text-on-surface border border-[rgba(71,85,105,0.25)] truncate">L2 Approach</div>
+<div class="p-1 rounded bg-[#1B2336] text-on-surface border border-[rgba(71,85,105,0.25)] truncate">L3 Pseudocode</div>
+<div class="p-1 rounded bg-[#1B2336] text-outline border border-[rgba(71,85,105,0.15)] truncate">L4 Solution</div>
+</div>
+</section>
+</main>
+<!-- Footer Action Dock (Shared Component from JSON Blueprint) -->
+<footer class="bg-surface-container-low dark:bg-surface-container-low docked full-width bottom-0 sticky z-50 border-t border-outline-variant/30 dark:border-outline-variant/30 flat no shadows flex items-center justify-between px-space-md py-space-md w-full max-w-full">
+<!-- Back Action (Inactive Navigation Style) -->
+<button class="text-outline dark:text-outline hover:text-on-surface px-3 py-2 font-label-md text-label-md transition-colors duration-150 active:scale-95 flex items-center gap-1.5" type="button">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="m15 18-6-6 6-6"></path>
+</svg>
+<span>Back</span>
+</button>
+<!-- Center Progress Indicators -->
+<div class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-outline/40"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-outline/40"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+</div>
+<!-- Next / Finish Action (Active Navigation Style) -->
+<button class="bg-primary text-on-primary font-semibold rounded-lg px-4 py-2 font-label-md text-label-md hover:bg-primary-container dark:hover:bg-primary-container hover:text-on-primary-container transition-all duration-150 active:scale-[0.98] flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#0F172A]" type="button">
+<span>Finish</span>
+<svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M5 12h14"></path>
+<path d="m12 5 7 7-7 7"></path>
+</svg>
+</button>
+</footer>
+</div>
+<!-- Interactive micro-interactions for toggles -->
+<script>
+    document.querySelectorAll('button[role="switch"]').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        const isChecked = toggle.getAttribute('aria-checked') === 'true';
+        const newChecked = !isChecked;
+        toggle.setAttribute('aria-checked', String(newChecked));
+        
+        const thumb = toggle.querySelector('span:not(.sr-only)');
+        if (newChecked) {
+          toggle.classList.remove('bg-[#272F42]');
+          toggle.classList.add('bg-primary-container');
+          thumb.classList.remove('translate-x-0', 'bg-[#94A3B8]');
+          thumb.classList.add('translate-x-5', 'bg-[#0F172A]');
+        } else {
+          toggle.classList.remove('bg-primary-container');
+          toggle.classList.add('bg-[#272F42]');
+          thumb.classList.remove('translate-x-5', 'bg-[#0F172A]');
+          thumb.classList.add('translate-x-0', 'bg-[#94A3B8]');
+        }
+      });
+    });
+  </script>
+</body></html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Chrome Side Panel</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts: JetBrains Mono & IBM Plex Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-background": "#dae2fd",
+            "on-primary-fixed": "#002109",
+            "primary-fixed-dim": "#4ae176",
+            "tertiary": "#ffba61",
+            "surface-container-low": "#131b2e",
+            "surface-container": "#171f33",
+            "on-tertiary-fixed": "#2a1700",
+            "inverse-primary": "#006e2f",
+            "on-tertiary-container": "#5c3800",
+            "surface-bright": "#31394d",
+            "surface-container-highest": "#2d3449",
+            "secondary-fixed": "#c4e7ff",
+            "error-container": "#93000a",
+            "primary-fixed": "#6bff8f",
+            "on-primary": "#003915",
+            "primary": "#4be277",
+            "surface-variant": "#2d3449",
+            "outline": "#869585",
+            "secondary-container": "#00a6e0",
+            "on-secondary-fixed-variant": "#004c69",
+            "inverse-on-surface": "#283044",
+            "surface-container-high": "#222a3d",
+            "secondary": "#7bd0ff",
+            "on-tertiary": "#472a00",
+            "inverse-surface": "#dae2fd",
+            "background": "#0b1326",
+            "secondary-fixed-dim": "#7bd0ff",
+            "on-primary-fixed-variant": "#005321",
+            "surface": "#0b1326",
+            "tertiary-fixed-dim": "#ffb95f",
+            "tertiary-fixed": "#ffddb8",
+            "on-secondary-fixed": "#001e2c",
+            "on-secondary": "#00354a",
+            "surface-dim": "#0b1326",
+            "on-error-container": "#ffdad6",
+            "surface-tint": "#4ae176",
+            "surface-container-lowest": "#060e20",
+            "on-error": "#690005",
+            "on-surface": "#dae2fd",
+            "on-surface-variant": "#bccbb9",
+            "outline-variant": "#3d4a3d",
+            "tertiary-container": "#ef9900",
+            "primary-container": "#22c55e",
+            "on-tertiary-fixed-variant": "#653e00",
+            "error": "#ffb4ab",
+            "on-secondary-container": "#00374d",
+            "on-primary-container": "#004b1e"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "0.5rem",
+            "space-sm": "0.5rem",
+            "space-md": "0.75rem",
+            "space-xl": "1.5rem",
+            "margin": "0.75rem",
+            "space-lg": "1rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "headline-md": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "body-lg": ["IBM Plex Sans"],
+            "label-sm": ["JetBrains Mono"],
+            "code-inline": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "headline-sm": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "headline-md": ["1rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "code-inline": ["0.75rem", { "lineHeight": "1rem", "fontWeight": "400" }],
+            "body-md": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "headline-sm": ["0.875rem", { "lineHeight": "1.25rem", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .skeleton-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .skeleton-shimmer::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0) 100%);
+      animation: shimmer 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Scrollbar aesthetics for sidepanel constraints */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1326;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2d3449;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-body-sm antialiased min-h-screen flex justify-center selection:bg-primary-container selection:text-on-primary">
+<!-- Chrome Side Panel Mockup Frame (Constrained width ~400px) -->
+<div class="w-full max-w-[400px] min-h-screen bg-surface flex flex-col border-x border-outline-variant/40 shadow-2xl relative">
+<!-- TopNavBar Component (Strict adherence to Shared Component JSON Anchor) -->
+<header class="bg-surface-container-low sticky top-0 z-40 flex flex-col w-full px-space-md py-space-sm border-b border-outline-variant/40">
+<!-- Upper Section: Brand, Live Pill & Actions -->
+<div class="flex items-center justify-between gap-space-sm pb-space-xs">
+<div class="flex items-center gap-2">
+<!-- Exact brand anchor string from JSON -->
+<span class="text-headline-sm font-headline-sm font-bold text-on-surface tracking-tight">Unstuck</span>
+<!-- Watching / Active Pill status indicator -->
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary-container/15 border border-primary/30">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="text-[10px] font-label-sm font-medium text-primary tracking-wide">Watching</span>
+</div>
+</div>
+<!-- Trailing actions: Pause and trailing_icon_actions -->
+<div class="flex items-center gap-1 text-on-surface-variant">
+<button aria-label="Pause" class="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors duration-150 active:scale-95 text-label-sm font-label-sm" type="button">
+<span class="material-symbols-outlined text-[15px]" data-icon="pause_circle">pause_circle</span>
+<span>Pause</span>
+</button>
+<button aria-label="Settings" class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors duration-150 active:scale-95" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+<!-- Navigation Links row: ["Chat", "Hints", "Trace", "Progress"] with "Hints" Active -->
+<nav aria-label="Main Navigation" class="flex items-center space-x-4 pt-1">
+<!-- Chat (Inactive) -->
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" type="button">
+          Chat
+        </button>
+<!-- Hints (ACTIVE: exact class match to style_active_navigation) -->
+<button class="border-b-2 border-primary text-primary font-label-md text-label-md pb-1 flex items-center gap-1" type="button">
+<span>Hints</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+</button>
+<!-- Trace (Inactive) -->
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" type="button">
+          Trace
+        </button>
+<!-- Progress (Inactive) -->
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" type="button">
+          Progress
+        </button>
+</nav>
+</header>
+<!-- Main Content Canvas (Single-Column Vertical Scroll for Narrow Widths) -->
+<main class="flex-1 px-space-md py-space-sm space-y-space-md overflow-y-auto">
+<!-- Problem Context Card (Level 1 Surface) -->
+<section class="bg-surface-container-low border border-outline-variant/40 rounded-xl p-3 space-y-2.5 transition-colors hover:border-outline-variant/70">
+<div class="flex items-center justify-between text-label-sm font-label-sm">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[14px]" data-icon="terminal">terminal</span>
+<span class="tracking-wide">leetcode.com</span>
+</div>
+<span class="px-2 py-0.5 rounded-full font-label-sm bg-primary/10 border border-primary/30 text-primary">
+            Easy
+          </span>
+</div>
+<div>
+<h1 class="text-headline-sm font-headline-sm text-on-surface tracking-tight">1. Two Sum</h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5 line-clamp-1">
+            Given an array of integers nums and an integer target, return indices...
+          </p>
+</div>
+<div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-surface-container-highest text-on-surface-variant border border-outline-variant/30">
+            Array
+          </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-surface-container-highest text-on-surface-variant border border-outline-variant/30">
+            Hash Table
+          </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-[10px] text-outline font-label-sm">
+            Python 3
+          </span>
+</div>
+</section>
+<!-- Hint Level Progression Stepper (Levels 1 to 4) -->
+<section aria-label="Hint Level Stages" class="bg-surface-container/60 border border-outline-variant/40 rounded-xl p-2.5">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant/20 mb-2">
+<span class="text-label-sm font-label-sm text-on-surface-variant">Cognitive Scaffold</span>
+<span class="text-[10px] font-label-sm text-primary font-medium tracking-wide">Target: Level 2</span>
+</div>
+<div class="grid grid-cols-4 gap-1.5 text-center">
+<!-- L1 Direction (Completed) -->
+<div class="flex flex-col items-center p-1.5 rounded-lg bg-surface-container-low border border-primary/40 relative">
+<span class="material-symbols-outlined text-[15px] text-primary" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-[10px] font-label-sm font-medium text-on-surface mt-1">L1</span>
+<span class="text-[9px] font-body-sm text-on-surface-variant truncate w-full">Direction</span>
+</div>
+<!-- L2 Approach (Active Loading Target) -->
+<div class="flex flex-col items-center p-1.5 rounded-lg bg-surface-container-high border border-primary text-primary relative ring-1 ring-primary/40 shadow-sm">
+<div class="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin my-[1px]"></div>
+<span class="text-[10px] font-label-sm font-semibold text-primary mt-1">L2</span>
+<span class="text-[9px] font-body-sm text-primary truncate w-full font-medium">Approach</span>
+</div>
+<!-- L3 Pseudocode (Locked) -->
+<div class="flex flex-col items-center p-1.5 rounded-lg bg-surface-container-lowest/60 border border-outline-variant/20 opacity-60">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant" data-icon="lock">lock</span>
+<span class="text-[10px] font-label-sm text-on-surface-variant mt-1">L3</span>
+<span class="text-[9px] font-body-sm text-on-surface-variant truncate w-full">Pseudo</span>
+</div>
+<!-- L4 Full Solution (Locked) -->
+<div class="flex flex-col items-center p-1.5 rounded-lg bg-surface-container-lowest/60 border border-outline-variant/20 opacity-60">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant" data-icon="lock">lock</span>
+<span class="text-[10px] font-label-sm text-on-surface-variant mt-1">L4</span>
+<span class="text-[9px] font-body-sm text-on-surface-variant truncate w-full">Solution</span>
+</div>
+</div>
+</section>
+<!-- Main Hint Container: Active Loading State with Layout-Stable Skeleton -->
+<section class="bg-surface-container-low border border-outline-variant/40 rounded-xl p-3.5 space-y-3.5 relative overflow-hidden">
+<!-- Header of Hint Card -->
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-2">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Generating Level 2 Hint</h2>
+</div>
+<span class="text-[10px] font-label-sm px-1.5 py-0.5 rounded bg-surface-container-highest text-secondary border border-secondary/30">
+            Socratic
+          </span>
+</div>
+<!-- 3-line Animated Skeleton Placeholder Bars (occupying fixed vertical space for zero layout shift) -->
+<div aria-label="Loading hint text skeleton" class="space-y-2.5 py-1 min-h-[76px] flex flex-col justify-center">
+<div class="h-3 w-11/12 bg-surface-container-highest/80 rounded skeleton-shimmer"></div>
+<div class="h-3 w-full bg-surface-container-highest/80 rounded skeleton-shimmer"></div>
+<div class="h-3 w-4/6 bg-surface-container-highest/80 rounded skeleton-shimmer"></div>
+</div>
+<!-- Agent Workflow Execution Pipeline Box -->
+<div class="bg-surface-container-lowest/80 border border-outline-variant/30 rounded-lg p-3 space-y-2.5">
+<div class="flex items-center justify-between text-[11px] font-label-sm text-on-surface-variant border-b border-outline-variant/20 pb-1.5">
+<span class="uppercase tracking-wider">Agent Workflow</span>
+<span class="text-primary font-mono">Step 3 of 4</span>
+</div>
+<ul class="space-y-2 font-label-sm text-[11px]">
+<!-- 1. Reading problem (done) -->
+<li class="flex items-center gap-2.5 text-on-surface">
+<span class="material-symbols-outlined text-primary text-[15px]" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-normal text-on-surface">Reading the problem</span>
+<span class="ml-auto text-[10px] font-label-sm text-outline">120ms</span>
+</li>
+<!-- 2. Choosing hint level (done) -->
+<li class="flex items-center gap-2.5 text-on-surface">
+<span class="material-symbols-outlined text-primary text-[15px]" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-normal text-on-surface">Choosing hint level</span>
+<span class="ml-auto text-[10px] font-label-sm text-outline">85ms</span>
+</li>
+<!-- 3. Writing hint (in-progress) -->
+<li class="flex items-center gap-2.5 text-primary bg-primary/5 p-1 rounded border border-primary/20 -mx-1">
+<span class="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0"></span>
+<span class="font-medium text-primary">Writing hint</span>
+<span class="ml-auto text-[10px] font-label-sm text-primary animate-pulse">Streaming...</span>
+</li>
+<!-- 4. Safety Guard (pending) -->
+<li class="flex items-center gap-2.5 text-on-surface-variant opacity-60">
+<span class="material-symbols-outlined text-[15px] text-on-surface-variant" data-icon="schedule">schedule</span>
+<span class="font-normal">Checking it doesn't give the answer away</span>
+<span class="ml-auto text-[10px] font-label-sm text-outline">Queue</span>
+</li>
+</ul>
+</div>
+<!-- Cancellation Action & Reassurance Caption -->
+<div class="pt-1 flex flex-col items-center gap-1.5 text-center">
+<button class="w-full py-1.5 px-3 rounded-lg border border-outline-variant/60 hover:border-error hover:text-error hover:bg-error-container/20 text-on-surface-variant text-label-sm font-label-sm transition-all duration-150 active:scale-98" type="button">
+            Cancel Generation
+          </button>
+<div class="flex items-center gap-1 text-[11px] font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px] text-outline" data-icon="info">info</span>
+<span>Usually takes a few seconds.</span>
+</div>
+</div>
+</section>
+<!-- Previous Context Card: Level 1 Direction Recap -->
+<details class="group bg-surface-container-low border border-outline-variant/30 rounded-xl overflow-hidden transition-all duration-200">
+<summary class="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-on-surface">
+<span class="material-symbols-outlined text-primary text-[15px]" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Previous Hint: Level 1 (Direction)</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform duration-200 text-[16px]" data-icon="expand_more">expand_more</span>
+</summary>
+<div class="p-3 pt-0 text-body-sm font-body-sm text-on-surface-variant border-t border-outline-variant/20 bg-surface-container-lowest/40">
+<p class="italic text-[11px] leading-relaxed">
+            "Notice how searching for each complement takes O(n) in a list. Can you trade space for instant lookup time using a complementary data structure?"
+          </p>
+</div>
+</details>
+</main>
+<!-- Bottom Docked Actions Panel (Cleanly disabled placeholders to guarantee layout stability) -->
+<footer class="bg-surface-container-low border-t border-outline-variant/40 p-space-md space-y-2 sticky bottom-0 z-30">
+<div class="flex items-center gap-2">
+<button class="flex-1 py-2 px-3 rounded-lg bg-surface-container-highest/60 border border-outline-variant/30 text-on-surface-variant/40 font-label-md text-label-md cursor-not-allowed flex items-center justify-center gap-1.5" disabled="" type="button">
+<span class="material-symbols-outlined text-[14px]" data-icon="navigate_next">navigate_next</span>
+<span>Next Hint (Locked)</span>
+</button>
+<button aria-label="Copy Hint" class="p-2 rounded-lg bg-surface-container-highest/60 border border-outline-variant/30 text-on-surface-variant/40 cursor-not-allowed" disabled="" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="content_copy">content_copy</span>
+</button>
+</div>
+<!-- Quick Prompt / Follow-up Input Bar -->
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-lowest border border-outline-variant/40 rounded-lg py-1.5 pl-2.5 pr-8 text-body-sm font-body-sm text-on-surface placeholder:text-on-surface-variant/40 cursor-not-allowed opacity-75" disabled="" placeholder="Ask a targeted question..." type="text"/>
+<button class="absolute right-2 text-on-surface-variant/40 cursor-not-allowed" disabled="" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="send">send</span>
+</button>
+</div>
+</footer>
+</div>
+</body></html>

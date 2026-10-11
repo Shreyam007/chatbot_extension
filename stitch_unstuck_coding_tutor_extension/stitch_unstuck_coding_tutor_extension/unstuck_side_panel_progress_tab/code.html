@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Progress</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-on-surface": "#283044",
+            "surface-container-low": "#131b2e",
+            "surface-variant": "#2d3449",
+            "surface": "#0b1326",
+            "outline-variant": "#3d4a3d",
+            "surface-container-highest": "#2d3449",
+            "surface-container-lowest": "#060e20",
+            "surface-container-high": "#222a3d",
+            "tertiary": "#ffba61",
+            "on-secondary-container": "#00374d",
+            "on-error-container": "#ffdad6",
+            "tertiary-fixed-dim": "#ffb95f",
+            "error": "#ffb4ab",
+            "surface-tint": "#4ae176",
+            "on-surface": "#dae2fd",
+            "primary": "#4be277",
+            "error-container": "#93000a",
+            "surface-container": "#171f33",
+            "background": "#0b1326",
+            "tertiary-fixed": "#ffddb8",
+            "primary-container": "#22c55e",
+            "surface-bright": "#31394d",
+            "on-surface-variant": "#bccbb9",
+            "surface-dim": "#0b1326",
+            "on-tertiary-fixed": "#2a1700",
+            "on-tertiary-fixed-variant": "#653e00",
+            "on-secondary": "#00354a",
+            "outline": "#869585",
+            "on-background": "#dae2fd",
+            "on-primary-fixed-variant": "#005321",
+            "on-primary": "#003915",
+            "secondary-container": "#00a6e0",
+            "on-secondary-fixed": "#001e2c",
+            "on-tertiary-container": "#5c3800",
+            "on-tertiary": "#472a00",
+            "on-secondary-fixed-variant": "#004c69",
+            "inverse-surface": "#dae2fd",
+            "tertiary-container": "#ef9900",
+            "primary-fixed-dim": "#4ae176",
+            "on-primary-container": "#004b1e",
+            "secondary-fixed-dim": "#7bd0ff",
+            "primary-fixed": "#6bff8f",
+            "on-error": "#690005",
+            "secondary-fixed": "#c4e7ff",
+            "inverse-primary": "#006e2f",
+            "on-primary-fixed": "#002109",
+            "secondary": "#7bd0ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-lg": "1rem",
+            "space-xl": "1.5rem",
+            "margin": "1rem",
+            "gutter": "0.75rem",
+            "space-xs": "0.25rem",
+            "space-md": "0.75rem"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-lg": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "headline-md": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"],
+            "headline-sm": ["JetBrains Mono"],
+            "code-md": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 1.125rem;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1326;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #222a3d;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #31394d;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased flex justify-center min-h-screen py-0 sm:py-6 selection:bg-primary-container selection:text-on-primary-container">
+<!-- Side Panel Host Shell (Constrained 420px width for Chrome Extension Panel) -->
+<main class="w-full max-w-[430px] min-h-screen sm:min-h-[920px] bg-surface flex flex-col sm:rounded-xl border border-outline-variant/40 shadow-2xl relative overflow-hidden">
+<!-- TopNavBar (Shared Component implementation matching JSON hierarchy) -->
+<header class="bg-surface-container-low flex flex-col w-full px-space-md py-space-sm border-b border-outline-variant/40 docked full-width top-0 sticky z-40">
+<!-- Upper Utility Bar: Brand Anchor + Active Context + Actions -->
+<div class="flex items-center justify-between pb-space-sm pt-space-xs">
+<div class="flex items-center gap-2">
+<!-- Knot icon mark -->
+<div class="w-6 h-6 rounded-lg bg-surface-container-high border border-outline-variant/50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-primary text-[17px]" data-icon="all_inclusive">all_inclusive</span>
+</div>
+<span class="text-headline-sm font-headline-sm font-bold text-on-surface tracking-tight">Unstuck</span>
+<!-- Live session pill -->
+<div class="ml-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high border border-outline-variant/40">
+<span class="relative flex h-1.5 w-1.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate max-w-[130px]">LeetCode #42</span>
+</div>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors duration-150 active:scale-95" title="Pause companion">
+<span class="material-symbols-outlined" data-icon="pause_circle">pause_circle</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors duration-150 active:scale-95" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors duration-150 active:scale-95" title="Dock side panel">
+<span class="material-symbols-outlined" data-icon="dock_to_right">dock_to_right</span>
+</button>
+</div>
+</div>
+<!-- Navigation Links Strip (Progress is active) -->
+<nav class="flex items-center gap-5 pt-1">
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#chat">Chat</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#hints">Hints</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors" href="#trace">Trace</a>
+<a class="border-b-2 border-primary text-primary font-label-md text-label-md pb-1" href="#progress">Progress</a>
+</nav>
+</header>
+<!-- Scrollable Panel Body -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-3.5 space-y-3.5">
+<!-- 1. Top Summary Metrics (3-column compact bento) -->
+<section aria-labelledby="weekly-metrics-heading">
+<h2 class="sr-only" id="weekly-metrics-heading">Weekly Progress Metrics</h2>
+<div class="grid grid-cols-3 gap-2">
+<!-- Metric 1 -->
+<div class="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Solved this week</span>
+<div class="my-1.5 flex items-baseline gap-1.5">
+<span class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">6</span>
+</div>
+<div class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary">
+<span class="material-symbols-outlined text-[13px]" data-icon="arrow_upward">arrow_upward</span>
+<span>+2 vs last</span>
+</div>
+</div>
+<!-- Metric 2 -->
+<div class="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Hints per solve</span>
+<div class="my-1.5 flex items-baseline gap-1.5">
+<span class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">1.8</span>
+</div>
+<div class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary">
+<span class="material-symbols-outlined text-[13px]" data-icon="trending_down">trending_down</span>
+<span>-0.4 better</span>
+</div>
+</div>
+<!-- Metric 3 -->
+<div class="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Nudge accept</span>
+<div class="my-1.5 flex items-baseline gap-1.5">
+<span class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">64%</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">
+<span>9/14 taken</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. Hints Needed Per Problem (Last 10) Line Chart Section -->
+<section class="bg-surface-container border border-outline-variant/30 rounded-xl p-3 space-y-2.5">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-1.5">
+<span>Hints needed per problem</span>
+</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Trend across last 10 completed submissions</p>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-high text-primary border border-primary/20">
+            Last 10
+          </span>
+</div>
+<!-- Sparkline Container with SVG and Interactive Tooltip Marker -->
+<div class="relative bg-surface-container-lowest/80 rounded-lg p-2.5 border border-outline-variant/20 pt-4">
+<!-- Active Floating Data Tag -->
+<div class="flex items-center justify-between font-label-sm text-label-sm mb-1 text-on-surface-variant">
+<span>4 Hints (max)</span>
+<span class="text-primary font-medium flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+              Selected: #198 (1 hint)
+            </span>
+<span>0 Hints (target)</span>
+</div>
+<div class="w-full h-24 relative">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 340 70">
+<defs>
+<lineargradient id="hintGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#4be277" stop-opacity="0.35"></stop>
+<stop offset="100%" stop-color="#4be277" stop-opacity="0.0"></stop>
+</lineargradient>
+<filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
+<fegaussianblur result="blur" stddeviation="2"></fegaussianblur>
+<fecomposite in="SourceGraphic" in2="blur" operator="over"></fecomposite>
+</filter>
+</defs>
+<!-- Subtle horizontal reference grid lines -->
+<line stroke="#222a3d" stroke-dasharray="3,3" stroke-width="1" x1="0" x2="340" y1="12" y2="12"></line>
+<line stroke="#222a3d" stroke-dasharray="3,3" stroke-width="1" x1="0" x2="340" y1="35" y2="35"></line>
+<line stroke="#222a3d" stroke-dasharray="3,3" stroke-width="1" x1="0" x2="340" y1="58" y2="58"></line>
+<!-- Coordinates mapped from: [3, 2, 4, 1, 2, 3, 1, 2, 1, 0] -->
+<!-- X positions: 10, 46, 82, 118, 154, 190, 226, 262, 298, 334 -->
+<!-- Y positions: (4-val)*13 + 8 => [21, 34, 8, 47, 34, 21, 47, 34, 47, 60] -->
+<!-- Area Fill Under Path -->
+<polygon fill="url(#hintGradient)" points="10,60 10,21 46,34 82,8 118,47 154,34 190,21 226,47 262,34 298,47 334,60 334,60"></polygon>
+<!-- Data Trendline -->
+<polyline fill="none" points="10,21 46,34 82,8 118,47 154,34 190,21 226,47 262,34 298,47 334,60" stroke="#4be277" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></polyline>
+<!-- Plot Points -->
+<circle cx="10" cy="21" fill="#4be277" r="2.5"></circle>
+<circle cx="46" cy="34" fill="#4be277" r="2.5"></circle>
+<circle cx="82" cy="8" fill="#ffba61" r="2.5"></circle>
+<circle cx="118" cy="47" fill="#4be277" r="2.5"></circle>
+<circle cx="154" cy="34" fill="#4be277" r="2.5"></circle>
+<circle cx="190" cy="21" fill="#4be277" r="2.5"></circle>
+<circle cx="226" cy="47" fill="#4be277" r="2.5"></circle>
+<circle cx="262" cy="34" fill="#4be277" r="2.5"></circle>
+<!-- Highlighted point #198 -->
+<circle cx="298" cy="47" fill="#0b1326" filter="url(#glow)" r="5" stroke="#4be277" stroke-width="2.5"></circle>
+<circle cx="298" cy="47" fill="#4be277" r="2"></circle>
+<!-- Last point 0 hints -->
+<circle cx="334" cy="60" fill="#4be277" r="3"></circle>
+</svg>
+</div>
+<!-- Bottom Axis Problem Index Labels -->
+<div class="flex justify-between items-center px-1 font-label-sm text-label-sm text-on-surface-variant/70 pt-1 border-t border-outline-variant/10">
+<span>P-10</span>
+<span>P-8</span>
+<span>P-6</span>
+<span>P-4</span>
+<span class="text-primary font-bold">#198</span>
+<span>Latest</span>
+</div>
+</div>
+<!-- Text Summary Callout -->
+<div class="flex items-start gap-2 p-2.5 rounded-lg bg-surface-container-high/60 border border-outline-variant/30">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5" data-icon="auto_awesome">auto_awesome</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Average hints decreased by <strong class="text-primary font-semibold">35%</strong> over your last 10 problems. You are reaching Level 3 conceptual hints less frequently.
+          </p>
+</div>
+</section>
+<!-- 3. Topic Mastery Section with Drilldowns -->
+<section class="bg-surface-container border border-outline-variant/30 rounded-xl p-3 space-y-3">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Topic mastery</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Calibrated from dwell &amp; syntax errors</p>
+</div>
+<button class="inline-flex items-center gap-1 px-2 py-1 rounded text-label-sm font-label-sm text-primary border border-primary/30 hover:bg-surface-container-high hover:border-primary transition-colors">
+<span>Focus weak</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="filter_alt">filter_alt</span>
+</button>
+</div>
+<!-- Topics Accordion List -->
+<div class="space-y-2">
+<!-- Item 1: Arrays (Expanded state) -->
+<div class="rounded-lg bg-surface-container-low border border-outline-variant/40 overflow-hidden">
+<div class="p-2.5 cursor-pointer hover:bg-surface-container-high/40 transition-colors flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]" data-icon="expand_more">expand_more</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Arrays</span>
+<span class="font-label-sm text-label-sm text-primary">↑ +8%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-on-surface font-semibold">72%</span>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 72%"></div>
+</div>
+</div>
+<!-- Expanded Breakdown Details -->
+<div class="px-2.5 pb-2.5 pt-1 space-y-1.5 border-t border-outline-variant/20 bg-surface-container-lowest/40">
+<div class="flex items-center justify-between text-body-sm font-body-sm py-1 px-2 rounded hover:bg-surface-container-high/50">
+<div class="flex flex-col">
+<span class="text-on-surface font-medium">Two Sum (#1)</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Solved 2d ago • 1 hint used</span>
+</div>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/30">Mastered</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm py-1 px-2 rounded hover:bg-surface-container-high/50">
+<div class="flex flex-col">
+<span class="text-on-surface font-medium">Container With Most Water (#11)</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Solved 4d ago • 2 hints used</span>
+</div>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/30">Good</span>
+</div>
+</div>
+</div>
+<!-- Item 2: Strings -->
+<div class="rounded-lg bg-surface-container-low border border-outline-variant/30 p-2.5 cursor-pointer hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]" data-icon="chevron_right">chevron_right</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Strings</span>
+<span class="font-label-sm text-label-sm text-primary">↑ +4%</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface font-semibold">58%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary-container h-full rounded-full" style="width: 58%"></div>
+</div>
+</div>
+<!-- Item 3: Dynamic Programming (Warning / Needs practice) -->
+<div class="rounded-lg bg-surface-container-low border border-outline-variant/30 p-2.5 cursor-pointer hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]" data-icon="chevron_right">chevron_right</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Dynamic Programming</span>
+<span class="font-label-sm text-label-sm text-tertiary">↓ -2%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-tertiary/10 text-tertiary border border-tertiary/30">Needs practice</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">31%</span>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 31%"></div>
+</div>
+</div>
+<!-- Item 4: Graphs (Weak spot) -->
+<div class="rounded-lg bg-surface-container-low border border-outline-variant/30 p-2.5 cursor-pointer hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]" data-icon="chevron_right">chevron_right</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Graphs</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">— 0%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-error/10 text-error border border-error/30">Weak spot</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">24%</span>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-error/80 h-full rounded-full" style="width: 24%"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. Contextual Empty / Privacy Educational Preview Card -->
+<section class="rounded-xl border border-dashed border-outline-variant/40 bg-surface-container-low/60 p-3 flex items-start gap-3">
+<div class="p-2 rounded-lg bg-surface-container-high text-primary shrink-0 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]" data-icon="shield_person">shield_person</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-center justify-between">
+<h4 class="font-label-md text-label-md text-on-surface font-medium">Local-first privacy</h4>
+<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant">Browser DB</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-normal">
+            Solve problems with Unstuck active and patterns calculate instantly. Hints, dwell intervals, and syntactic traps never leave your local machine.
+          </p>
+</div>
+</section>
+</div>
+<!-- 5. Docked Action Footer / Secondary Action Cluster -->
+<footer class="p-3 border-t border-outline-variant/40 bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<button class="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:bg-surface-tint active:scale-98 transition-all">
+<span class="material-symbols-outlined text-[16px]" data-icon="psychology">psychology</span>
+<span>Review weak topics</span>
+</button>
+<button class="inline-flex items-center justify-center p-2 rounded-lg bg-surface-container-high border border-outline-variant/40 text-on-surface hover:border-primary/50 transition-colors" title="Export study summary">
+<span class="material-symbols-outlined text-[18px]" data-icon="file_download">file_download</span>
+</button>
+</div>
+<div class="flex items-center justify-between px-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Last synced 2m ago</span>
+<button class="font-label-sm text-label-sm text-primary hover:underline inline-flex items-center gap-0.5">
+<span>Export Markdown recap</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="north_east">north_east</span>
+</button>
+</div>
+</footer>
+</main>
+</body></html>

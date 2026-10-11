@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unstuck - Problem Solved</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary": "#00354a",
+            "surface-dim": "#0b1326",
+            "background": "#0b1326",
+            "surface-tint": "#4ae176",
+            "surface-container-lowest": "#060e20",
+            "on-tertiary-container": "#5c3800",
+            "on-tertiary": "#472a00",
+            "on-surface": "#dae2fd",
+            "primary-fixed": "#6bff8f",
+            "secondary-fixed": "#c4e7ff",
+            "on-tertiary-fixed": "#2a1700",
+            "outline-variant": "#3d4a3d",
+            "inverse-surface": "#dae2fd",
+            "primary-container": "#22c55e",
+            "on-secondary-fixed-variant": "#004c69",
+            "on-surface-variant": "#bccbb9",
+            "on-primary-container": "#004b1e",
+            "error-container": "#93000a",
+            "primary-fixed-dim": "#4ae176",
+            "surface": "#0b1326",
+            "secondary": "#7bd0ff",
+            "surface-container-low": "#131b2e",
+            "inverse-on-surface": "#283044",
+            "on-primary-fixed": "#002109",
+            "on-background": "#dae2fd",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface-variant": "#2d3449",
+            "surface-container-high": "#222a3d",
+            "tertiary-fixed": "#ffddb8",
+            "tertiary-fixed-dim": "#ffb95f",
+            "tertiary": "#ffba61",
+            "surface-container-highest": "#2d3449",
+            "surface-bright": "#31394d",
+            "on-secondary-fixed": "#001e2c",
+            "secondary-container": "#00a6e0",
+            "tertiary-container": "#ef9900",
+            "on-secondary-container": "#00374d",
+            "inverse-primary": "#006e2f",
+            "secondary-fixed-dim": "#7bd0ff",
+            "error": "#ffb4ab",
+            "outline": "#869585",
+            "primary": "#4be277",
+            "on-error-container": "#ffdad6",
+            "on-primary": "#003915",
+            "on-primary-fixed-variant": "#005321",
+            "on-error": "#690005",
+            "surface-container": "#171f33"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-md": "0.75rem",
+            "gutter": "0.75rem",
+            "margin": "1rem",
+            "space-lg": "1rem",
+            "space-sm": "0.5rem",
+            "space-xl": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "body-lg": ["IBM Plex Sans"],
+            "headline-lg": ["JetBrains Mono"],
+            "code-sm": ["JetBrains Mono"],
+            "headline-sm": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"],
+            "headline-md": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "code-md": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "body-lg": ["0.9375rem", { "lineHeight": "1.5rem", "fontWeight": "400" }],
+            "headline-lg": ["1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "code-sm": ["0.75rem", { "lineHeight": "1.125rem", "fontWeight": "400" }],
+            "headline-sm": ["1rem", { "lineHeight": "1.375rem", "fontWeight": "600" }],
+            "label-sm": ["0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" }],
+            "body-sm": ["0.8125rem", { "lineHeight": "1.25rem", "fontWeight": "400" }],
+            "headline-md": ["1.125rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-md": ["0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "code-md": ["0.8125rem", { "lineHeight": "1.375rem", "fontWeight": "400" }],
+            "body-md": ["0.875rem", { "lineHeight": "1.375rem", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 350, 'GRAD' 0, 'opsz' 20;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #2d3449;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-surface-dim text-on-surface antialiased font-body-sm flex justify-center items-start min-h-screen p-0 sm:py-6">
+<!-- Desktop Chrome Side Panel Container (Standard 420px max-width) -->
+<div class="w-full max-w-[420px] h-[100vh] sm:h-[880px] sm:max-h-[92vh] bg-surface flex flex-col border border-outline-variant/40 sm:rounded-xl shadow-2xl overflow-hidden relative">
+<!-- TopNavBar (Shared Component implementation) -->
+<header class="docked full-width top-0 sticky z-40 bg-surface-container-low flex flex-col w-full px-space-md py-space-sm border-b border-outline-variant/40 flex-shrink-0">
+<div class="flex items-center justify-between gap-2 mb-2">
+<!-- Logo & Product Name -->
+<div class="flex items-center gap-2">
+<div class="w-5 h-5 rounded bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-[13px] font-bold" data-icon="terminal">terminal</span>
+</div>
+<span class="text-headline-sm font-headline-sm font-bold text-on-surface tracking-tight">Unstuck</span>
+<span class="text-label-sm font-label-sm px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant/30">v1.4.2</span>
+</div>
+<!-- Trailing Icon Actions -->
+<div class="flex items-center gap-1">
+<button class="flex items-center gap-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high px-1.5 py-1 rounded text-label-md font-label-md transition-colors active:scale-95 duration-100" title="Pause session">
+<span class="material-symbols-outlined" data-icon="pause_circle">pause_circle</span>
+<span class="hidden sm:inline">Pause</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high p-1 rounded transition-colors active:scale-95 duration-100" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-[1px] h-3.5 bg-outline-variant/40 mx-0.5"></div>
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high p-1 rounded transition-colors active:scale-95 duration-100" title="Close side panel">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+</div>
+<!-- Problem Context Bar -->
+<div class="flex items-center justify-between pb-2 mb-1 border-b border-outline-variant/20">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-primary text-[14px]" data-icon="task_alt" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Solved • Two Sum (#1)</span>
+</div>
+<span class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-primary/10 text-primary border border-primary/30">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+          Accepted
+        </span>
+</div>
+<!-- Tab Navigation Cluster -->
+<nav class="flex items-center gap-5 pt-1">
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors">Chat</button>
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors">Hints</button>
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md pb-1 transition-colors">Trace</button>
+<button class="border-b-2 border-primary text-primary font-label-md text-label-md pb-1 flex items-center gap-1">
+          Progress
+          <span class="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+</button>
+</nav>
+</header>
+<!-- Scrollable Content Canvas (Constrained Fluid Stack) -->
+<main class="flex-1 overflow-y-auto custom-scrollbar px-margin py-space-md space-y-space-md">
+<!-- Hero Calm Celebration Banner -->
+<section class="bg-surface-container-low rounded-xl p-space-md border border-outline-variant/30 flex flex-col items-center text-center relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none"></div>
+<!-- Status Node -->
+<div class="w-11 h-11 rounded-full bg-surface-container-high border border-primary/40 flex items-center justify-center text-primary mb-2 shadow-inner">
+<span class="material-symbols-outlined text-[24px]" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight mb-1">
+          Solved. Nice.
+        </h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Verdict accepted on LeetCode <span class="text-outline-variant">•</span> Clean pass on test cases
+        </p>
+</section>
+<!-- Problem Session Summary Bento Card -->
+<section class="bg-surface-container-low rounded-xl p-space-md border border-outline-variant/30 space-y-3">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+<span class="font-label-md text-label-md text-on-surface-variant tracking-wider uppercase">Session Metrics</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant/80">ID: #01-HASH-PASS</span>
+</div>
+<!-- 2x2 Clean Minimalist Stat Grid -->
+<div class="grid grid-cols-2 gap-2">
+<!-- Metric 1: Time taken -->
+<div class="bg-surface-container p-2.5 rounded-lg border border-outline-variant/25 flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="schedule">schedule</span>
+              Time Taken
+            </span>
+<div class="mt-1.5 flex items-baseline gap-1">
+<span class="font-headline-md text-headline-md text-on-surface">24m 12s</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline mt-0.5">Under median (28m)</span>
+</div>
+<!-- Metric 2: Hints Used -->
+<div class="bg-surface-container p-2.5 rounded-lg border border-outline-variant/25 flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="lightbulb">lightbulb</span>
+              Hints Used
+            </span>
+<div class="mt-1.5 flex items-baseline gap-1">
+<span class="font-headline-md text-headline-md text-on-surface">2</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">of 4</span>
+</div>
+<div class="flex items-center gap-1 mt-1">
+<span class="font-label-sm text-label-sm px-1 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant/30">L1 Dir</span>
+<span class="font-label-sm text-label-sm px-1 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant/30">L2 Appr</span>
+</div>
+</div>
+<!-- Metric 3: Topic -->
+<div class="bg-surface-container p-2.5 rounded-lg border border-outline-variant/25 flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="category">category</span>
+              Topic &amp; Structure
+            </span>
+<div class="mt-1.5">
+<span class="font-body-md font-semibold text-on-surface block leading-tight">Arrays &amp; Hash</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Key-value lookup</span>
+</div>
+</div>
+<!-- Metric 4: Mastery Progress -->
+<div class="bg-surface-container p-2.5 rounded-lg border border-outline-variant/25 flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="trending_up">trending_up</span>
+              Arrays Mastery
+            </span>
+<div class="mt-1.5 flex items-center gap-1.5">
+<span class="font-headline-md text-headline-md text-primary">+4%</span>
+<span class="font-code-sm text-code-sm text-on-surface">72%</span>
+</div>
+<!-- Visual mini progress bar -->
+<div class="w-full h-1 bg-surface-container-high rounded-full overflow-hidden mt-1">
+<div class="h-full bg-primary rounded-full" style="width: 72%;"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Key Takeaways / Solved Insight Card -->
+<section class="bg-surface-container-low rounded-xl p-space-md border border-outline-variant/30">
+<div class="flex items-center justify-between cursor-pointer group" onclick="toggleTakeaway()">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]" data-icon="insights">insights</span>
+<h3 class="font-label-md text-label-md text-on-surface group-hover:text-secondary transition-colors">Core Takeaway &amp; Algorithmic Trade-off</h3>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-on-surface transition-transform duration-200" data-icon="expand_less" id="takeaway-chevron">expand_less</span>
+</div>
+<div class="mt-2.5 pt-2.5 border-t border-outline-variant/20 transition-all duration-200" id="takeaway-body">
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed mb-2">
+            Using a complement hash map traded <span class="font-code-sm text-code-sm text-secondary px-1 py-0.5 rounded bg-surface-container">O(n)</span> space for <span class="font-code-sm text-code-sm text-primary px-1 py-0.5 rounded bg-surface-container">O(n)</span> execution time, effectively eliminating the brute-force <span class="font-code-sm text-code-sm text-error px-1 py-0.5 rounded bg-surface-container">O(n²)</span> nested sweep.
+          </p>
+<div class="bg-surface-container-lowest rounded-lg p-2 border border-outline-variant/20 font-code-sm text-code-sm text-on-surface-variant/90 flex items-center justify-between">
+<code>lookup = target - current_val</code>
+<span class="text-label-sm font-label-sm text-primary">0ms hash hit</span>
+</div>
+</div>
+</section>
+<!-- "What Helped" Learning Reflection Section -->
+<section class="bg-surface-container-low rounded-xl p-space-md border border-outline-variant/30 space-y-2.5">
+<div class="flex items-center justify-between">
+<h2 class="font-label-md text-label-md text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-tertiary" data-icon="psychology">psychology</span>
+            What helped most?
+          </h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Reflection log</span>
+</div>
+<div class="flex flex-wrap gap-1.5" id="chip-group">
+<!-- Selected Tag -->
+<button class="reflection-chip px-2.5 py-1 rounded-full text-label-md font-label-md bg-primary/15 text-primary border border-primary/40 flex items-center gap-1 transition-all" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-[13px]" data-icon="check">check</span>
+            Direction nudge
+          </button>
+<!-- Selected Tag -->
+<button class="reflection-chip px-2.5 py-1 rounded-full text-label-md font-label-md bg-primary/15 text-primary border border-primary/40 flex items-center gap-1 transition-all" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-[13px]" data-icon="check">check</span>
+            Edge case hint
+          </button>
+<!-- Unselected Tags -->
+<button class="reflection-chip px-2.5 py-1 rounded-full text-label-md font-label-md bg-surface-container text-on-surface-variant hover:text-on-surface border border-outline-variant/30 flex items-center gap-1 transition-all" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-[13px] opacity-0" data-icon="check">check</span>
+            Complexity breakdown
+          </button>
+<button class="reflection-chip px-2.5 py-1 rounded-full text-label-md font-label-md bg-surface-container text-on-surface-variant hover:text-on-surface border border-outline-variant/30 flex items-center gap-1 transition-all" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-[13px] opacity-0" data-icon="check">check</span>
+            Self-realization
+          </button>
+</div>
+</section>
+<!-- Feedback / Hint Calibration Row -->
+<section class="bg-surface-container-low rounded-xl p-space-md border border-outline-variant/30 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-md text-label-md text-on-surface block">Rate the hint progression</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Calibrates Unstuck nudge sensitivity</span>
+</div>
+<!-- 5-Star Rating Row -->
+<div class="flex items-center gap-0.5" id="star-rating">
+<button class="p-0.5 text-tertiary hover:scale-110 transition-transform" onclick="setRating(1)">
+<span class="material-symbols-outlined text-[18px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="p-0.5 text-tertiary hover:scale-110 transition-transform" onclick="setRating(2)">
+<span class="material-symbols-outlined text-[18px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="p-0.5 text-tertiary hover:scale-110 transition-transform" onclick="setRating(3)">
+<span class="material-symbols-outlined text-[18px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="p-0.5 text-tertiary hover:scale-110 transition-transform" onclick="setRating(4)">
+<span class="material-symbols-outlined text-[18px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="p-0.5 text-outline-variant hover:text-tertiary hover:scale-110 transition-transform" onclick="setRating(5)">
+<span class="material-symbols-outlined text-[18px]" data-icon="star">star</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Docked Footer Action Controls (Bottom Edge Anchor) -->
+<footer class="bg-surface-container-low border-t border-outline-variant/40 p-space-md flex-shrink-0 flex flex-col gap-2 z-20">
+<div class="flex items-center gap-2">
+<!-- Secondary Action: Similar Problems -->
+<button class="flex-1 bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-outline-variant text-on-surface font-label-md text-label-md h-9 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[14px]" data-icon="auto_awesome_motion">auto_awesome_motion</span>
+<span>Similar problems</span>
+<kbd class="font-code-sm text-[10px] px-1 py-0.2 bg-surface-dim rounded border border-outline-variant/40 text-on-surface-variant ml-0.5">⌘R</kbd>
+</button>
+<!-- Primary CTA: Done -->
+<button class="bg-primary-container hover:bg-primary text-on-primary-container font-headline-sm text-headline-sm font-semibold h-9 px-5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[16px] font-bold" data-icon="check">check</span>
+<span>Done</span>
+<kbd class="font-code-sm text-[10px] px-1 py-0.2 bg-on-primary-container/20 rounded text-on-primary-container ml-0.5">Esc</kbd>
+</button>
+</div>
+<!-- Quick subtle status bar / footer note -->
+<div class="flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant/70 px-0.5">
+<span class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+          Session synced to cloud
+        </span>
+<span>LeetCode tab connected</span>
+</div>
+</footer>
+</div>
+<script>
+    function toggleTakeaway() {
+      const body = document.getElementById('takeaway-body');
+      const chevron = document.getElementById('takeaway-chevron');
+      if (body.classList.contains('hidden')) {
+        body.classList.remove('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+      } else {
+        body.classList.add('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    function toggleChip(button) {
+      const checkIcon = button.querySelector('span');
+      const isSelected = button.classList.contains('bg-primary/15');
+      if (isSelected) {
+        button.classList.remove('bg-primary/15', 'text-primary', 'border-primary/40');
+        button.classList.add('bg-surface-container', 'text-on-surface-variant', 'border-outline-variant/30');
+        checkIcon.classList.add('opacity-0');
+      } else {
+        button.classList.remove('bg-surface-container', 'text-on-surface-variant', 'border-outline-variant/30');
+        button.classList.add('bg-primary/15', 'text-primary', 'border-primary/40');
+        checkIcon.classList.remove('opacity-0');
+      }
+    }
+
+    function setRating(rating) {
+      const starContainer = document.getElementById('star-rating');
+      const buttons = starContainer.querySelectorAll('button');
+      buttons.forEach((btn, index) => {
+        const icon = btn.querySelector('span');
+        if (index < rating) {
+          btn.className = 'p-0.5 text-tertiary hover:scale-110 transition-transform';
+          icon.style.fontVariationSettings = "'FILL' 1";
+        } else {
+          btn.className = 'p-0.5 text-outline-variant hover:text-tertiary hover:scale-110 transition-transform';
+          icon.style.fontVariationSettings = "'FILL' 0";
+        }
+      });
+    }
+
+    // Keyboard affordance listeners
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        console.log('Unstuck session completed.');
+      }
+    });
+  </script>
+</body></html>
