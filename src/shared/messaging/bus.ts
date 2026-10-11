@@ -140,53 +140,65 @@ export function registerBackgroundRouter(handlers: RequestHandlers): () => void 
     sender: chrome.runtime.MessageSender,
     sendResponse: (res: BusResponseEnvelope) => void
   ): boolean => {
-    // Validate incoming message format
-    const parsed = BusRequestSchema.safeParse(rawMessage);
-    if (!parsed.success) {
-      logger.debug('Received invalid or unknown message on bus:', rawMessage);
-      sendResponse({
-        ok: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: 'Message did not match bus contract schema',
-        },
-      });
-      return false;
-    }
-
-    const request = parsed.data;
-    const handler = handlers[request.type];
-
-    if (!handler) {
-      logger.debug(`No handler registered for message type: ${request.type}`);
-      sendResponse({
-        ok: false,
-        error: {
-          code: 'UNHANDLED_TYPE',
-          message: `No handler for request type: ${request.type}`,
-        },
-      });
-      return false;
-    }
-
-    // Execute typed handler asynchronously
-    Promise.resolve()
-      .then(() => handler(request as never, sender))
-      .then((data) => {
-        sendResponse({ ok: true, data });
-      })
-      .catch((err) => {
-        logger.error(`Handler error for ${request.type}:`, err);
+    try {
+      // Validate incoming message format
+      const parsed = BusRequestSchema.safeParse(rawMessage);
+      if (!parsed.success) {
+        logger.debug('Received invalid or unknown message on bus:', rawMessage);
         sendResponse({
           ok: false,
           error: {
-            code: 'HANDLER_ERROR',
-            message: err instanceof Error ? err.message : 'Unknown handler failure',
+            code: 'INVALID_REQUEST',
+            message: 'Message did not match bus contract schema',
           },
         });
-      });
+        return false;
+      }
 
-    return true; // Keep channel open for async response
+      const request = parsed.data;
+      const handler = handlers[request.type];
+
+      if (!handler) {
+        logger.debug(`No handler registered for message type: ${request.type}`);
+        sendResponse({
+          ok: false,
+          error: {
+            code: 'UNHANDLED_TYPE',
+            message: `No handler for request type: ${request.type}`,
+          },
+        });
+        return false;
+      }
+
+      // Execute typed handler asynchronously
+      Promise.resolve()
+        .then(() => handler(request as never, sender))
+        .then((data) => {
+          sendResponse({ ok: true, data });
+        })
+        .catch((err) => {
+          logger.error(`Handler error for ${request.type}:`, err);
+          sendResponse({
+            ok: false,
+            error: {
+              code: 'HANDLER_ERROR',
+              message: err instanceof Error ? err.message : 'Unknown handler failure',
+            },
+          });
+        });
+
+      return true; // Keep channel open for async response
+    } catch (syncErr) {
+      logger.error('Synchronous router error handling message:', syncErr);
+      sendResponse({
+        ok: false,
+        error: {
+          code: 'ROUTER_SYNC_ERROR',
+          message: syncErr instanceof Error ? syncErr.message : 'Unhandled router exception',
+        },
+      });
+      return false;
+    }
   };
 
   chrome.runtime.onMessage.addListener(listener);

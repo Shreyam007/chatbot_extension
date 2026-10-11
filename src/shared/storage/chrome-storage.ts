@@ -1,6 +1,8 @@
 import { createLogger } from '../logger';
 import { SettingsSchema, type Settings } from '../schemas/settings';
 import { OnboardingStateSchema, type OnboardingState, DEFAULT_ONBOARDING_STATE } from '../schemas/onboarding';
+import type { PageContext } from '../schemas/context';
+import type { SignalWindow } from '../schemas/signals';
 import { DEFAULT_SETTINGS } from '../config';
 
 const logger = createLogger('ChromeStorage');
@@ -183,3 +185,28 @@ export async function _setRawLocalStorageForTesting(key: string, value: unknown)
   }
   memoryLocal.set(key, value);
 }
+
+/**
+ * Tab session helpers for per-tab state storage and worker rehydration (EC-004, EC-007)
+ */
+export async function getTabContext(tabId: number): Promise<PageContext | null> {
+  return getSessionRecord<PageContext>(`tab_context_${tabId}`);
+}
+
+export async function setTabContext(tabId: number, context: PageContext): Promise<void> {
+  await setSessionRecord(`tab_context_${tabId}`, context);
+}
+
+export async function getTabSignalWindow(tabId: number): Promise<SignalWindow | null> {
+  return getSessionRecord<SignalWindow>(`tab_signals_${tabId}`);
+}
+
+export async function setTabSignalWindow(tabId: number, window: SignalWindow): Promise<void> {
+  await setSessionRecord(`tab_signals_${tabId}`, window);
+}
+
+export async function clearTabSession(tabId: number): Promise<void> {
+  await setSessionRecord(`tab_context_${tabId}`, null);
+  await setSessionRecord(`tab_signals_${tabId}`, null);
+}
+

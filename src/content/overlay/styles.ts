@@ -378,4 +378,13 @@ export const OVERLAY_STYLES = `
 .unstuck-hidden {
   display: none !important;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .unstuck-card,
+  .unstuck-fab-pulse,
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
 `;

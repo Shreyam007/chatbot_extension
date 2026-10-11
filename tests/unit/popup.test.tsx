@@ -19,10 +19,10 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (globalThis as any).chrome = {
+    (globalThis as unknown as { chrome: unknown }).chrome = {
       sidePanel: { open: vi.fn() },
-      tabs: { query: vi.fn((_q, cb) => cb([{ id: 101 }])) },
-      runtime: { openOptionsPage: vi.fn(), getURL: vi.fn((path) => path) },
+      tabs: { query: vi.fn((_q: unknown, cb: (tabs: Array<{ id: number }>) => void) => cb([{ id: 101 }])) },
+      runtime: { openOptionsPage: vi.fn(), getURL: vi.fn((path: string) => path) },
     };
 
     container = document.createElement('div');
@@ -52,7 +52,7 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
       acceptRate: 0.75,
       hintsUsedCount: 2,
       hintsLeftCount: 4,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     await act(async () => {
       root.render(<PopupApp />);
@@ -84,7 +84,7 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
       acceptRate: 0.75,
       hintsUsedCount: 2,
       hintsLeftCount: 4,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     await act(async () => {
       root.render(<PopupApp />);
@@ -112,7 +112,7 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
       acceptRate: 0,
       hintsUsedCount: 0,
       hintsLeftCount: 0,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     await act(async () => {
       root.render(<PopupApp />);
@@ -141,7 +141,7 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
       acceptRate: 0,
       hintsUsedCount: 0,
       hintsLeftCount: 0,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     await act(async () => {
       root.render(<PopupApp />);
@@ -167,7 +167,7 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
       acceptRate: 0.75,
       hintsUsedCount: 2,
       hintsLeftCount: 4,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     await act(async () => {
       root.render(<PopupApp />);
@@ -199,7 +199,7 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
       acceptRate: 0.75,
       hintsUsedCount: 2,
       hintsLeftCount: 4,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     await act(async () => {
       root.render(<PopupApp />);
@@ -234,7 +234,7 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
       acceptRate: 0.75,
       hintsUsedCount: 2,
       hintsLeftCount: 4,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     await act(async () => {
       root.render(<PopupApp />);

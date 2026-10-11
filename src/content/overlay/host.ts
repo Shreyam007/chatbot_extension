@@ -62,8 +62,12 @@ export class OverlayHost {
       this.shadowRoot = host.shadowRoot;
     }
 
-    this.render();
-    window.addEventListener('keydown', this.boundOnKeyDown);
+    try {
+      this.render();
+      window.addEventListener('keydown', this.boundOnKeyDown);
+    } catch (err) {
+      logger.error('Error mounting overlay in shadow DOM:', err);
+    }
   }
 
   private render(): void {
