@@ -399,3 +399,21 @@ Per `ANTIGRAVITY.md` specification:
   - 15/15 unit tests passing in `tests/unit/mastery-bkt.test.ts` (222/222 total unit tests passing across all 25 test files).
   - Playwright E2E test passing in `tests/e2e/mastery-progress.test.ts`, verifying BKT mastery calibration, focus toggle, and capturing high-fidelity screenshots (`sidepanel_mastery_bkt.png`, `sidepanel_mastery_weak_review.png`).
   - Full suite of 7/7 Playwright E2E suites passing cleanly.
+
+---
+
+## 18. E2E Service-Worker Interception & Gemini Mocking (Step 16)
+
+- **Problem:**
+  - In Manifest V3 Chrome extensions, the background service worker executes inside an isolated V8 isolate context (`ServiceWorkerGlobalScope`), completely detached from DOM page window contexts.
+  - Standard Playwright page-level routing (`page.route()`) intercepts only navigation and resource requests issued by that specific DOM page, completely bypassing network calls initiated inside the service worker via `fetch()`.
+  - Adding test-only mock flags, conditional build flags, or fake endpoints into production source code violates production purity and introduces security risks.
+- **Solution (Zero Production Contamination):**
+  - Playwright provides a direct `Worker` handle to the extension background script (`context.serviceWorkers()[0]`).
+  - During E2E test execution, we execute `background.evaluate()` on that Worker handle to intercept `globalThis.fetch` inside the `ServiceWorkerGlobalScope` dynamically at runtime.
+  - Test suites inject mock behaviors (successful level-specific hint generation, HTTP 429 rate limits with `Retry-After: 3`, HTTP 403 invalid key errors, and network disconnects) entirely in memory during test initialization.
+- **Advantages:**
+  1. **Production Purity:** Zero mock hooks, debug flags, or test bypasses exist in `src/` or the production bundle (`.output/chrome-mv3`).
+  2. **End-to-End Realism:** Network calls traverse the real `GeminiClient`, parse real responses and headers, pass through the real multi-agent Critic and grounding guardrails, and propagate through the message bus to React components.
+  3. **Verification:** Proven by inspecting `.output/chrome-mv3` after a normal production build and asserting that the exact mocked response reaches the Side Panel UI.
+

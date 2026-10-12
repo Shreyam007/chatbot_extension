@@ -16,6 +16,10 @@ export default defineConfig({
     ],
     action: {
       default_title: 'Unstuck'
+    },
+    options_ui: {
+      page: 'options.html',
+      open_in_tab: true
     }
   },
   modules: ['@wxt-dev/module-react']

@@ -19,4 +19,9 @@ describe('Shared Configuration', () => {
   it('enforces contest auto-disable as locked true', () => {
     expect(DEFAULT_SETTINGS.contestAutoDisable).toBe(true);
   });
+
+  it('defaults demoMode to false and enforces standard 15-minute cooldown when off (Rule 5)', () => {
+    expect(DEFAULT_SETTINGS.demoMode).toBe(false);
+    expect(DEFAULT_SETTINGS.cooldownMin).toBe(15);
+  });
 });

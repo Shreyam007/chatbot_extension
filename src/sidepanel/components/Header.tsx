@@ -14,6 +14,7 @@ export interface HeaderProps {
   isWatching: boolean;
   isPaused: boolean;
   isContest: boolean;
+  demoMode?: boolean;
   onTogglePause: () => void;
   onOpenSettings: () => void;
 }
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   isWatching,
   isPaused,
   isContest,
+  demoMode,
   onTogglePause,
   onOpenSettings,
 }) => {
@@ -50,6 +52,16 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="text-sm font-mono font-bold text-on-surface tracking-tight truncate">
             {APP_NAME} TUTOR
           </span>
+
+          {demoMode && (
+            <div
+              data-testid="demo-mode-badge"
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-secondary/20 border border-secondary/40 shrink-0 text-secondary font-mono text-[9px] font-bold uppercase tracking-wider"
+              title="Demo Mode active: 20s cooldowns"
+            >
+              DEMO (20s)
+            </div>
+          )}
 
           {/* Live Status Badge */}
           {isContest ? (

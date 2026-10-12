@@ -35,6 +35,10 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
   const [countdown, setCountdown] = useState(retryAfterSeconds);
 
   useEffect(() => {
+    setCountdown(retryAfterSeconds);
+  }, [retryAfterSeconds]);
+
+  useEffect(() => {
     if (type !== 'rate_limited' || countdown <= 0) return;
     const timer = setInterval(() => {
       setCountdown((prev) => Math.max(0, prev - 1));

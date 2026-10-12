@@ -28,6 +28,7 @@ export const SidePanelApp: React.FC = () => {
   const [pStuck, setPStuck] = useState<number>(0.14);
   const [isContest, setIsContest] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [demoMode, setDemoMode] = useState<boolean>(false);
 
   // Tabs & Navigation
   const [activeTab, setActiveTab] = useState<SidePanelTab>('hints');
@@ -37,6 +38,7 @@ export const SidePanelApp: React.FC = () => {
   const [activeHint, setActiveHint] = useState<Hint | null>(null);
   const [isHintLoading, setIsHintLoading] = useState<boolean>(false);
   const [errorState, setErrorState] = useState<ErrorStateType | null>(null);
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState<number>(3);
 
   // Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -60,6 +62,15 @@ export const SidePanelApp: React.FC = () => {
         setOnboardingComplete(Boolean(res?.state?.completed));
       })
       .catch(() => setOnboardingComplete(true));
+
+    // Fetch settings for demoMode
+    sendToBackground<{ type: string; settings: { demoMode?: boolean } }>({ type: 'GET_SETTINGS' })
+      .then((res) => {
+        if (res?.settings?.demoMode !== undefined) {
+          setDemoMode(Boolean(res.settings.demoMode));
+        }
+      })
+      .catch(() => {});
 
     // Check status & API key
     sendToBackground<{ type: string; status: { hasApiKey: boolean; isContest: boolean } }>({
@@ -221,13 +232,19 @@ export const SidePanelApp: React.FC = () => {
         loadTelemetryAndMastery();
       }
     } catch (err: unknown) {
+      const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: unknown }).code) : '';
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('NO_KEY')) {
+      if (code === 'NO_KEY' || msg.includes('NO_KEY')) {
         setErrorState('no_api_key');
-      } else if (msg.includes('TIMEOUT')) {
+      } else if (code === 'INVALID_KEY' || msg.includes('INVALID_KEY') || msg.includes('403') || msg.includes('permission_denied')) {
+        setErrorState('invalid_key');
+      } else if (code === 'TIMEOUT' || msg.includes('TIMEOUT')) {
         setErrorState('timeout');
-      } else if (msg.includes('RATE_LIMITED')) {
+      } else if (code === 'RATE_LIMITED' || msg.includes('RATE_LIMITED') || msg.includes('429')) {
         setErrorState('rate_limited');
+        setRetryAfterSeconds(3);
+      } else if (code === 'OFFLINE' || msg.includes('OFFLINE') || msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('connection')) {
+        setErrorState('offline');
       } else {
         // Fallback demo scaffold for level progression
         const scaffolds: Record<HintLevel, { text: string; code?: string }> = {
@@ -359,8 +376,13 @@ export const SidePanelApp: React.FC = () => {
   };
 
   const handleOpenSettings = () => {
-    if (chrome.runtime?.openOptionsPage) {
-      chrome.runtime.openOptionsPage();
+    try {
+      const optionsUrl = chrome.runtime?.getURL ? chrome.runtime.getURL('options.html') : 'options.html';
+      window.open(optionsUrl, '_blank');
+    } catch {
+      if (chrome.runtime?.openOptionsPage) {
+        chrome.runtime.openOptionsPage();
+      }
     }
   };
 
@@ -381,6 +403,7 @@ export const SidePanelApp: React.FC = () => {
         isWatching={!isPaused && !isContest}
         isPaused={isPaused}
         isContest={isContest}
+        demoMode={demoMode}
         onTogglePause={handleTogglePause}
         onOpenSettings={handleOpenSettings}
       />
@@ -404,6 +427,7 @@ export const SidePanelApp: React.FC = () => {
           /* Error views (S13.3 - S13.5) */
           <ErrorStateView
             type={errorState}
+            retryAfterSeconds={retryAfterSeconds}
             onRetry={() => handleNextLevel(currentLevel)}
             onOpenSettings={handleOpenSettings}
           />

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Two Sum - LeetCode</title>
+</head>
+<body>
+  <div id="app">
+    <div data-cy="question-title" id="prob-title">1. Two Sum</div>
+    <div class="text-olive" id="prob-diff">Easy</div>
+    <div data-track-load="description_content" id="prob-desc">
+      <p>Given an array of integers <code>nums</code> and an integer <code>target</code>, return indices of the two numbers such that they add up to target.</p>
+    </div>
+    <div class="monaco-editor">
+      <div class="view-lines" id="editor-lines">
+        <div class="view-line">def twoSum(nums, target): pass</div>
+      </div>
+    </div>
+    <div class="controls" style="margin-top: 20px;">
+      <button id="nav-to-problem-2" onclick="navigateToProblem2()">Navigate to Add Two Numbers</button>
+    </div>
+  </div>
+
+  <script>
+    function navigateToProblem2() {
+      history.pushState({ problem: 2 }, 'Add Two Numbers - LeetCode', '/problems/add-two-numbers/');
+      document.title = 'Add Two Numbers - LeetCode';
+      document.getElementById('prob-title').innerText = '2. Add Two Numbers';
+      document.getElementById('prob-diff').innerText = 'Medium';
+      document.getElementById('prob-desc').innerHTML = '<p>You are given two non-empty linked lists representing two non-negative integers.</p>';
+      document.getElementById('editor-lines').innerHTML = '<div class="view-line">def addTwoNumbers(l1, l2): pass</div>';
+      window.dispatchEvent(new Event('popstate'));
+    }
+  </script>
+</body>
+</html>

@@ -35,6 +35,7 @@ interface PopupState {
   acceptRate: number;
   hintsUsedCount: number;
   hintsLeftCount: number;
+  demoMode?: boolean;
 }
 
 const DEFAULT_POPUP_STATE: PopupState = {
@@ -50,6 +51,7 @@ const DEFAULT_POPUP_STATE: PopupState = {
   acceptRate: 0.75,
   hintsUsedCount: 2,
   hintsLeftCount: 4,
+  demoMode: false,
 };
 
 export const PopupApp: React.FC = () => {
@@ -77,6 +79,7 @@ export const PopupApp: React.FC = () => {
           acceptRate: res.acceptRate ?? 0.75,
           hintsUsedCount: res.hintsUsedCount ?? 2,
           hintsLeftCount: res.hintsLeftCount ?? 4,
+          demoMode: Boolean(res.demoMode),
         });
       }
     } catch {
@@ -194,6 +197,15 @@ export const PopupApp: React.FC = () => {
             {APP_NAME}
           </h1>
           {renderVariantBadge()}
+          {state.demoMode && (
+            <span
+              data-testid="popup-demo-mode-badge"
+              className="font-mono text-[9px] font-bold text-secondary px-1.5 py-0.5 rounded bg-secondary/15 border border-secondary/30 shrink-0"
+              title="Demo Mode: 20s cooldowns"
+            >
+              DEMO
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1">

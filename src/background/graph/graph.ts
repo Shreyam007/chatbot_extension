@@ -5,6 +5,7 @@ import { buildContext } from './context-builder';
 import { generateHint } from './generator';
 import { evaluateHint } from './critic';
 import { generateSafeFallback } from './fallback';
+import { LlmError } from '../llm/errors';
 import type {
   AgentGraphState,
   AgentGraphOptions,
@@ -92,6 +93,13 @@ export async function runAgentGraph(
     } catch (genErr) {
       logger.error('hint_generator execution failed', genErr);
       recordNodeTiming('hint_generator', genStart, { error: String(genErr) });
+      const errCode = (genErr as { code?: string })?.code;
+      if (
+        (genErr instanceof LlmError || Boolean(errCode)) &&
+        ['NO_KEY', 'INVALID_KEY', 'RATE_LIMITED', 'OFFLINE'].includes(errCode || '')
+      ) {
+        throw genErr;
+      }
       break;
     }
 

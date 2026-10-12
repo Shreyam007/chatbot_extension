@@ -177,11 +177,14 @@ export function registerBackgroundRouter(handlers: RequestHandlers): () => void 
           sendResponse({ ok: true, data });
         })
         .catch((err) => {
-          logger.error(`Handler error for ${request.type}:`, err);
+          const errCode =
+            err && typeof err === 'object' && 'code' in err && typeof (err as { code: unknown }).code === 'string'
+              ? (err as { code: string }).code
+              : 'HANDLER_ERROR';
           sendResponse({
             ok: false,
             error: {
-              code: 'HANDLER_ERROR',
+              code: errCode,
               message: err instanceof Error ? err.message : 'Unknown handler failure',
             },
           });

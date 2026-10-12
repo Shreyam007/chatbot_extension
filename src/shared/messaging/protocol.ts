@@ -331,6 +331,7 @@ export const GetPopupStateResponseSchema = z.object({
   acceptRate: z.number(),
   hintsUsedCount: z.number(),
   hintsLeftCount: z.number(),
+  demoMode: z.boolean().optional(),
 });
 
 export const GetLocalMetricsRequestSchema = z.object({

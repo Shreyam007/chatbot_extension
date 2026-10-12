@@ -33,7 +33,7 @@ export const leetcodeAdapter: PageAdapter = {
     // 1. Extract problem title
     let title = '';
     const titleElem =
-      doc.querySelector('span.text-title-large') ||
+      doc.querySelector('.text-title-large') ||
       doc.querySelector('div[data-cy="question-title"]') ||
       doc.querySelector('div.text-lg.font-medium') ||
       doc.querySelector('h1');

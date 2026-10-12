@@ -106,8 +106,8 @@ export class GeminiClient {
           // If aborted by user, non-retryable error, or long rate-limit countdown, throw immediately
           if (
             err.code === 'ABORTED' ||
+            err.code === 'RATE_LIMITED' ||
             !err.isRetryable ||
-            (err.code === 'RATE_LIMITED' && (err.retryAfterSeconds ?? 0) > 3) ||
             attempt > maxRetries
           ) {
             throw err;

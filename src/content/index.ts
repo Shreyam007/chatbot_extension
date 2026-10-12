@@ -101,12 +101,12 @@ export class ContentScriptController {
       this.overlay.collapseToFab();
     }
 
-    // 1. Context extraction
-    this.extractAndCacheContext();
-
-    // 2. Start monotonic signal collector
+    // 1. Start monotonic signal collector
     this.collector = new SignalCollector();
     this.collector.start();
+
+    // 2. Context extraction
+    this.extractAndCacheContext();
 
     // 3. Start SPA navigation watcher (EC-022)
     this.navWatcher = new SPANavigationWatcher();
@@ -136,6 +136,7 @@ export class ContentScriptController {
     this.currentContext = this.currentAdapter.extractContext(document, currentUrl);
     if (this.currentContext) {
       logger.info(`Extracted page context: "${this.currentContext.title}" (${this.currentContext.site})`);
+      this.reportSignals();
     } else {
       logger.debug('No coding problem context extracted from current DOM');
     }

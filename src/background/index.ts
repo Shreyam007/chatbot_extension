@@ -87,8 +87,8 @@ export function initBackground() {
       return {
         type: 'STATUS',
         status: {
-          isSupportedSite: false,
-          isContest: false,
+          isSupportedSite: Boolean(latestPageContext && latestPageContext.site !== 'generic'),
+          isContest: Boolean(latestPageContext?.isContest),
           trackingActive: Boolean(settings.trackingEnabled),
           hasApiKey: Boolean(apiKey && apiKey.length > 0),
           selectedModel: settings.model || DEFAULT_AI_MODEL,
@@ -250,6 +250,7 @@ export function initBackground() {
         bucketStats,
         {
           isTabActive: sender?.tab?.active ?? true,
+          demoMode: Boolean(settings.demoMode),
         }
       );
 
@@ -550,6 +551,8 @@ export function initBackground() {
       };
     },
     GET_POPUP_STATE: async () => {
+      const stored = await chrome.storage?.local?.get(['settings']);
+      const settings = stored?.settings || DEFAULT_SETTINGS;
       let activeUrl = latestPageContext?.url || '';
       let domain = latestPageContext ? new URL(latestPageContext.url).hostname : 'leetcode.com';
       let isRestricted = false;
@@ -629,6 +632,7 @@ export function initBackground() {
         acceptRate,
         hintsUsedCount,
         hintsLeftCount,
+        demoMode: Boolean(settings.demoMode),
       };
     },
     DELETE_ALL_DATA: async (_req) => {
