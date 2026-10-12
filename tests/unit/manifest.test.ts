@@ -11,6 +11,10 @@ describe('Built Manifest V3 Validation', () => {
 
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.name).toBe('Unstuck');
+    expect(manifest.version).toBe('1.0.0');
+    expect(manifest.icons?.['16']).toBe('icon-16.png');
+    expect(manifest.icons?.['128']).toBe('icon-128.png');
+    expect(manifest.action?.default_icon?.['16']).toBe('icon-16.png');
     expect(manifest.background?.service_worker).toBe('background.js');
     expect(manifest.action?.default_popup).toBe('popup.html');
     expect(manifest.side_panel?.default_path).toBe('sidepanel.html');
@@ -21,11 +25,13 @@ describe('Built Manifest V3 Validation', () => {
     expect(manifest.permissions).toContain('alarms');
   });
 
-  it('outputs all required html files in unpacked directory', () => {
+  it('outputs all required html files and icons in unpacked directory', () => {
     const outDir = path.resolve(__dirname, '../../.output/chrome-mv3');
     expect(fs.existsSync(path.join(outDir, 'popup.html'))).toBe(true);
     expect(fs.existsSync(path.join(outDir, 'sidepanel.html'))).toBe(true);
     expect(fs.existsSync(path.join(outDir, 'options.html'))).toBe(true);
     expect(fs.existsSync(path.join(outDir, 'background.js'))).toBe(true);
+    expect(fs.existsSync(path.join(outDir, 'icon-16.png'))).toBe(true);
+    expect(fs.existsSync(path.join(outDir, 'icon-128.png'))).toBe(true);
   });
 });

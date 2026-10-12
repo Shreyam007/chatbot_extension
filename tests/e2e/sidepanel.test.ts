@@ -97,7 +97,7 @@ test('Step 10 Side Panel: Render all tabs (Chat, Hints, Trace, Progress, S12 Sol
   // 5. Test Solved Modal (S12)
   await hintsTabBtn.click();
     await page.waitForTimeout(300);
-    const solvedBtn = page.locator('button:has-text("I solved it! 🎉")');
+    const solvedBtn = page.locator('button:has-text("I solved it!")');
     if (await solvedBtn.isVisible()) {
       await solvedBtn.click();
       await page.waitForTimeout(400);

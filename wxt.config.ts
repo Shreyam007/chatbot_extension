@@ -4,7 +4,13 @@ export default defineConfig({
   manifest: {
     name: 'Unstuck',
     description: 'Proactive, explainable tutoring assistant for coding problems.',
-    version: '0.1.0',
+    version: '1.0.0',
+    icons: {
+      16: 'icon-16.png',
+      32: 'icon-32.png',
+      48: 'icon-48.png',
+      128: 'icon-128.png'
+    },
     permissions: ['storage', 'sidePanel', 'alarms', 'activeTab', 'scripting'],
     host_permissions: [
       'https://leetcode.com/*',
@@ -15,7 +21,13 @@ export default defineConfig({
       'http://*/*'
     ],
     action: {
-      default_title: 'Unstuck'
+      default_title: 'Unstuck',
+      default_icon: {
+        16: 'icon-16.png',
+        32: 'icon-32.png',
+        48: 'icon-48.png',
+        128: 'icon-128.png'
+      }
     },
     options_ui: {
       page: 'options.html',

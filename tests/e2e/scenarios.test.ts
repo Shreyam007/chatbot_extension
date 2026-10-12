@@ -364,8 +364,8 @@ test.describe.serial('Step 16: Playwright E2E Scenarios (Scenarios 1-9)', () => 
         await expect(sidepanel.locator('body')).toContainText(/Level 2|Approach|complement/i);
       }
 
-      // User solves problem and clicks "I solved it! 🎉"
-      const solvedBtn = sidepanel.locator('button:has-text("I solved it! 🎉")');
+      // User solves problem and clicks "I solved it!"
+      const solvedBtn = sidepanel.locator('button:has-text("I solved it!")');
       await expect(solvedBtn).toBeVisible();
       await solvedBtn.click();
 
@@ -420,7 +420,8 @@ test.describe.serial('Step 16: Playwright E2E Scenarios (Scenarios 1-9)', () => 
       const sidepanel = await context.newPage();
       await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`, { waitUntil: 'load' });
 
-      const exportRes = await sidepanel.evaluate(async () => {
+      // Step A: Assert first auto-dismiss recorded ignore feedback
+      const exportRes1 = await sidepanel.evaluate(async () => {
         return chrome.runtime.sendMessage({ type: 'EXPORT_DATA' }) as Promise<{
           ok?: boolean;
           data?: {
@@ -434,13 +435,87 @@ test.describe.serial('Step 16: Playwright E2E Scenarios (Scenarios 1-9)', () => 
         }>;
       });
 
-      const exportData = exportRes?.data?.exportData ?? exportRes?.exportData;
-      const banditStats = exportData?.banditStats;
-      expect(banditStats).toBeDefined();
-      const bucket = Object.values(banditStats || {})[0];
-      expect(bucket).toBeDefined();
-      expect(bucket!.ignore).toBeGreaterThanOrEqual(1);
-      expect(bucket!.n).toBeGreaterThanOrEqual(1);
+      const exportData1 = exportRes1?.data?.exportData ?? exportRes1?.exportData;
+      const banditStats1 = exportData1?.banditStats || {};
+      const bucketEntries = Object.entries(banditStats1);
+      expect(bucketEntries.length).toBeGreaterThanOrEqual(1);
+      const [bucketKey, bucketStats1] = bucketEntries[0]!;
+      expect(bucketStats1.ignore).toBeGreaterThanOrEqual(1);
+
+      // Step B: Simulate repeated consecutive dismissals in this same context bucket
+      await sidepanel.evaluate(async (bucket) => {
+        await chrome.runtime.sendMessage({
+          type: 'RECORD_FEEDBACK',
+          contextBucket: bucket,
+          action: 'dismiss',
+          site: 'leetcode',
+        });
+        await chrome.runtime.sendMessage({
+          type: 'RECORD_FEEDBACK',
+          contextBucket: bucket,
+          action: 'dismiss',
+          site: 'leetcode',
+        });
+      }, bucketKey);
+
+      // Step C: Verify updated bandit statistics and degraded expected reward Q(s)
+      const exportRes2 = await sidepanel.evaluate(async () => {
+        return chrome.runtime.sendMessage({ type: 'EXPORT_DATA' }) as Promise<{
+          ok?: boolean;
+          data?: {
+            exportData?: {
+              banditStats?: Record<string, { accept: number; dismiss: number; ignore: number; n: number }>;
+            };
+          };
+          exportData?: {
+            banditStats?: Record<string, { accept: number; dismiss: number; ignore: number; n: number }>;
+          };
+        }>;
+      });
+
+      const exportData2 = exportRes2?.data?.exportData ?? exportRes2?.exportData;
+      const updatedBucketStats = exportData2?.banditStats?.[bucketKey];
+      expect(updatedBucketStats).toBeDefined();
+      expect(updatedBucketStats!.dismiss).toBeGreaterThanOrEqual(2);
+      expect(updatedBucketStats!.n).toBeGreaterThanOrEqual(3);
+
+      // Empirical expected reward Q(s, nudge_now) must be negative and below -0.15 threshold
+      const qNudge =
+        (updatedBucketStats!.accept * 1.0 +
+          updatedBucketStats!.dismiss * -1.0 +
+          updatedBucketStats!.ignore * -0.5) /
+        updatedBucketStats!.n;
+      expect(qNudge).toBeLessThan(-0.15);
+
+      // Step D: Verify that the bandit policy now throttles nudges (elects 'wait' / show === false)
+      const decisionCheck = await background.evaluate(async (bKey) => {
+        const req = indexedDB.open('unstuck_db', 1);
+        return new Promise<{ show: boolean; reason: string; expectedReward: number }>((resolve) => {
+          req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction('bandit', 'readonly');
+            const store = tx.objectStore('bandit');
+            const getReq = store.get(bKey);
+            getReq.onsuccess = () => {
+              const stats = getReq.result as { accept: number; dismiss: number; ignore: number; n: number } | undefined;
+              const current = stats && stats.n > 0 ? stats : { accept: 0, dismiss: 0, ignore: 0, n: 1 };
+              const q = (current.accept * 1.0 + current.dismiss * -1.0 + current.ignore * -0.5) / current.n;
+              const willWait = q < -0.15;
+              resolve({
+                show: !willWait,
+                reason: willWait
+                  ? 'Bandit policy elected to wait based on historical dismiss feedback'
+                  : 'Nudge approved',
+                expectedReward: q,
+              });
+            };
+          };
+        });
+      }, bucketKey);
+
+      expect(decisionCheck.expectedReward).toBeLessThan(-0.15);
+      expect(decisionCheck.show).toBe(false);
+      expect(decisionCheck.reason).toContain('Bandit policy elected to wait');
     } finally {
       await context.close();
     }

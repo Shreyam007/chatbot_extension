@@ -271,7 +271,7 @@ Per `ANTIGRAVITY.md` specification:
     - 4-level pedagogical stepper (L1 Direct, L2 Approach, L3 Pseudo, L4 Full Solution).
     - Confidence badge with hover tooltip explaining verification confidence.
     - Critic verification badge ("Checked by Critic: No spoiler code detected").
-    - Action buttons (`Next hint (L...)`, `Make it more direct`, `I solved it! 🎉`).
+    - Action buttons (`Next hint (L...)`, `Make it more direct`, `I solved it!`).
     - Feedback rating with thumbs down expansion into reason chips (`Too vague`, `Gave too much`, `Wrong direction`, `Other`).
     - **L4 Double Confirmation Guard**: Level 4 unlocks a confirmation card ("Guarded: Level 4 reveals the full solution code. Are you sure?") requiring explicit user confirmation before exposing working code.
     - **S06 Agent Loading Skeleton**: Pulsing placeholder with critic verification status during generation.
@@ -416,4 +416,27 @@ Per `ANTIGRAVITY.md` specification:
   1. **Production Purity:** Zero mock hooks, debug flags, or test bypasses exist in `src/` or the production bundle (`.output/chrome-mv3`).
   2. **End-to-End Realism:** Network calls traverse the real `GeminiClient`, parse real responses and headers, pass through the real multi-agent Critic and grounding guardrails, and propagate through the message bus to React components.
   3. **Verification:** Proven by inspecting `.output/chrome-mv3` after a normal production build and asserting that the exact mocked response reaches the Side Panel UI.
+
+---
+
+## 19. Packaging, Documentation & v1.0.0 Release (Step 17)
+
+- **Strict Emoji Deprecation:**
+  - Completely purged emojis from the codebase, user interface, prompt templates, tests, and documentation in favor of Lucide icon primitives (`CheckCircle2`, `Compass`, `AlertTriangle`, etc.).
+- **Strengthened Ignored Nudge Dynamics (Scenario 2):**
+  - Updated E2E scenario 2 to assert on internal bandit statistics storage, negative reward penalties (-0.5 per ignored countdown), and degraded expected reward $Q(s) < -0.15$ resulting in planner suppression (`decision.show === false`).
+- **Zero Mock Mode in Production:**
+  - Clarified throughout `VIVA_NOTES.md` and documentation that the production extension contains zero simulated or fake modes. Live demo fallbacks are strictly `npm run eval` and verified screen recordings.
+- **Brand Assets & Manifest V3 Icons:**
+  - Designed vector SVG icon (`assets/icon.svg`) featuring a green algorithmic knot loosening into a guided line (#22C55E on #0F172A slate).
+  - Generated crisp PNGs at 16px, 32px, 48px, and 128px in `public/` and `assets/icons/`. Wired into `wxt.config.ts`.
+- **Packaging Pipeline:**
+  - Configured `npm run build` and `npm run zip` yielding `.output/unstuck-1.0.0-chrome.zip` (232.24 kB). Verified 18 files, zero source maps, zero test files, zero `.env`.
+- **Packaged Build Smoke Test:**
+  - Added `tests/e2e/smoke-package.test.ts`, which extracts the production zip to a temporary folder and runs Playwright tests verifying all entry points (Options, Side Panel, Popup, Onboarding) mount without error.
+- **Documentation Suite:**
+  - Created `docs/PERMISSIONS.md` (least-privilege justifications), `docs/MANUAL_QA.md` (step-by-step Chrome checklist), and `docs/PRIVACY.md` (plain-language data notice).
+  - Expanded `docs/ARCHITECTURE.md` with Steps 14–16 and Mermaid diagrams.
+  - Expanded `docs/VIVA_NOTES.md` with 35 viva Q&As, honest upfront weaknesses, and contingency protocols.
+
 

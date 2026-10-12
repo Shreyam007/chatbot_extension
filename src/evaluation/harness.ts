@@ -87,8 +87,7 @@ export function runEvaluation(options: { seed?: number; problems?: BenchmarkProb
       const agreed = criticPass === item.expectedCriticPass;
 
       // Add reproducible jitter to simulate token processing latency (40ms - 120ms)
-      const measured = performance.now() - start;
-      const jitterMs = Math.round(40 + prng() * 80 + measured * 10);
+      const jitterMs = Math.round(40 + prng() * 80);
 
       const res: CandidateEvaluationResult = {
         problemId: prob.id,

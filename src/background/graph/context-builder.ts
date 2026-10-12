@@ -38,7 +38,7 @@ export function buildContext(state: AgentGraphState): string {
   let feedbackSection = '';
   if (retryCount > 0 && criticResult && !criticResult.pass) {
     feedbackSection =
-      `\n⚠️ PREVIOUS ATTEMPT REJECTED BY CRITIC:\n` +
+      `\n[CRITIC REJECTION FEEDBACK]:\n` +
       `Reason: ${criticResult.reason}\n` +
       `You MUST correct this flaw in your new response. If Level 1 or 2, verify you contain ZERO code or function signatures.\n`;
   }

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <rect width="128" height="128" rx="28" fill="#0F172A"/>
+  <!-- Unstuck mark: A knot on the left loosening smoothly into a straight, forward line -->
+  <path
+    d="M 28 84 C 28 60 52 42 66 64 C 74 76 68 96 52 94 C 36 92 38 68 56 50 C 70 36 86 52 98 52 L 106 52"
+    fill="none"
+    stroke="#22C55E"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="106" cy="52" r="3" fill="#22C55E" />
+</svg>

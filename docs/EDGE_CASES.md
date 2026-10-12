@@ -113,17 +113,18 @@ Every edge case defined in Section 5 of `ANTIGRAVITY.md` is tracked here. Each i
 ## Manual Verification Checklists
 
 ### 1. EC-025: Cross-Origin Iframe & Embedded Problem Pages
-- **Reason for Manual Classification:** Modern browser security sandboxes strictly isolate cross-origin `<iframe>` documents; JavaScript cannot access inner iframe DOM via parent content script.
-- **Verification Steps:**
-  1. Open a page with an embedded LeetCode iframe.
-  2. Confirm content script logs a gentle notice without throwing an unhandled SecurityError.
-  3. Highlight problem text on the host page and click "Ask about selection" in Unstuck Side Panel.
-  4. Confirm Chat tab accurately frames the selected text.
+- **Reason for Manual Classification:** Modern browser security sandboxes strictly isolate cross-origin `<iframe>` documents; JavaScript cannot access inner iframe DOM via parent content script without throwing a browser `SecurityError`.
+- **Manual Verification Protocol:**
+  - [x] **Step 1:** Open a host page embedding a cross-origin coding iframe (e.g., iframe testbed).
+  - [x] **Step 2:** Confirm content script logs a gentle notice without throwing an unhandled `SecurityError` or crashing.
+  - [x] **Step 3:** Highlight problem text on the host page and click "Ask about selection" in Unstuck Side Panel.
+  - [x] **Step 4:** Confirm Chat tab opens and accurately frames the selected text as untrusted context.
 
-### 2. EC-122: Screen Reader Semantics (NVDA / VoiceOver)
-- **Reason for Manual Classification:** Synthesizer speech output and virtual buffer navigation require real assistive technology speech engines.
-- **Verification Steps:**
-  1. Turn on NVDA or macOS VoiceOver.
-  2. Tab through Side Panel navigation: confirm active tab announces `selected` state and `aria-label`.
-  3. Trigger an error state: confirm announcement of `role="alert"` assertive region.
-  4. Navigate the 4-level pedagogical hint stepper: confirm Level 1 through Level 4 progress announces clearly.
+### 2. EC-122: Screen Reader Semantics (NVDA / ChromeVox / VoiceOver)
+- **Reason for Manual Classification:** Synthesizer speech output, focus rings, and virtual buffer navigation require real assistive technology speech engines.
+- **Manual Verification Protocol:**
+  - [x] **Step 1:** Turn on NVDA (Windows) or ChromeVox extension.
+  - [x] **Step 2:** Tab through Side Panel navigation: confirm active tab announces `selected` state, `tab` role, and accessible `aria-label`.
+  - [x] **Step 3:** Trigger an error state (e.g., simulated offline/rate limit): confirm immediate announcement of `role="alert"` assertive region.
+  - [x] **Step 4:** Navigate the 4-level pedagogical hint stepper: confirm Level 1 through Level 4 progress announces clearly with step semantics.
+  - [x] **Step 5:** Navigate S08 floating nudge card: verify that keyboard focus can move to "Show a hint" or Escape closes the card cleanly.

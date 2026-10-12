@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Code2,
   Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 import type { Hint, HintLevel } from '../../shared/schemas/hints';
 
@@ -326,9 +327,10 @@ export const HintsTab: React.FC<HintsTabProps> = ({
           {/* Solved It Action */}
           <button
             onClick={onSolved}
-            className="w-full py-1 text-center font-mono text-xs text-primary hover:text-primary-fixed hover:underline transition-all flex items-center justify-center gap-1"
+            className="w-full py-1 text-center font-mono text-xs text-primary hover:text-primary-fixed hover:underline transition-all flex items-center justify-center gap-1.5"
           >
-            <span>I solved it! 🎉</span>
+            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+            <span>I solved it!</span>
           </button>
         </section>
       )}

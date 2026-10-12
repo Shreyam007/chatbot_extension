@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   ChevronRight,
   ChevronDown,
+  Compass,
 } from 'lucide-react';
 import type { HintLevel } from '../../shared/schemas/hints';
 
@@ -120,9 +121,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
               >
                 <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-mono text-[10px]">
-                    🧭
-                  </span>
+                  <Compass className="w-4 h-4 text-secondary" />
                   <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
                     Give me a direction
                   </span>

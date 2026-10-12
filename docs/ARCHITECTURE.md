@@ -41,17 +41,61 @@
                       +-----------------------------+
 ```
 
-## 2. Multi-Agent Reasoning Graph
+## 2. Multi-Agent Reasoning Graph & Message Flow
 
+### Multi-Agent StateGraph
+
+```mermaid
+flowchart TD
+    Signals[Behavioral Signals<br/>Dwell, Scroll, Submissions] --> Detector[Detector Agent<br/>Logistic Regression]
+    Detector -->|Not Stuck p < 0.60| EndNoOp[No Action]
+    Detector -->|Stuck p >= 0.60| Planner[Planner Agent<br/>Gates + Contextual Bandit]
+    Planner -->|Hard Gates Violated / Wait| EndNoOp
+    Planner -->|Expected Utility >= 0.50| Nudge[S08 Nudge Card<br/>Shadow DOM Overlay]
+    Nudge -->|Dismiss / Esc| BanditNeg[Bandit Update -1.0]
+    Nudge -->|Ignore 8s| BanditIgnore[Bandit Update -0.5]
+    Nudge -->|Accept 'Show a hint'| ContextBuilder[Context Builder Agent<br/>Safety Isolation & Truncation]
+    ContextBuilder --> HintGen[Hint Generator Agent<br/>Tiered Pedagogical Prompts]
+    HintGen --> Critic{Dual Critic Agent<br/>Leak & Grounding Check}
+    Critic -->|Pass| Deliver[Deliver Hint<br/>Render in Side Panel]
+    Critic -->|Fail & Retries < 3| HintGen
+    Critic -->|Fail & Retries >= 3| SafeFallback[Safe Fallback Agent<br/>Confidence 0.35 Disclaimer]
+    SafeFallback --> Deliver
+    Deliver --> UserFeedback[User Feedback<br/>Thumbs Up/Down, Solved]
+    UserFeedback --> BanditPos[Bandit Update +1.0]
+    UserFeedback --> BKT[BKT Mastery Update]
 ```
-signals -> detector -> [stuck? no -> END]
-                       [yes] -> planner -> [should_nudge? no -> END]
-                                [yes] -> nudge shown -> (user accepts) ->
- context_builder -> hint_generator -> critic
-      critic.pass        -> deliver
-      critic.fail (<=2)  -> hint_generator (with critic feedback)
-      critic.fail (>2)   -> safe_fallback -> deliver (generic scaffold, flagged low confidence)
- deliver -> feedback -> bandit_update + mastery_update
+
+### Chrome MV3 Message Flow Architecture
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Page as Web Page (LeetCode/CF)
+    participant CS as Content Script (Isolated)
+    participant SW as Service Worker (MV3 Orchestrator)
+    participant SP as Side Panel / Popup UI
+    participant Gemini as Google Gemini REST API
+
+    Page->>CS: User interaction (typing, scrolling, submits)
+    CS->>SW: EMIT_SIGNALS (dwellMs, scrollReversals, wrongSubmits)
+    SW->>SW: Detector Evaluates p(stuck)
+    SW->>SW: Planner Checks Policy Gates & Bandit Q(s)
+    opt Planner Approves Nudge
+        SW->>CS: SHOW_NUDGE (overlay props, timeout 8s)
+        CS->>Page: Renders S08 Card in Shadow DOM
+        Page->>CS: User clicks "Show a hint"
+        CS->>SW: NUDGE_ACCEPTED
+        SW->>SP: OPEN_SIDE_PANEL / SYNC_STATE
+    end
+    SP->>SW: REQUEST_HINT (targetLevel, problemId)
+    SW->>SW: context_builder builds untrusted context
+    SW->>Gemini: fetch POST generateContent (API key from local storage)
+    Gemini-->>SW: Raw LLM Response (JSON)
+    SW->>SW: Dual Critic Verifies (No code leak at L1/L2, grounded quotes)
+    SW->>SP: HINT_DELIVERED (hint payload, trace metadata)
+    SP->>SW: USER_FEEDBACK (helpful / unhelpful / solved)
+    SW->>SW: Update IndexedDB (Bandit reward & BKT mastery)
 ```
 
 ## 3. Storage Model
@@ -527,6 +571,104 @@ Unstuck computes latent knowledge mastery states $P(L_t) \in [0.01, 0.99]$ acros
 - Recommends targeted canonical problem sets and conceptual study tips:
   - **Dynamic Programming ($P(L) < 0.60$):** Canonical practice: LC 300, LC 322. Tip: *"Focus on defining clear state transitions and identifying base cases."*
   - **Binary Search ($P(L) < 0.60$):** Canonical practice: LC 33, LC 153. Tip: *"Verify loop invariants (left <= right vs left < right) and boundary updates carefully."*
+
+---
+
+## 13. Error Boundary Hardening & Fault Tolerance (Step 14)
+
+### Component Isolation & Crash Containment
+To guarantee that an unexpected runtime exception in one part of the UI never unmounts the entire extension, Unstuck deploys tab-scoped and section-scoped React Error Boundaries (`src/sidepanel/components/ErrorBoundary.tsx`):
+- **Tab-Level Isolation:** Each major view (`ChatTab`, `HintsTab`, `TraceTab`, `ProgressTab`, and `OptionsApp` sections) is wrapped in its own `ErrorBoundary`. A crash in the SVG sparkline renderer in `ProgressTab` leaves `HintsTab` and `ChatTab` completely operational.
+- **Graceful Recovery:** The fallback view displays a clear error state, a single-click "Retry" button that resets component error state without requiring a full extension reload, and a "Copy Diagnostics" action.
+
+### Secret-Scrubbing Diagnostics Pipeline
+The diagnostic payload generator captures error metadata for debugging while strictly sanitizing confidential user data:
+1. **Redaction Engine:** Passes all error message strings, component stacks, and state snapshots through regex sanitizers stripping Google Gemini API keys (`AIzaSy...`), OpenAI keys (`sk-...`), and HTTP Bearer tokens.
+2. **Contextual Metadata:** Includes extension version, browser user agent, active tab URL pathname (with query parameters and tokens stripped), and high-level agent state.
+3. **Local Storage Only:** Diagnostics are never automatically phoned home to any cloud server; they can only be copied to the local clipboard by explicit user action.
+
+---
+
+## 14. Metrics Aggregation & Evaluation Harness (Step 15)
+
+### Telemetry & Bandit Data Flow
+
+```mermaid
+flowchart LR
+    subgraph Client Signals
+        Dwell[Active Dwell]
+        Scroll[Scroll Reversals]
+        Submissions[Wrong Submissions]
+    end
+    subgraph Service Worker Telemetry
+        Detector[Logistic Detector]
+        Planner[Planner Gates & Bandit]
+        Metrics[Aggregator / Buffer]
+    end
+    subgraph Local Storage
+        IDB[(IndexedDB unstuck_store_v2<br/>events, hints, bandit, bkt)]
+    end
+    subgraph Evaluation & Export
+        CSV[CSV Exporter]
+        JSON[JSON Exporter]
+        MD[Markdown Table]
+        Harness[Eval Harness CLI<br/>npm run eval]
+    end
+    Dwell --> Detector
+    Scroll --> Detector
+    Submissions --> Detector
+    Detector --> Planner
+    Planner --> IDB
+    Planner --> Metrics
+    IDB --> CSV
+    IDB --> JSON
+    IDB --> MD
+    Harness --> MD
+```
+
+### Metrics Engine & Data Formats
+The telemetry subsystem aggregates operational metrics in local IndexedDB tables:
+- **Events Tracked:** `nudge_shown`, `nudge_accepted`, `nudge_dismissed`, `nudge_ignored`, `hint_delivered`, `hint_feedback`, `problem_solved`.
+- **Computed Indicators:**
+  - Nudge Acceptance Rate: $\frac{\text{Accepted}}{\text{Shown}}$
+  - Ignored Nudge Decay: Tracking bandit discount on repeated dismissals
+  - Hint Level Depth Distribution: L1 (Conceptual) vs L2 (Approach) vs L3 (Pseudocode) vs L4 (Code)
+  - Time-to-Solve: Duration from first signal capture to accepted verdict
+- **Multi-Format Export:**
+  - **JSON:** Complete raw telemetry dump for programmatic analysis.
+  - **CSV:** Tabular format optimized for spreadsheet imports (Excel, Google Sheets).
+  - **Markdown:** Clean human-readable summary tables directly pasteable into documentation.
+
+### Offline Evaluation Harness (`npm run eval`)
+The offline benchmark testbed runs against 15 canonical problem scenarios across 4 key evaluation categories:
+1. **Compliant Hints (L1–L4):** Validates that Socratic hints pass the Critic with 100% precision without false alarms.
+2. **Leaky Hint Candidates:** Tests Critic leak detection against code syntax, function signatures, and Markdown code blocks.
+3. **Ungrounded Candidates:** Verifies that hints citing hallucinated constraints or external libraries are intercepted.
+4. **Adversarial Prompt Injections:** Ensures that jailbreak attempts embedded in problem descriptions or user code are sanitized and safely rejected.
+
+---
+
+## 15. End-to-End Testing & Verification Architecture (Step 16)
+
+### Playwright Chromium Extension Testing Framework
+Testing Manifest V3 extensions requires native Chromium execution with the extension unpacked:
+- **Test Context:** Playwright launches Chromium with `--disable-extensions-except=.output/chrome-mv3` and `--load-extension=.output/chrome-mv3`.
+- **Service Worker Interception:** Network routes to `generativelanguage.googleapis.com` are intercepted deterministically to mock Gemini responses (valid hints, HTTP 429 rate limit with `Retry-After`, HTTP 400 invalid key, timeouts).
+- **Multi-Surface Coordination:** Tests coordinate across host web pages, Shadow-DOM overlays, the side panel (`chrome-extension://<id>/sidepanel.html`), and options pages (`options.html`).
+
+### Verified E2E Scenario Battery
+1. **Happy Path:** Stuck detection triggers S08 overlay -> User accepts -> Level 1 conceptual hint delivered -> User requests Level 2 -> Problem solved summary modal (S12) updates mastery.
+2. **Ignored Nudges:** Overlay displays 8-second countdown bar -> Times out and auto-dismisses -> Contextual bandit records negative reward -> Expected reward $Q(s)$ degrades -> Subsequent nudges suppressed.
+3. **Contest Fair Play:** Navigation to LeetCode `/contest/` or Codeforces contest page immediately locks the extension -> S14.2 Contest shield active -> Overlay suppressed.
+4. **Offline Resilience:** Disconnection triggers S13.2 banner -> Local signal collection remains active without uncaught network exceptions.
+5. **Rate Limiting:** HTTP 429 response triggers S13.3 countdown timer derived from `Retry-After` -> Button automatically re-enables when the timer expires.
+6. **Key Validation:** Invalid Gemini API key triggers S13.1 error state with direct navigation link to Options BYOK configuration.
+7. **DOM Resilience:** Malformed or unrecognized host DOM triggers graceful adapter fallback without crashing the extension.
+8. **SPA Navigation:** Switching problems on LeetCode/Codeforces resets dwell signals and active hints while preserving prior conversation history in local storage.
+9. **Chaos Resilience:** Killing the background service worker mid-session tests instant state rehydration from `chrome.storage.session` and IndexedDB.
+10. **Multi-Tab Isolation:** Independent problem tabs maintain segregated signal windows, in-flight hint requests, and UI state without cross-talk.
+11. **Packaged Smoke Test:** Automated test extracts `.output/unstuck-1.0.0-chrome.zip` to a temporary directory and loads it into Chromium to verify that the release package boots all entry points cleanly.
+
 
 
 
