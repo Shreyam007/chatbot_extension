@@ -76,6 +76,7 @@ export const RequestHintRequestSchema = z.object({
   level: HintLevelSchema,
   problemHash: z.string().min(1),
   userQuery: z.string().max(2000).optional(),
+  requestId: z.string().optional(),
 });
 
 export const RequestHintResponseSchema = z.object({
@@ -149,6 +150,7 @@ export const RecordFeedbackResponseSchema = z.object({
 export const CancelGenerationRequestSchema = z.object({
   type: z.literal('CANCEL_GENERATION'),
   tabId: z.number().optional(),
+  requestId: z.string().optional(),
 });
 
 export const CancelGenerationResponseSchema = z.object({
@@ -186,6 +188,7 @@ export const SubmitChatQueryRequestSchema = z.object({
   query: z.string().min(1).max(2000),
   problemHash: z.string().min(1),
   level: HintLevelSchema.optional(),
+  requestId: z.string().optional(),
 });
 
 export const SubmitChatQueryResponseSchema = z.object({
@@ -194,6 +197,8 @@ export const SubmitChatQueryResponseSchema = z.object({
   groundedQuote: z.string().optional(),
   confidence: z.number().min(0).max(1),
   codeBlock: z.string().optional(),
+  criticChecked: z.boolean().optional(),
+  answerable_from_page: z.boolean().optional(),
 });
 
 export const GetRunTracesRequestSchema = z.object({

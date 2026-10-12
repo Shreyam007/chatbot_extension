@@ -45,17 +45,44 @@ describe('Step 3: Onboarding State & API Key Testing', () => {
       expect(result.error).toContain('cannot be empty');
     });
 
-    it('succeeds for valid mock keys used in testing and offline mode', async () => {
-      const result = await testGeminiApiKey('mock_gemini_api_key');
-      expect(result.success).toBe(true);
-      expect(result.latencyMs).toBeGreaterThan(0);
-      expect(result.supportedModels).toContain('models/gemini-2.5-flash');
+    it('succeeds for valid keys returning model listing', async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          models: [{ name: 'models/gemini-2.5-flash' }, { name: 'models/gemini-1.5-flash' }],
+        }),
+      });
+      try {
+        const result = await testGeminiApiKey('some_key_string_for_testing');
+        expect(result.success).toBe(true);
+        expect(result.latencyMs).toBeGreaterThanOrEqual(0);
+        expect(result.supportedModels).toContain('models/gemini-2.5-flash');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
     });
 
-    it('rejects simulated invalid mock keys with descriptive error', async () => {
-      const result = await testGeminiApiKey('mock_invalid_api_key');
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('PERMISSION_DENIED');
+    it('rejects invalid keys with descriptive error from API response', async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        json: async () => ({
+          error: {
+            status: 'PERMISSION_DENIED',
+            message: 'API key not valid. Please pass a valid API key.',
+          },
+        }),
+      });
+      try {
+        const result = await testGeminiApiKey('invalid_key_string_for_testing');
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('PERMISSION_DENIED');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
     });
 
     it('handles simulated Google AI API response parsing', async () => {

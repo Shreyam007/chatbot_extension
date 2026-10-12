@@ -655,7 +655,7 @@ describe('Agent Graph & Dual Critic (Step 9)', () => {
 
     for (const sample of LABELLED_SAMPLES) {
       const isLeak = checkHeuristicLeak(sample.candidate, sample.level);
-      const isGrounded = checkGrounding(sample.candidate.groundedQuote, SAMPLE_PROBLEM_STATEMENT);
+      const isGrounded = checkGrounding(sample.candidate.groundedQuote || '', SAMPLE_PROBLEM_STATEMENT);
 
       if (isLeak !== sample.expectedLeak || isGrounded !== sample.expectedGrounded) {
         console.error(
@@ -700,7 +700,7 @@ describe('Agent Graph & Dual Critic (Step 9)', () => {
     expect(ungroundedSamples.length).toBe(8);
 
     for (const sample of ungroundedSamples) {
-      const isGrounded = checkGrounding(sample.candidate.groundedQuote, SAMPLE_PROBLEM_STATEMENT);
+      const isGrounded = checkGrounding(sample.candidate.groundedQuote || '', SAMPLE_PROBLEM_STATEMENT);
       expect(isGrounded).toBe(false);
     }
   });

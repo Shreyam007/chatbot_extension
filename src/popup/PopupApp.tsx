@@ -39,18 +39,17 @@ interface PopupState {
 }
 
 const DEFAULT_POPUP_STATE: PopupState = {
-  variant: 'active',
-  siteDomain: 'leetcode.com/problems/two-sum',
-  url: 'https://leetcode.com/problems/two-sum',
-  problemTitle: 'Two Sum',
+  variant: 'unsupported',
+  siteDomain: '',
+  url: '',
   isContest: false,
   isPaused: false,
   isSnoozed: false,
-  nudgesCount: 4,
-  acceptedCount: 3,
-  acceptRate: 0.75,
-  hintsUsedCount: 2,
-  hintsLeftCount: 4,
+  nudgesCount: 0,
+  acceptedCount: 0,
+  acceptRate: 0,
+  hintsUsedCount: 0,
+  hintsLeftCount: 0,
   demoMode: false,
 };
 
@@ -65,20 +64,20 @@ export const PopupApp: React.FC = () => {
       if (res && res.variant) {
         setState({
           variant: res.variant,
-          siteDomain: res.siteDomain || 'leetcode.com/problems/two-sum',
+          siteDomain: res.siteDomain || '',
           url: res.url || '',
-          problemTitle: res.problemTitle || 'Two Sum',
+          problemTitle: res.problemTitle,
           problemUrl: res.problemUrl,
           isContest: Boolean(res.isContest),
           isPaused: Boolean(res.isPaused),
           isSnoozed: Boolean(res.isSnoozed),
           pauseRemainingMs: res.pauseRemainingMs,
           pauseElapsedMs: res.pauseElapsedMs,
-          nudgesCount: res.nudgesCount ?? 4,
-          acceptedCount: res.acceptedCount ?? 3,
-          acceptRate: res.acceptRate ?? 0.75,
-          hintsUsedCount: res.hintsUsedCount ?? 2,
-          hintsLeftCount: res.hintsLeftCount ?? 4,
+          nudgesCount: res.nudgesCount ?? 0,
+          acceptedCount: res.acceptedCount ?? 0,
+          acceptRate: res.acceptRate ?? 0,
+          hintsUsedCount: res.hintsUsedCount ?? 0,
+          hintsLeftCount: res.hintsLeftCount ?? 0,
           demoMode: Boolean(res.demoMode),
         });
       }

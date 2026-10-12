@@ -274,6 +274,15 @@ If $U(s) < 0.50$, the planner suppresses the nudge. If $U(s) \ge 0.50$, it queri
 #### Q31: How do React Error Boundaries ensure fault isolation?
 **Answer:** Every major tab and panel is wrapped in an independent `ErrorBoundary`. If an uncaught rendering error occurs in the Trace tab's SVG canvas, only that tab displays a fallback error card; the Hints and Chat tabs continue functioning normally without unmounting the root application.
 
+#### Q32: In v1.0.0, why did all side panel chat queries return a canned Two Sum response, and how was this resolved in v1.0.1?
+**Answer:** In v1.0.0, the message bus enforced a hard 10-second timeout. Multi-agent StateGraph runs under live LLM latency took 10–12 seconds, causing the promise to reject. A UI `catch` block in `SidePanelApp` had been populated with a hardcoded Two Sum scaffold with `criticChecked: true` rather than surfacing an honest error. Concurrently, the generator prompt strictly mandated verbatim quotes even for off-topic questions (e.g., *"who invented this problem"*), failing Critic grounding and exhausting retries.
+In v1.0.1, we resolved this through five structural fixes:
+1. Expanded generation bus timeout to 35 seconds with `requestId` tracking and cancellation support.
+2. Structured off-topic question answering (`answerable_from_page: false`, optional `groundedQuote`).
+3. Implemented deterministic short-circuiting in the Critic to eliminate wasted LLM judge latency when heuristic leaks or grounding fail.
+4. Completely purged all fabricated mock data and hardcoded scaffolds across the codebase, replacing them with typed S13.x error cards and interactive Retry actions.
+5. Added a bundle sentinel test that audits production artifacts for forbidden canned strings.
+
 ---
 
 ## 6. Upfront Weaknesses & Technical Limitations (Honest Self-Critique)

@@ -27,7 +27,12 @@ export async function runAgentGraph(
   options: AgentGraphOptions = {}
 ): Promise<{ hint: Hint; trace: AgentRunTrace }> {
   const startTime = Date.now();
-  const maxRetries = options.maxRetries ?? LIMITS.MAX_CRITIC_RETRIES; // default 2
+  // Chat queries cap retries to 1 for interactive responsiveness; hints allow configured retries (default 2)
+  const maxRetries = options.maxRetries ?? (options.userQuery ? 1 : LIMITS.MAX_CRITIC_RETRIES);
+  const timeoutMs = options.timeoutMs ?? 30000;
+  const deadlineMs = startTime + timeoutMs;
+  const MAX_TOTAL_LLM_CALLS = options.userQuery ? 4 : 8;
+  let totalLlmCalls = 0;
   const problemHash = context.url;
 
   const trace: AgentRunTrace = {
@@ -58,11 +63,19 @@ export async function runAgentGraph(
     const timing: TraceNodeTiming = {
       node,
       startTime: nodeStart,
-      durationMs: Date.now() - nodeStart,
+      durationMs: Math.max(1, Date.now() - nodeStart),
       details,
     };
     trace.nodeTimings.push(timing);
   }
+
+  // Record initial telemetry pipeline stages for XAI transparency
+  const siteName = context.site || 'leetcode';
+  recordNodeTiming('detector', startTime, { triggered: true });
+  recordNodeTiming('planner', startTime, {
+    selectedAction: `nudge_with_level_${level}`,
+    bucket: `${siteName}:high:intermediate`,
+  });
 
   // --- NODE 1: context_builder ---
   const cbStart = Date.now();
@@ -76,15 +89,24 @@ export async function runAgentGraph(
   let deliveredHint: Hint | undefined;
 
   while (state.retryCount <= maxRetries) {
+    if (Date.now() >= deadlineMs || totalLlmCalls >= MAX_TOTAL_LLM_CALLS) {
+      logger.warn(
+        `Budget or deadline reached (calls=${totalLlmCalls}/${MAX_TOTAL_LLM_CALLS}, elapsed=${Date.now() - startTime}ms); falling back`
+      );
+      break;
+    }
+
     // NODE 2: hint_generator
     const genStart = Date.now();
     logger.debug(`Executing hint_generator (attempt ${state.retryCount + 1}/${maxRetries + 1})`);
+    totalLlmCalls++;
 
     try {
       state.candidateHint = await generateHint(state, {
         model: options.model,
         tabId: options.tabId,
         apiKey: options.apiKey,
+        requestId: options.requestId,
       });
       recordNodeTiming('hint_generator', genStart, {
         attempt: state.retryCount + 1,
@@ -112,7 +134,9 @@ export async function runAgentGraph(
       tabId: options.tabId,
       apiKey: options.apiKey,
       mockCriticPass: options.mockCriticPass,
+      requestId: options.requestId,
     });
+    totalLlmCalls++;
 
     state.criticResult = evaluation;
     trace.criticEvaluations.push(evaluation);
@@ -129,6 +153,7 @@ export async function runAgentGraph(
         level: state.level,
         text: state.candidateHint.hint,
         codeBlock: state.candidateHint.codeBlock,
+        groundedQuote: state.candidateHint.groundedQuote,
         confidence: evaluation.confidence,
         checks: {
           leak: evaluation.leak,

@@ -182,6 +182,22 @@ export const HintsTab: React.FC<HintsTabProps> = ({
             </span>
           </div>
         </section>
+      ) : !activeHint ? (
+        /* Empty State when no hints have been requested */
+        <section className="bg-surface-container border border-outline-variant/40 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2 select-none">
+          <Sparkles className="w-6 h-6 text-primary/70 mb-1" />
+          <h2 className="font-mono text-xs font-semibold text-on-surface">No hints requested yet</h2>
+          <p className="font-sans text-xs text-on-surface-variant max-w-[260px] leading-relaxed">
+            When you're stuck, request a hint to get progressive guidance without code dumps.
+          </p>
+          <button
+            onClick={() => onNextLevel(1)}
+            disabled={isLoading}
+            className="mt-2 bg-primary hover:bg-primary-container text-on-primary-container font-mono text-xs px-3 py-1.5 rounded-lg font-semibold transition-all shadow-sm active:scale-95 disabled:opacity-50"
+          >
+            Request Level 1 Hint
+          </button>
+        </section>
       ) : (
         /* 2. Current Hint Card */
         <section className="bg-surface-container border border-primary/40 rounded-xl p-3.5 relative shadow-md flex flex-col gap-3">
@@ -200,14 +216,14 @@ export const HintsTab: React.FC<HintsTabProps> = ({
               title="How sure the checker is that this hint matches the problem without revealing spoilers."
             >
               <span className="font-mono text-[10px] font-semibold">
-                Confidence {activeHint ? Math.round((activeHint.confidence ?? 0.85) * 100) : 85}%
+                Confidence {Math.round((activeHint.confidence ?? 0.85) * 100)}%
               </span>
               <Info className="w-3 h-3" />
             </div>
           </div>
 
           {/* Low confidence warning banner if <= 0.48 */}
-          {activeHint && activeHint.confidence <= 0.48 && (
+          {activeHint.confidence <= 0.48 && (
             <div className="flex items-center gap-1.5 p-2 rounded-lg bg-tertiary/10 border border-tertiary/30 text-tertiary">
               <AlertTriangle className="w-4 h-4 shrink-0 text-tertiary" />
               <span className="font-mono text-[11px] leading-tight">
@@ -218,12 +234,11 @@ export const HintsTab: React.FC<HintsTabProps> = ({
 
           {/* Hint Pedagogical Copy */}
           <div className="text-xs font-sans text-on-surface leading-relaxed select-text">
-            {activeHint?.text ??
-              "Think about trading space for time. Can we remember values we've already processed in a single pass instead of rescanning the input?"}
+            {activeHint.text}
           </div>
 
           {/* Code block if present (L3 / L4) */}
-          {activeHint?.codeBlock ? (
+          {activeHint.codeBlock ? (
             <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2.5 overflow-hidden">
               <div className="flex items-center justify-between text-[10px] font-mono text-outline border-b border-outline-variant/20 pb-1 mb-1">
                 <span>Code Scaffold</span>
@@ -250,13 +265,33 @@ export const HintsTab: React.FC<HintsTabProps> = ({
 
           {/* Critic Check Tag */}
           <div className="flex items-center gap-1.5 pt-1 border-t border-outline-variant/20">
-            <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
-            <span className="font-mono text-[10px] text-on-surface-variant">
-              Checked by Critic:{' '}
-              <span className="text-primary font-medium">
-                {currentLevel < 3 ? 'No spoiler code detected' : 'Pedagogically grounded'}
-              </span>
-            </span>
+            {activeHint.checks?.leak === false && activeHint.checks?.grounded === true ? (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="font-mono text-[10px] text-on-surface-variant">
+                  Checked by Critic:{' '}
+                  <span className="text-primary font-medium">
+                    {currentLevel < 3 ? 'No spoiler code detected' : 'Pedagogically grounded'}
+                  </span>
+                </span>
+              </>
+            ) : activeHint.checks?.grounded === false ? (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-tertiary shrink-0" />
+                <span className="font-mono text-[10px] text-tertiary">
+                  Critic:{' '}
+                  <span className="font-medium">Ungrounded claim / safe scaffold</span>
+                </span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-outline shrink-0" />
+                <span className="font-mono text-[10px] text-outline">
+                  Critic:{' '}
+                  <span className="font-medium">Unverified</span>
+                </span>
+              </>
+            )}
           </div>
         </section>
       )}

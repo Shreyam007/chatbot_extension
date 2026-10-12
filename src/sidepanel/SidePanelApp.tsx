@@ -25,7 +25,7 @@ export const SidePanelApp: React.FC = () => {
   // Active Context & Telemetry
   const [context, setContext] = useState<PageContext | null>(null);
   const [signals, setSignals] = useState<SignalWindow | null>(null);
-  const [pStuck, setPStuck] = useState<number>(0.14);
+  const [pStuck, setPStuck] = useState<number>(0);
   const [isContest, setIsContest] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [demoMode, setDemoMode] = useState<boolean>(false);
@@ -47,9 +47,9 @@ export const SidePanelApp: React.FC = () => {
   // Trace & Progress State
   const [traces, setTraces] = useState<AgentRunTrace[]>([]);
   const [topics, setTopics] = useState<TopicProgress[]>([]);
-  const [weeklySolved, setWeeklySolved] = useState<number>(6);
-  const [hintsPerSolve, setHintsPerSolve] = useState<number>(1.8);
-  const [nudgeAcceptRate, setNudgeAcceptRate] = useState<number>(0.64);
+  const [weeklySolved, setWeeklySolved] = useState<number>(0);
+  const [hintsPerSolve, setHintsPerSolve] = useState<number>(0);
+  const [nudgeAcceptRate, setNudgeAcceptRate] = useState<number>(0);
 
   // Solved Modal
   const [showSolvedModal, setShowSolvedModal] = useState<boolean>(false);
@@ -102,22 +102,14 @@ export const SidePanelApp: React.FC = () => {
           setIsPaused(res.isPaused);
           loadHintsHistory(res.context.url);
         } else {
-          // Provide default LeetCode context fixture for rich side panel display
-          const defaultContext: PageContext = {
-            url: 'https://leetcode.com/problems/two-sum',
-            site: 'leetcode',
-            title: '1. Two Sum',
-            statementText: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
-            difficulty: 'Easy',
-            tags: ['Array', 'Hash Table'],
-            isContest: false,
-            detectedAt: Date.now(),
-          };
-          setContext(defaultContext);
-          loadHintsHistory(defaultContext.url);
+          setContext(null);
+          setActiveHint(null);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setContext(null);
+        setActiveHint(null);
+      });
 
     // Fetch traces & mastery
     loadTelemetryAndMastery();
@@ -158,31 +150,12 @@ export const SidePanelApp: React.FC = () => {
           setCurrentLevel(last.level);
         }
       } else {
-        // Initial Level 1 hint
-        setActiveHint({
-          id: `hint-${Date.now()}`,
-          level: 1,
-          text: "Notice that you need to find two numbers that sum up to target. Instead of checking every pair with a nested loop, think about what complement value (target - num) is required for each element.",
-          confidence: 0.92,
-          retries: 0,
-          model: 'gemini-2.5-flash',
-          latencyMs: 140,
-          checks: { leak: false, grounded: true, relevant: true },
-        });
+        setActiveHint(null);
         setCurrentLevel(1);
       }
     } catch {
-      // Fallback initial hint
-      setActiveHint({
-        id: `hint-${Date.now()}`,
-        level: 1,
-        text: "Think about trading space for time. Can we remember numbers we've already seen in a single pass?",
-        confidence: 0.88,
-        retries: 0,
-        model: 'gemini-2.5-flash',
-        latencyMs: 120,
-        checks: { leak: false, grounded: true, relevant: true },
-      });
+      setActiveHint(null);
+      setCurrentLevel(1);
     }
   };
 
@@ -219,11 +192,14 @@ export const SidePanelApp: React.FC = () => {
     setIsHintLoading(true);
     setErrorState(null);
 
+    const requestId = `hint-req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
     try {
       const res = await sendToBackground<{ type: string; hint: Hint }>({
         type: 'REQUEST_HINT',
         level: targetLevel,
         problemHash: context.url,
+        requestId,
       });
 
       if (res?.hint) {
@@ -238,7 +214,7 @@ export const SidePanelApp: React.FC = () => {
         setErrorState('no_api_key');
       } else if (code === 'INVALID_KEY' || msg.includes('INVALID_KEY') || msg.includes('403') || msg.includes('permission_denied')) {
         setErrorState('invalid_key');
-      } else if (code === 'TIMEOUT' || msg.includes('TIMEOUT')) {
+      } else if (code === 'TIMEOUT' || msg.includes('TIMEOUT') || msg.includes('timed out')) {
         setErrorState('timeout');
       } else if (code === 'RATE_LIMITED' || msg.includes('RATE_LIMITED') || msg.includes('429')) {
         setErrorState('rate_limited');
@@ -246,32 +222,7 @@ export const SidePanelApp: React.FC = () => {
       } else if (code === 'OFFLINE' || msg.includes('OFFLINE') || msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('connection')) {
         setErrorState('offline');
       } else {
-        // Fallback demo scaffold for level progression
-        const scaffolds: Record<HintLevel, { text: string; code?: string }> = {
-          1: { text: "Focus on the complement: for every nums[i], what number would add up to target?" },
-          2: { text: "Use a Hash Table to store elements as you iterate. For each element, check if target - element is already in the map." },
-          3: {
-            text: "Here is the structural pseudocode scaffold:",
-            code: "map = new Map()\nfor i, num in nums:\n  diff = target - num\n  if map.has(diff): return [map.get(diff), i]\n  map.set(num, i)",
-          },
-          4: {
-            text: "Complete optimal solution with O(n) time and O(n) space complexity:",
-            code: "function twoSum(nums: number[], target: number): number[] {\n  const map = new Map<number, number>();\n  for (let i = 0; i < nums.length; i++) {\n    const diff = target - nums[i];\n    if (map.has(diff)) {\n      return [map.get(diff)!, i];\n    }\n    map.set(nums[i], i);\n  }\n  return [];\n}",
-          },
-        };
-
-        setActiveHint({
-          id: `hint-${Date.now()}`,
-          level: targetLevel,
-          text: scaffolds[targetLevel].text,
-          codeBlock: scaffolds[targetLevel].code,
-          confidence: 0.94,
-          retries: 0,
-          model: 'gemini-2.5-flash',
-          latencyMs: 250,
-          checks: { leak: false, grounded: true, relevant: true },
-        });
-        setCurrentLevel(targetLevel);
+        setErrorState('timeout');
       }
     } finally {
       setIsHintLoading(false);
@@ -292,6 +243,9 @@ export const SidePanelApp: React.FC = () => {
     };
     setMessages((prev) => [...prev, userMsg]);
     setIsChatLoading(true);
+    setErrorState(null);
+
+    const requestId = `chat-req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
     try {
       const res = await sendToBackground<{
@@ -300,11 +254,14 @@ export const SidePanelApp: React.FC = () => {
         groundedQuote?: string;
         confidence: number;
         codeBlock?: string;
+        criticChecked?: boolean;
+        answerable_from_page?: boolean;
       }>({
         type: 'SUBMIT_CHAT_QUERY',
         query,
         problemHash: context.url,
         level: level ?? currentLevel,
+        requestId,
       });
 
       if (res) {
@@ -316,23 +273,35 @@ export const SidePanelApp: React.FC = () => {
           groundedQuote: res.groundedQuote,
           confidence: res.confidence,
           codeBlock: res.codeBlock,
-          criticChecked: true,
+          criticChecked: Boolean(res.criticChecked),
         };
         setMessages((prev) => [...prev, assistantMsg]);
         loadTelemetryAndMastery();
       }
-    } catch {
-      // Mock pedagogical response
-      const fallbackMsg: ChatMessage = {
-        id: `asst-${Date.now()}`,
-        sender: 'assistant',
-        text: `Consider how the data structures allow O(1) lookups. By indexing previously seen numbers in a Hash Table, you avoid repeating inner loops.`,
-        timestamp: Date.now(),
-        groundedQuote: 'nums[i] + nums[j] == target',
-        confidence: 0.89,
-        criticChecked: true,
-      };
-      setMessages((prev) => [...prev, fallbackMsg]);
+    } catch (err: unknown) {
+      const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: unknown }).code) : '';
+      const msg = err instanceof Error ? err.message : String(err);
+      if (code === 'NO_KEY' || msg.includes('NO_KEY')) {
+        setErrorState('no_api_key');
+      } else if (code === 'INVALID_KEY' || msg.includes('INVALID_KEY') || msg.includes('403') || msg.includes('permission_denied')) {
+        setErrorState('invalid_key');
+      } else if (code === 'RATE_LIMITED' || msg.includes('RATE_LIMITED') || msg.includes('429')) {
+        setErrorState('rate_limited');
+        setRetryAfterSeconds(3);
+      } else if (code === 'OFFLINE' || msg.includes('OFFLINE')) {
+        setErrorState('offline');
+      } else {
+        const errorMsg: ChatMessage = {
+          id: `asst-err-${Date.now()}`,
+          sender: 'assistant',
+          text: msg.includes('timed out') || code === 'TIMEOUT'
+            ? 'Request timed out after 35s. Please check your network or try again.'
+            : `Unable to complete request (${code || 'error'}). Please try again.`,
+          timestamp: Date.now(),
+          criticChecked: false,
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      }
     } finally {
       setIsChatLoading(false);
     }

@@ -72,13 +72,11 @@ export function runEvaluation(options: { seed?: number; problems?: BenchmarkProb
 
   for (const prob of problems) {
     for (const item of prob.candidates) {
-      const start = performance.now();
-
       // 1. Heuristic Code Leak check
       const hasLeak = checkHeuristicLeak(item.candidate, item.level);
 
       // 2. Grounding Substring check
-      const isGrounded = checkGrounding(item.candidate.groundedQuote, prob.statementText);
+      const isGrounded = checkGrounding(item.candidate.groundedQuote || '', prob.statementText);
 
       // 3. Critic Decision
       const criticPass = item.level <= 2 ? !hasLeak && isGrounded : isGrounded;

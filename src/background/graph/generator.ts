@@ -7,11 +7,11 @@ export const HINT_SCHEMA = {
   properties: {
     hint: {
       type: 'STRING',
-      description: 'The tutoring hint text explaining the concept or next step.',
+      description: 'The tutoring hint text or response explaining the concept or answering the student question.',
     },
     codeBlock: {
       type: 'STRING',
-      description: 'Code or pseudocode snippet. ONLY allowed for Level 3 (pseudocode) or Level 4 (full code). Must be omitted for Level 1 and Level 2.',
+      description: 'Code or pseudocode snippet. ONLY allowed for Level 3 (pseudocode) or Level 4 (full code). Must be omitted for Level 1 and Level 2. REQUIRED for Level 3 pseudocode unless the question is off-topic.',
     },
     topics: {
       type: 'ARRAY',
@@ -20,17 +20,55 @@ export const HINT_SCHEMA = {
     },
     groundedQuote: {
       type: 'STRING',
-      description: 'An exact word-for-word quote from the problem statement that directly anchors this hint.',
+      description: 'An exact word-for-word quote from the problem statement that directly anchors this hint. Leave empty string if question is not answerable from page text.',
+    },
+    answerable_from_page: {
+      type: 'BOOLEAN',
+      description: 'True if the question or hint is answerable from the problem statement text; false if asking about unmentioned history, authorship, or off-topic.',
     },
     selfConfidence: {
       type: 'NUMBER',
       description: 'Self-estimated confidence between 0.0 and 1.0 that this hint is accurate and level-appropriate.',
     },
   },
-  required: ['hint', 'topics', 'groundedQuote', 'selfConfidence'],
+  required: ['hint', 'topics', 'selfConfidence'],
 };
 
-export function getSystemInstructionForLevel(level: HintLevel): string {
+export function getSystemInstructionForLevel(level: HintLevel, isChat = false): string {
+  if (isChat) {
+    switch (level) {
+      case 1:
+        return (
+          'You are Unstuck, a Socratic programming tutor in a conversation with a student.\n' +
+          '- Goal: Answer the student\'s question conceptually, pointing toward the right mental model or invariant without giving away the algorithm.\n' +
+          '- HARD CONSTRAINT: You must contain ZERO code, ZERO function definitions, ZERO code fences, and ZERO pseudocode.\n' +
+          '- If the question cannot be answered from the page (e.g., problem history, author/origin, trivia), briefly state that the page does not say and offer to help solve the algorithmic problem.\n' +
+          '- If quoting the problem statement, include an exact groundedQuote substring.'
+        );
+      case 2:
+        return (
+          'You are Unstuck, a Socratic programming tutor in a conversation with a student.\n' +
+          '- Goal: Answer the student\'s question by describing the algorithmic outline and step-by-step reasoning in plain language.\n' +
+          '- HARD CONSTRAINT: You must contain ZERO code blocks or executable syntax. Explain the data flow conceptually.\n' +
+          '- If the question cannot be answered from the page, state concisely that the page does not say, and offer to help with the problem.\n' +
+          '- If quoting the problem statement, include an exact groundedQuote substring.'
+        );
+      case 3:
+        return (
+          'You are Unstuck, a programming tutor in a conversation with a student providing a LEVEL 3 (PSEUDOCODE) response.\n' +
+          '- Goal: Answer the student\'s question and provide structured pseudocode in codeBlock outlining key loops, variables, and state updates (do NOT use real language syntax like C++/Java/Python builtins).\n' +
+          '- HARD CONSTRAINT: Level 3 MUST include pseudocode in codeBlock unless the question is completely off-topic.\n' +
+          '- If the question cannot be answered from the page, state concisely that the page does not say, and offer to help with the problem.'
+        );
+      case 4:
+        return (
+          'You are Unstuck, an expert coding tutor providing a LEVEL 4 (FULL SOLUTION) response.\n' +
+          '- Goal: Deliver a complete, optimal implementation with time and space complexity analysis in codeBlock.\n' +
+          '- If the question cannot be answered from the page, state concisely that the page does not say, and offer to help with the problem.'
+        );
+    }
+  }
+
   switch (level) {
     case 1:
       return (
@@ -50,9 +88,8 @@ export function getSystemInstructionForLevel(level: HintLevel): string {
     case 3:
       return (
         'You are Unstuck, a programming tutor providing a LEVEL 3 (PSEUDOCODE) hint.\n' +
-        '- Goal: Provide structured pseudocode outlining key loops, variables, and state updates.\n' +
-        '- You may include a codeBlock containing clear pseudocode.\n' +
-        '- You MUST include an exact groundedQuote substring from the problem statement.'
+        '- Goal: Provide structured pseudocode in codeBlock outlining key loops, variables, and state updates.\n' +
+        '- You MUST include clear pseudocode in codeBlock and an exact groundedQuote substring from the problem statement.'
       );
     case 4:
       return (
@@ -70,15 +107,19 @@ export function getSystemInstructionForLevel(level: HintLevel): string {
  */
 export async function generateHint(
   state: AgentGraphState,
-  options?: { model?: string; tabId?: number; apiKey?: string }
+  options?: { model?: string; tabId?: number; apiKey?: string; requestId?: string }
 ): Promise<GeneratedHintCandidate> {
   const client = new GeminiClient(options?.apiKey);
-  const systemInstruction = getSystemInstructionForLevel(state.level);
+  const isChat = Boolean(state.userQuery && state.userQuery.trim().length > 0);
+  const systemInstruction = getSystemInstructionForLevel(state.level, isChat);
   const prompt = state.assembledPrompt || '';
+
+  state.trace.llmCallCount = (state.trace.llmCallCount || 0) + 1;
 
   const response = await client.generateJson<GeneratedHintCandidate>(prompt, {
     model: options?.model,
     tabId: options?.tabId,
+    requestId: options?.requestId,
     temperature: 0.2,
     systemInstruction,
     responseSchema: HINT_SCHEMA,
@@ -92,6 +133,7 @@ export async function generateHint(
     codeBlock: typeof candidate.codeBlock === 'string' && candidate.codeBlock.trim() ? candidate.codeBlock.trim() : undefined,
     topics: Array.isArray(candidate.topics) ? candidate.topics.map(String) : [],
     groundedQuote: typeof candidate.groundedQuote === 'string' ? candidate.groundedQuote.trim() : '',
+    answerable_from_page: typeof candidate.answerable_from_page === 'boolean' ? candidate.answerable_from_page : undefined,
     selfConfidence: typeof candidate.selfConfidence === 'number' ? Math.max(0, Math.min(1, candidate.selfConfidence)) : 0.85,
   };
 }

@@ -58,6 +58,10 @@ export async function sendToBackground<T = unknown>(
     throw new MessagingError('CLIENT_VALIDATION_FAILED', 'Invalid outgoing message payload');
   }
 
+  // Allow longer deadline for heavy multi-agent generation requests (EC-086)
+  const isGenerationReq = request.type === 'SUBMIT_CHAT_QUERY' || request.type === 'REQUEST_HINT';
+  const effectiveTimeout = timeoutMs !== 10000 ? timeoutMs : (isGenerationReq ? 35000 : 10000);
+
   // Check if chrome.runtime is available
   if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
     throw new MessagingError('NO_RUNTIME', 'Chrome runtime messaging not available in this environment');
@@ -68,9 +72,9 @@ export async function sendToBackground<T = unknown>(
     const timer = setTimeout(() => {
       if (!completed) {
         completed = true;
-        reject(new MessagingError('TIMEOUT', `Message ${request.type} timed out after ${timeoutMs}ms`));
+        reject(new MessagingError('TIMEOUT', `Message ${request.type} timed out after ${effectiveTimeout}ms`));
       }
-    }, timeoutMs);
+    }, effectiveTimeout);
 
     try {
       chrome.runtime.sendMessage(request, (response: BusResponseEnvelope | undefined) => {

@@ -21,11 +21,11 @@ export interface SolvedModalProps {
 
 export const SolvedModal: React.FC<SolvedModalProps> = ({
   problemTitle,
-  timeTaken = '24m 12s',
-  hintsUsedCount = 2,
-  topic = 'Arrays & Hash',
-  masteryGain = '+4%',
-  newMasteryPct = 72,
+  timeTaken = '—',
+  hintsUsedCount = 0,
+  topic = '—',
+  masteryGain = '—',
+  newMasteryPct = 0,
   onDismiss,
 }) => {
   return (
@@ -65,7 +65,7 @@ export const SolvedModal: React.FC<SolvedModalProps> = ({
             <span className="font-mono text-xs font-bold text-on-surface mt-1">
               {timeTaken}
             </span>
-            <span className="font-mono text-[9px] text-outline mt-0.5">Under median</span>
+            <span className="font-mono text-[9px] text-outline mt-0.5">Session time</span>
           </div>
 
           {/* Hints Used */}

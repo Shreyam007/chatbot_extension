@@ -91,7 +91,7 @@ export const CRITIC_SCHEMA = {
 export async function evaluateHint(
   candidate: GeneratedHintCandidate,
   state: AgentGraphState,
-  options?: { model?: string; tabId?: number; apiKey?: string; mockCriticPass?: boolean }
+  options?: { model?: string; tabId?: number; apiKey?: string; mockCriticPass?: boolean; requestId?: string }
 ): Promise<CriticEvaluation> {
   const statementText = state.context.statementText || '';
 
@@ -99,9 +99,19 @@ export async function evaluateHint(
   const hasLeak = checkHeuristicLeak(candidate, state.level);
 
   // 2. Grounding Substring Check
-  const isGrounded = checkGrounding(candidate.groundedQuote, statementText);
+  let isGrounded = false;
+  if (state.userQuery && candidate.answerable_from_page === false) {
+    // Off-topic or unanswerable query: if quote provided, verify; if empty, accepted as honest off-page reply
+    if (candidate.groundedQuote && candidate.groundedQuote.trim().length >= 5) {
+      isGrounded = checkGrounding(candidate.groundedQuote, statementText);
+    } else {
+      isGrounded = true;
+    }
+  } else {
+    isGrounded = checkGrounding(candidate.groundedQuote || '', statementText);
+  }
 
-  // If deterministic checks already failed, reject immediately with clear reason
+  // If deterministic checks already failed, reject immediately with clear reason (no wasted LLM judge call)
   if (hasLeak) {
     return {
       pass: false,
@@ -115,6 +125,14 @@ export async function evaluateHint(
 
   if (!isGrounded) {
     logger.warn('Hint rejected by Grounding Check: groundedQuote not found in statement text');
+    return {
+      pass: false,
+      leak: false,
+      grounded: false,
+      relevant: false,
+      confidence: 0.1,
+      reason: 'Quote not found in problem statement.',
+    };
   }
 
   // Bypass LLM judge in mock test mode if requested
@@ -151,6 +169,7 @@ export async function evaluateHint(
     }>(judgePrompt, {
       model: options?.model,
       tabId: options?.tabId,
+      requestId: options?.requestId,
       temperature: 0.1,
       maxOutputTokens: 512,
       responseSchema: CRITIC_SCHEMA,

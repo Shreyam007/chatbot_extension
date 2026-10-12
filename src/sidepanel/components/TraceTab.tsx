@@ -25,13 +25,8 @@ export interface TraceTabProps {
 
 export const TraceTab: React.FC<TraceTabProps> = ({
   traces,
-  activePStuck = 0.78,
-  contributions = {
-    dwell: 0.85,
-    scrollReversals: 0.72,
-    wrongSubmissions: 0.9,
-    tabSwitches: 0.45,
-  },
+  activePStuck = 0,
+  contributions,
 }) => {
   const [showAllDetails, setShowAllDetails] = useState(true);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -45,12 +40,47 @@ export const TraceTab: React.FC<TraceTabProps> = ({
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const latestTrace = traces[0] || null;
+  if (!traces || traces.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col p-6 items-center justify-center text-center gap-2 text-on-surface select-none">
+        <div className="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-primary/70 border border-outline-variant/40 mb-2">
+          <Radar className="w-5 h-5" />
+        </div>
+        <h2 className="font-mono text-sm font-semibold text-on-surface">No trace telemetry yet</h2>
+        <p className="font-sans text-xs text-on-surface-variant max-w-[260px] leading-relaxed">
+          Request a hint or ask a question in chat to view live multi-agent execution telemetry and pipeline benchmarks.
+        </p>
+      </div>
+    );
+  }
 
-  const totalLatency = latestTrace
+  const latestTrace = traces[0]!;
+
+  const totalLatency = latestTrace.totalDurationMs > 0
     ? (latestTrace.totalDurationMs / 1000).toFixed(1) + 's'
-    : '2.4s';
-  const requestedLevel = latestTrace?.requestedLevel ?? 2;
+    : '—';
+  const requestedLevel = latestTrace.requestedLevel ?? 1;
+
+  const detectorTiming = latestTrace.nodeTimings.find((n) => n.node === 'detector');
+  const detectorMs = detectorTiming ? `${detectorTiming.durationMs}ms` : '—';
+
+  const plannerTiming = latestTrace.nodeTimings.find((n) => n.node === 'planner');
+  const plannerMs = plannerTiming ? `${plannerTiming.durationMs}ms` : '—';
+  const selectedAction = (plannerTiming?.details?.selectedAction as string) || `nudge_with_level_${requestedLevel}`;
+  const contextBucket = (plannerTiming?.details?.bucket as string) || latestTrace.problemHash || '—';
+
+  const genTiming = latestTrace.nodeTimings.find((n) => n.node === 'hint_generator');
+  const genMs = genTiming ? `${(genTiming.durationMs / 1000).toFixed(1)}s` : '—';
+  const cbTiming = latestTrace.nodeTimings.find((n) => n.node === 'context_builder');
+  const statementLen = typeof cbTiming?.details?.statementLength === 'number' ? cbTiming.details.statementLength : 0;
+  const tokenBudgetStr = statementLen > 0 ? `${Math.round(statementLen / 4).toLocaleString()} / 4,000 tokens` : '— / 4,000 tokens';
+
+  const criticTiming = latestTrace.nodeTimings.find((n) => n.node === 'critic');
+  const criticMs = criticTiming ? `${criticTiming.durationMs}ms` : '—';
+  const criticEval = latestTrace.criticEvaluations[0];
+  const leakVerdict = criticEval ? (criticEval.leak ? 'Leak detected' : '0 detected (fenced/keywords)') : '—';
+  const groundingVerdict = criticEval ? (criticEval.grounded ? 'Grounded in statement text' : 'Ungrounded claim') : '—';
+  const judgeVerdict = criticEval ? (criticEval.pass ? 'APPROVED' : (criticEval.reason || 'REJECTED')) : '—';
 
   return (
     <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto custom-scrollbar select-none">
@@ -164,7 +194,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-outline">
-                  <span className="font-mono text-[10px]">180ms</span>
+                  <span className="font-mono text-[10px]">{detectorMs}</span>
                   <ChevronDown
                     className={`w-3.5 h-3.5 transition-transform ${
                       openSections.detector ? 'rotate-180' : ''
@@ -175,7 +205,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
 
               <div className="text-xs font-mono text-on-surface-variant flex items-center justify-between">
                 <span>
-                  p(stuck) = <strong className="text-tertiary">{activePStuck.toFixed(2)}</strong>{' '}
+                  p(stuck) = <strong className="text-tertiary">{activePStuck > 0 ? activePStuck.toFixed(2) : '—'}</strong>{' '}
                   <span className="text-outline text-[10px]">(threshold &gt; 0.65)</span>
                 </span>
                 <span className="text-[9px] text-primary bg-primary/10 px-1 rounded">
@@ -189,81 +219,89 @@ export const TraceTab: React.FC<TraceTabProps> = ({
                     Contributing Signal Weights
                   </span>
 
-                  {/* Dwell */}
-                  <div className="flex items-center justify-between text-[11px] font-mono">
-                    <div className="flex items-center gap-1 text-on-surface-variant w-36 truncate">
-                      <Timer className="w-3 h-3 text-tertiary shrink-0" />
-                      <span>Dwell: 4m 12s</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 max-w-[120px]">
-                      <div className="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-tertiary h-full rounded-full"
-                          style={{ width: `${Math.round((contributions.dwell ?? 0.85) * 100)}%` }}
-                        />
+                  {contributions ? (
+                    <>
+                      {/* Dwell */}
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <div className="flex items-center gap-1 text-on-surface-variant w-36 truncate">
+                          <Timer className="w-3 h-3 text-tertiary shrink-0" />
+                          <span>Dwell weight</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-1 max-w-[120px]">
+                          <div className="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-tertiary h-full rounded-full"
+                              style={{ width: `${Math.round((contributions.dwell ?? 0) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-on-surface w-6 text-right">
+                            {(contributions.dwell ?? 0).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-[10px] text-on-surface w-6 text-right">
-                        {(contributions.dwell ?? 0.85).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Scroll reversals */}
-                  <div className="flex items-center justify-between text-[11px] font-mono">
-                    <div className="flex items-center gap-1 text-on-surface-variant w-36 truncate">
-                      <ArrowUpDown className="w-3 h-3 text-secondary shrink-0" />
-                      <span>Scroll reversals: 7</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 max-w-[120px]">
-                      <div className="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-secondary h-full rounded-full"
-                          style={{ width: `${Math.round((contributions.scrollReversals ?? 0.72) * 100)}%` }}
-                        />
+                      {/* Scroll reversals */}
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <div className="flex items-center gap-1 text-on-surface-variant w-36 truncate">
+                          <ArrowUpDown className="w-3 h-3 text-secondary shrink-0" />
+                          <span>Scroll reversals</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-1 max-w-[120px]">
+                          <div className="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-secondary h-full rounded-full"
+                              style={{ width: `${Math.round((contributions.scrollReversals ?? 0) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-on-surface w-6 text-right">
+                            {(contributions.scrollReversals ?? 0).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-[10px] text-on-surface w-6 text-right">
-                        {(contributions.scrollReversals ?? 0.72).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Wrong submissions */}
-                  <div className="flex items-center justify-between text-[11px] font-mono">
-                    <div className="flex items-center gap-1 text-on-surface-variant w-36 truncate">
-                      <AlertOctagon className="w-3 h-3 text-error shrink-0" />
-                      <span>Wrong verdicts: 2</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 max-w-[120px]">
-                      <div className="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-error h-full rounded-full"
-                          style={{ width: `${Math.round((contributions.wrongSubmissions ?? 0.9) * 100)}%` }}
-                        />
+                      {/* Wrong submissions */}
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <div className="flex items-center gap-1 text-on-surface-variant w-36 truncate">
+                          <AlertOctagon className="w-3 h-3 text-error shrink-0" />
+                          <span>Wrong verdicts</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-1 max-w-[120px]">
+                          <div className="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-error h-full rounded-full"
+                              style={{ width: `${Math.round((contributions.wrongSubmissions ?? 0) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-on-surface w-6 text-right">
+                            {(contributions.wrongSubmissions ?? 0).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-[10px] text-on-surface w-6 text-right">
-                        {(contributions.wrongSubmissions ?? 0.9).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Tab switches */}
-                  <div className="flex items-center justify-between text-[11px] font-mono">
-                    <div className="flex items-center gap-1 text-on-surface-variant w-36 truncate">
-                      <ExternalLink className="w-3 h-3 text-outline shrink-0" />
-                      <span>Tab switches: 4</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 max-w-[120px]">
-                      <div className="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-outline h-full rounded-full"
-                          style={{ width: `${Math.round((contributions.tabSwitches ?? 0.45) * 100)}%` }}
-                        />
+                      {/* Tab switches */}
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <div className="flex items-center gap-1 text-on-surface-variant w-36 truncate">
+                          <ExternalLink className="w-3 h-3 text-outline shrink-0" />
+                          <span>Tab switches</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-1 max-w-[120px]">
+                          <div className="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-outline h-full rounded-full"
+                              style={{ width: `${Math.round((contributions.tabSwitches ?? 0) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-on-surface w-6 text-right">
+                            {(contributions.tabSwitches ?? 0).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-[10px] text-on-surface w-6 text-right">
-                        {(contributions.tabSwitches ?? 0.45).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
+                    </>
+                  ) : (
+                    <span className="text-[10px] font-mono text-outline">
+                      No active signal window recorded for current page session.
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -291,7 +329,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-outline">
-                  <span className="font-mono text-[10px]">12ms</span>
+                  <span className="font-mono text-[10px]">{plannerMs}</span>
                   <ChevronDown
                     className={`w-3.5 h-3.5 transition-transform ${
                       openSections.planner ? 'rotate-180' : ''
@@ -301,7 +339,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
               </div>
 
               <div className="text-xs font-mono text-on-surface-variant flex items-center justify-between">
-                <span>Utility: 0.82 &gt; Cost: 0.35</span>
+                <span>Bandit Policy</span>
                 <span className="text-[9px] text-secondary bg-secondary/10 px-1 rounded">
                   Contextual Bandit
                 </span>
@@ -315,11 +353,11 @@ export const TraceTab: React.FC<TraceTabProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-outline">Selected Action:</span>
-                    <span className="text-on-surface font-semibold">nudge_with_level_{requestedLevel}</span>
+                    <span className="text-on-surface font-semibold">{selectedAction}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-outline">Context Bucket:</span>
-                    <span className="text-secondary">leetcode:stuck_high:mastery_medium</span>
+                    <span className="text-secondary truncate max-w-[200px]">{contextBucket}</span>
                   </div>
                 </div>
               )}
@@ -348,7 +386,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-outline">
-                  <span className="font-mono text-[10px]">1.8s</span>
+                  <span className="font-mono text-[10px]">{genMs}</span>
                   <ChevronDown
                     className={`w-3.5 h-3.5 transition-transform ${
                       openSections.generator ? 'rotate-180' : ''
@@ -358,7 +396,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
               </div>
 
               <div className="text-xs font-mono text-on-surface-variant flex items-center justify-between">
-                <span>Model: {latestTrace?.model || 'gemini-2.5-flash'}</span>
+                <span>Model: {latestTrace.model || 'gemini-2.5-flash'}</span>
                 <span className="text-[9px] text-primary bg-primary/10 px-1 rounded">
                   JSON Schema
                 </span>
@@ -368,11 +406,11 @@ export const TraceTab: React.FC<TraceTabProps> = ({
                 <div className="mt-2.5 pt-2 border-t border-outline-variant/30 font-mono text-[10px] space-y-1 text-on-surface-variant">
                   <div className="flex justify-between">
                     <span className="text-outline">Context Budget:</span>
-                    <span>1,842 / 4,000 tokens (Rule 3 protected)</span>
+                    <span>{tokenBudgetStr}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-outline">Retries:</span>
-                    <span>{latestTrace?.retries ?? 0}</span>
+                    <span>{latestTrace.retries ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-outline">Untrusted Boundary:</span>
@@ -401,11 +439,11 @@ export const TraceTab: React.FC<TraceTabProps> = ({
                     4. Critic Agent
                   </span>
                   <span className="px-1.5 py-0.2 rounded-full font-mono text-[9px] bg-primary/10 text-primary border border-primary/30">
-                    Passed
+                    Evaluated
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-outline">
-                  <span className="font-mono text-[10px]">240ms</span>
+                  <span className="font-mono text-[10px]">{criticMs}</span>
                   <ChevronDown
                     className={`w-3.5 h-3.5 transition-transform ${
                       openSections.critic ? 'rotate-180' : ''
@@ -415,7 +453,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
               </div>
 
               <div className="text-xs font-mono text-on-surface-variant flex items-center justify-between">
-                <span>Leak check: 0 code blocks</span>
+                <span>Leak check: {leakVerdict}</span>
                 <span className="text-[9px] text-primary bg-primary/10 px-1 rounded">
                   Dual Critic
                 </span>
@@ -425,15 +463,15 @@ export const TraceTab: React.FC<TraceTabProps> = ({
                 <div className="mt-2.5 pt-2 border-t border-outline-variant/30 font-mono text-[10px] space-y-1 text-on-surface-variant">
                   <div className="flex justify-between">
                     <span className="text-outline">Deterministic Leaks:</span>
-                    <span className="text-primary font-medium">0 detected (fenced/keywords)</span>
+                    <span className="text-primary font-medium">{leakVerdict}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-outline">Grounding Overlap:</span>
-                    <span className="text-primary font-medium">94% text match</span>
+                    <span className="text-primary font-medium">{groundingVerdict}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-outline">LLM Judge Verdict:</span>
-                    <span className="text-primary font-medium">APPROVED</span>
+                    <span className="text-primary font-medium">{judgeVerdict}</span>
                   </div>
                 </div>
               )}

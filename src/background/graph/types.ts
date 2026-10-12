@@ -5,7 +5,8 @@ export interface GeneratedHintCandidate {
   hint: string;
   codeBlock?: string;
   topics: string[];
-  groundedQuote: string;
+  groundedQuote?: string;
+  answerable_from_page?: boolean;
   selfConfidence: number;
 }
 
@@ -36,6 +37,7 @@ export interface AgentRunTrace {
   criticEvaluations: CriticEvaluation[];
   isFallback: boolean;
   model: string;
+  llmCallCount?: number;
   promptTokens?: number;
   candidateTokens?: number;
 }
@@ -60,10 +62,13 @@ export interface AgentGraphOptions {
   apiKey?: string;
   model?: string;
   tabId?: number;
+  requestId?: string;
+  deadlineMs?: number;
   maxRetries?: number;
   userQuery?: string;
   userCode?: string;
   mastery?: number;
   history?: Hint[];
   mockCriticPass?: boolean;
+  timeoutMs?: number;
 }

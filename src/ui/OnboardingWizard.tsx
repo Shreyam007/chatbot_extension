@@ -131,8 +131,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
       if (res.success) {
         setTestStatus('success');
-        setLatencyMs(res.latencyMs || 150);
-        setSupportedModels(res.supportedModels || [`models/${DEFAULT_AI_MODEL}`, 'models/gemini-1.5-flash']);
+        setLatencyMs(res.latencyMs ?? 0);
+        setSupportedModels(res.supportedModels || []);
         persistState({
           apiKey: apiKey.trim(),
           testStatus: 'success',

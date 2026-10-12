@@ -439,4 +439,47 @@ Per `ANTIGRAVITY.md` specification:
   - Expanded `docs/ARCHITECTURE.md` with Steps 14–16 and Mermaid diagrams.
   - Expanded `docs/VIVA_NOTES.md` with 35 viva Q&As, honest upfront weaknesses, and contingency protocols.
 
+---
+
+## 20. Fabricated Data Audit, Real Async Chat Pipeline & v1.0.1 Release
+
+### Context & Symptoms
+In v1.0.0, users reported that all side panel chat queries (including off-topic queries like *"who invented this problem"*, *"how would be the approach"*, and *"how?"*) consistently returned the identical canned assistant reply (*"Consider how the data structures allow O(1) lookups..."*) with an ungrounded quote (`"nums[i] + nums[j] == target"`), an unconditional green `"Critic: Checked"` badge, and an `"L3 Pseudocode"` chip with no pseudocode.
+
+### Root Cause Analysis
+1. **Message Bus Timeout (10,000ms):**
+   `sendToBackground` had a rigid 10s timeout. When multi-agent graph runs (detector + planner + generator + critic + retry) took 10–12s on live Gemini calls, the client-side promise rejected with a timeout.
+2. **Canned Mock Data Injection in UI Catch Blocks:**
+   `SidePanelApp.tsx` caught this error and silently injected a hardcoded Two Sum response into the conversation with `criticChecked: true`.
+3. **Rigid Grounding Requirements for Off-Topic Queries:**
+   The `generator` prompt strictly forced `groundedQuote` output. When users asked off-topic questions not answerable from the page, the model either fabricated quotes or failed Critic grounding, triggering infinite retries and hitting the timeout.
+4. **Hardcoded Two Sum Scaffolds in State & Component Defaults:**
+   `SidePanelApp` initialized `activeHint` with a hardcoded Two Sum Level 1 hint. Other tabs (Trace, Progress, Options) contained mock default values (12ms, 1,842 tokens, +2 vs last week, etc.).
+
+### Architectural Changes & Solutions in v1.0.1
+1. **Message Bus Timeout Expansion & Request Tracking:**
+   - Expanded generation timeouts in `sendToBackground` from 10,000ms to 35,000ms.
+   - Added unique `requestId` across all chat and hint messages, enabling client-initiated cancellation and abort controllers in the `GeminiClient`.
+2. **Generator Off-Topic Handling & Schema Refinement:**
+   - Prompt updated with `Student Question:` and explicit instructions: If a student question cannot be answered from the page, answer honestly that the information is not in the problem statement, omit `groundedQuote`, and set `answerable_from_page: false`.
+   - `groundedQuote` made optional in generation schemas.
+3. **Deterministic Short-Circuiting in Critic Guardrails:**
+   - Deterministic leak detection and quote grounding verify first. If heuristic leak or quote grounding fails, the Critic immediately rejects without wasting time/tokens on an LLM judge call.
+   - Off-topic questions marked with `answerable_from_page: false` skip verbatim statement grounding.
+4. **Complete Elimination of Fabricated Data:**
+   - Performed a comprehensive audit of 36 items across `SidePanelApp`, `ChatTab`, `HintsTab`, `TraceTab`, `ProgressTab`, `PopupApp`, `OptionsApp`, `SolvedModal`, and `api-test.ts`.
+   - Purged all hardcoded mock responses, default Two Sum scaffolds, fake execution timings, and fake test keys.
+   - If a generation fails or times out, the UI renders honest S13.x error states (S13.1 Invalid Key, S13.2 Offline, S13.3 Rate Limited, S13.4 Server Error) with interactive Retry actions.
+5. **Dynamic Critic Confidence Badging:**
+   - Green `Critic: Checked`: Only when leak-safe, quote-grounded, and non-fallback.
+   - Amber `Low confidence`: When model confidence $\le 0.48$.
+   - Outline `Critic: Unverified`: When fallback was used.
+6. **Live Trace Telemetry:**
+   - TraceTab renders dynamic execution times (`detectorMs`, `plannerMs`, `genMs`, `criticMs`), real model ID, and actual Gemini token usage. Shows clean empty state when no traces exist.
+7. **Bundle Sentinel & Quality Assurance:**
+   - Added `tests/unit/bundle-sentinel.test.ts` to scan `.output/chrome-mv3` against forbidden canned strings.
+   - All 40 unit test files (276 tests) and 23 Playwright E2E tests pass twice in a row with zero flakes.
+   - Bumped version to `1.0.1`. Packaged as `.output/unstuck-1.0.1-chrome.zip`.
+
+
 

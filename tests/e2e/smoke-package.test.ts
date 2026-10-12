@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
-const zipPath = path.join(rootDir, '.output', 'unstuck-1.0.0-chrome.zip');
+const zipPath = path.join(rootDir, '.output', 'unstuck-1.0.1-chrome.zip');
 
 let tempExtractDir: string;
 let context: BrowserContext;
@@ -55,7 +55,7 @@ test.afterAll(async () => {
   } catch {}
 });
 
-test.describe('Step 17: Packaged Build Smoke Test (.output/unstuck-1.0.0-chrome.zip)', () => {
+test.describe('Step 17: Packaged Build Smoke Test (.output/unstuck-1.0.1-chrome.zip)', () => {
   test('1. Options page opens, mounts without errors, and renders settings dashboard', async () => {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/options.html`, { waitUntil: 'load' });

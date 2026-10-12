@@ -13,6 +13,7 @@ const logger = createLogger('GeminiClient');
 export class GeminiClient {
   private static inFlightByTab = new Map<number, Promise<LlmResponse<unknown>>>();
   private static abortControllersByTab = new Map<number, AbortController>();
+  private static abortControllersByRequestId = new Map<string, AbortController>();
 
   constructor(private readonly explicitApiKey?: string) {}
 
@@ -42,15 +43,34 @@ export class GeminiClient {
    * Aborts any in-flight generation request for the given tab ID (EC-086)
    */
   public static cancelTabRequest(tabId: number): boolean {
-    const controller = this.abortControllersByTab.get(tabId);
-    if (controller) {
-      controller.abort();
-      this.abortControllersByTab.delete(tabId);
-      this.inFlightByTab.delete(tabId);
-      logger.debug(`Aborted in-flight LLM request for tab ${tabId}`);
-      return true;
+    return this.cancelRequest({ tabId });
+  }
+
+  /**
+   * Aborts any in-flight generation request by tab ID or requestId
+   */
+  public static cancelRequest(ids: { tabId?: number; requestId?: string }): boolean {
+    let cancelled = false;
+    if (ids.tabId !== undefined) {
+      const controller = this.abortControllersByTab.get(ids.tabId);
+      if (controller) {
+        controller.abort();
+        this.abortControllersByTab.delete(ids.tabId);
+        this.inFlightByTab.delete(ids.tabId);
+        logger.debug(`Aborted in-flight LLM request for tab ${ids.tabId}`);
+        cancelled = true;
+      }
     }
-    return false;
+    if (ids.requestId) {
+      const controller = this.abortControllersByRequestId.get(ids.requestId);
+      if (controller) {
+        controller.abort();
+        this.abortControllersByRequestId.delete(ids.requestId);
+        logger.debug(`Aborted in-flight LLM request for requestId ${ids.requestId}`);
+        cancelled = true;
+      }
+    }
+    return cancelled;
   }
 
   /**
@@ -154,6 +174,9 @@ export class GeminiClient {
     if (options.tabId !== undefined) {
       GeminiClient.abortControllersByTab.set(options.tabId, controller);
     }
+    if (options.requestId) {
+      GeminiClient.abortControllersByRequestId.set(options.requestId, controller);
+    }
 
     // Connect caller's abort signal if supplied
     if (options.signal) {
@@ -231,6 +254,12 @@ export class GeminiClient {
       throw new LlmError('SERVER_ERROR', `Network error: ${errMsg}`, { cause: err });
     } finally {
       clearTimeout(timeoutTimer);
+      if (options.requestId) {
+        GeminiClient.abortControllersByRequestId.delete(options.requestId);
+      }
+      if (options.tabId !== undefined) {
+        GeminiClient.abortControllersByTab.delete(options.tabId);
+      }
     }
 
     const latencyMs = Date.now() - startTime;

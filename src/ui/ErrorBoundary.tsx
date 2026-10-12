@@ -89,6 +89,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     });
   }
 
+  private copyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  override componentWillUnmount(): void {
+    if (this.copyTimeout) {
+      clearTimeout(this.copyTimeout);
+      this.copyTimeout = null;
+    }
+  }
+
   handleCopyDiagnostics = async (): Promise<void> => {
     try {
       const text = formatDiagnostics(this.state.error, this.props.componentName);
@@ -96,8 +105,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         await navigator.clipboard.writeText(text);
       }
       this.setState({ copied: true });
-      setTimeout(() => {
-        this.setState({ copied: false });
+      if (this.copyTimeout) clearTimeout(this.copyTimeout);
+      this.copyTimeout = setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          this.setState({ copied: false });
+        }
       }, 2500);
     } catch (err) {
       logger.debug('Failed to copy diagnostics to clipboard', err);

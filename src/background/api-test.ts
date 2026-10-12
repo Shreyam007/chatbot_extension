@@ -27,26 +27,6 @@ export async function testGeminiApiKey(
     };
   }
 
-  if (trimmed === 'FAKE_TEST_KEY_NOT_REAL_INVALID' || trimmed.startsWith('mock_invalid')) {
-    return {
-      success: false,
-      error: 'API Error: PERMISSION_DENIED (HTTP 403). API key not valid.',
-    };
-  }
-
-  // Handle mock keys for automated unit tests and offline testing
-  if (
-    trimmed.startsWith('mock_') ||
-    trimmed.includes('MOCK_KEY') ||
-    trimmed === 'FAKE_TEST_KEY_NOT_REAL_SUCCESS'
-  ) {
-    return {
-      success: true,
-      latencyMs: 142,
-      supportedModels: [`models/${modelName}`, 'models/gemini-1.5-flash'],
-    };
-  }
-
   const startTime = Date.now();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);

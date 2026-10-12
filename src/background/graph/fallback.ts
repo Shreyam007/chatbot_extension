@@ -44,7 +44,7 @@ export function generateSafeFallback(state: AgentGraphState): Hint {
     confidence: 0.30, // Clamped low confidence (triggers S14.4 "I'm not sure" banner)
     checks: {
       leak: false,
-      grounded: true,
+      grounded: false,
       relevant: true,
     },
     retries: state.retryCount,

@@ -11,7 +11,7 @@ describe('Built Manifest V3 Validation', () => {
 
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.name).toBe('Unstuck');
-    expect(manifest.version).toBe('1.0.0');
+    expect(manifest.version).toBe('1.0.1');
     expect(manifest.icons?.['16']).toBe('icon-16.png');
     expect(manifest.icons?.['128']).toBe('icon-128.png');
     expect(manifest.action?.default_icon?.['16']).toBe('icon-16.png');

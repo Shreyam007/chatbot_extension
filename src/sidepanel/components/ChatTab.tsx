@@ -198,10 +198,22 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       </span>
                     </div>
 
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-mono font-semibold">
-                      <ShieldCheck className="w-3 h-3" />
-                      Critic: Checked
-                    </span>
+                    {msg.criticChecked && (msg.confidence ?? 1) > 0.48 ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-mono font-semibold">
+                        <ShieldCheck className="w-3 h-3" />
+                        Critic: Checked
+                      </span>
+                    ) : msg.confidence !== undefined && msg.confidence <= 0.48 ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/30 text-[10px] font-mono font-semibold">
+                        <AlertTriangle className="w-3 h-3" />
+                        Low confidence
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/40 text-[10px] font-mono font-semibold">
+                        <ShieldCheck className="w-3 h-3 text-outline" />
+                        Critic: Unverified
+                      </span>
+                    )}
                   </div>
 
                   {/* Message body */}

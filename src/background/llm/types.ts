@@ -37,6 +37,7 @@ export interface LlmGenerationOptions {
   _retryDelayMs?: number;
   systemInstruction?: string;
   tabId?: number;
+  requestId?: string;
   signal?: AbortSignal;
   responseSchema?: Record<string, unknown>;
 }

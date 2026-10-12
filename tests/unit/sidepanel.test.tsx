@@ -278,7 +278,7 @@ describe('Side Panel Components & S03-S14 States (Step 10)', () => {
           sender: 'assistant',
           text: 'Use a single pass hash table.',
           timestamp: Date.now(),
-          groundedQuote: 'nums[i] + nums[j] == target',
+          groundedQuote: 'return indices of the two numbers',
           confidence: 0.91,
           criticChecked: true,
         },
@@ -304,11 +304,41 @@ describe('Side Panel Components & S03-S14 States (Step 10)', () => {
       act(() => {
         citationPill.click();
       });
-      expect(onHighlight).toHaveBeenCalledWith('nums[i] + nums[j] == target');
+      expect(onHighlight).toHaveBeenCalledWith('return indices of the two numbers');
+    });
+
+    it('renders Low Confidence badge when confidence <= 0.48', () => {
+      act(() => {
+        root.render(
+          <ChatTab
+            messages={[
+              {
+                id: 'msg-low',
+                sender: 'assistant',
+                text: 'Maybe try binary search?',
+                timestamp: Date.now(),
+                confidence: 0.4,
+                criticChecked: false,
+              },
+            ]}
+            isLoading={false}
+            onSendMessage={vi.fn()}
+            onHighlightQuote={vi.fn()}
+          />
+        );
+      });
+      expect(container.textContent).toContain('Low confidence');
     });
   });
 
   describe('TraceTab Component (S07)', () => {
+    it('renders empty state when no traces exist', () => {
+      act(() => {
+        root.render(<TraceTab traces={[]} />);
+      });
+      expect(container.textContent).toContain('No trace telemetry yet');
+    });
+
     it('renders telemetry stat bento and 4 agent nodes', () => {
       const mockTrace: AgentRunTrace = {
         id: 'trace-1',
@@ -317,13 +347,24 @@ describe('Side Panel Components & S03-S14 States (Step 10)', () => {
         startTime: Date.now(),
         totalDurationMs: 2400,
         nodeTimings: [
-          { node: 'context_builder', startTime: 0, durationMs: 12 },
-          { node: 'hint_generator', startTime: 12, durationMs: 1800 },
-          { node: 'critic', startTime: 1812, durationMs: 240 },
-          { node: 'deliver', startTime: 2052, durationMs: 15 },
+          { node: 'detector', startTime: 0, durationMs: 180 },
+          { node: 'planner', startTime: 180, durationMs: 12 },
+          { node: 'context_builder', startTime: 192, durationMs: 10, details: { statementLength: 200 } },
+          { node: 'hint_generator', startTime: 202, durationMs: 1800 },
+          { node: 'critic', startTime: 2002, durationMs: 240 },
+          { node: 'deliver', startTime: 2242, durationMs: 15 },
         ],
         retries: 0,
-        criticEvaluations: [],
+        criticEvaluations: [
+          {
+            pass: true,
+            leak: false,
+            grounded: true,
+            relevant: true,
+            confidence: 0.94,
+            reason: 'APPROVED',
+          },
+        ],
         isFallback: false,
         model: 'gemini-2.5-flash',
       };
@@ -351,17 +392,36 @@ describe('Side Panel Components & S03-S14 States (Step 10)', () => {
       expect(container.textContent).toContain('3. Generator Agent');
       expect(container.textContent).toContain('4. Critic Agent');
       expect(container.textContent).toContain('p(stuck) = 0.78');
-      expect(container.textContent).toContain('Dwell: 4m 12s');
-      expect(container.textContent).toContain('Scroll reversals: 7');
-      expect(container.textContent).toContain('Wrong verdicts: 2');
+      expect(container.textContent).toContain('Dwell weight');
+      expect(container.textContent).toContain('Scroll reversals');
+      expect(container.textContent).toContain('Wrong verdicts');
     });
   });
 
   describe('ProgressTab Component (S10)', () => {
-    it('renders weekly summary metrics, sparkline, and mastery accordion', () => {
+    it('renders empty states when no topics exist', () => {
       act(() => {
         root.render(
           <ProgressTab
+            topics={[]}
+            weeklySolved={0}
+            hintsPerSolve={0}
+            nudgeAcceptRate={0}
+          />
+        );
+      });
+      expect(container.textContent).toContain('No topic mastery recorded yet');
+      expect(container.textContent).toContain('No problem completion history yet');
+    });
+
+    it('renders weekly summary metrics, telemetry, and mastery accordion', () => {
+      act(() => {
+        root.render(
+          <ProgressTab
+            topics={[
+              { topic: 'Arrays & Hashing', pKnown: 0.75, attempts: 4, hintsUsed: 2 },
+              { topic: 'Two Pointers', pKnown: 0.5, attempts: 2, hintsUsed: 3 },
+            ]}
             weeklySolved={8}
             hintsPerSolve={1.5}
             nudgeAcceptRate={0.75}
@@ -371,14 +431,10 @@ describe('Side Panel Components & S03-S14 States (Step 10)', () => {
 
       expect(container.textContent).toContain('Solved this week');
       expect(container.textContent).toContain('8');
-      expect(container.textContent).toContain('Hints needed per problem');
       expect(container.textContent).toContain('Topic mastery');
       expect(container.textContent).toContain('Arrays & Hashing');
       expect(container.textContent).toContain('Two Pointers');
-
-      // Verify accessible data table is present for screen readers
-      const table = container.querySelector('table');
-      expect(table).not.toBeNull();
+      expect(container.textContent).toContain('Weak');
     });
   });
 

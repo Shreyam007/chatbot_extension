@@ -1150,7 +1150,7 @@ export const OptionsApp: React.FC = () => {
                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/20">
                   <span className="text-outline block mb-1">Nudge Acceptance</span>
                   <span className="text-base font-bold text-primary">
-                    {Math.round((localMetrics?.nudgeAcceptanceRate ?? 0.64) * 100)}%
+                    {Math.round((localMetrics?.nudgeAcceptanceRate ?? 0) * 100)}%
                   </span>
                   <span className="text-[10px] text-on-surface-variant block mt-0.5">
                     {localMetrics?.nudgesAccepted ?? 0} accepted / {localMetrics?.nudgesOffered ?? 0}
@@ -1160,7 +1160,7 @@ export const OptionsApp: React.FC = () => {
                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/20">
                   <span className="text-outline block mb-1">Nudge Dismissal</span>
                   <span className="text-base font-bold text-tertiary">
-                    {Math.round((localMetrics?.nudgeDismissRate ?? 0.22) * 100)}%
+                    {Math.round((localMetrics?.nudgeDismissRate ?? 0) * 100)}%
                   </span>
                   <span className="text-[10px] text-on-surface-variant block mt-0.5">
                     {localMetrics?.nudgesDismissed ?? 0} dismissed
@@ -1180,7 +1180,7 @@ export const OptionsApp: React.FC = () => {
                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/20">
                   <span className="text-outline block mb-1">Hints per Solve</span>
                   <span className="text-base font-bold text-on-surface">
-                    {(localMetrics?.hintsPerSolve ?? 1.8).toFixed(1)}
+                    {(localMetrics?.hintsPerSolve ?? 0).toFixed(1)}
                   </span>
                   <span className="text-[10px] text-on-surface-variant block mt-0.5">
                     {localMetrics?.totalHintsDelivered ?? 0} hints delivered
@@ -1190,7 +1190,7 @@ export const OptionsApp: React.FC = () => {
                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/20">
                   <span className="text-outline block mb-1">Hint Helpfulness</span>
                   <span className="text-base font-bold text-primary">
-                    {Math.round((localMetrics?.hintHelpfulnessRate ?? 0.85) * 100)}%
+                    {Math.round((localMetrics?.hintHelpfulnessRate ?? 0) * 100)}%
                   </span>
                   <span className="text-[10px] text-on-surface-variant block mt-0.5">
                     {localMetrics?.totalHintRatings ?? 0} user ratings
@@ -1200,10 +1200,10 @@ export const OptionsApp: React.FC = () => {
                 <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/20">
                   <span className="text-outline block mb-1">Latency p50 / p95</span>
                   <span className="text-base font-bold text-on-surface">
-                    {localMetrics?.latencyP50Ms ?? 140}ms
+                    {localMetrics?.latencyP50Ms !== undefined && localMetrics.latencyP50Ms > 0 ? `${localMetrics.latencyP50Ms}ms` : '—'}
                   </span>
                   <span className="text-[10px] text-on-surface-variant block mt-0.5">
-                    p95: {localMetrics?.latencyP95Ms ?? 320}ms
+                    p95: {localMetrics?.latencyP95Ms !== undefined && localMetrics.latencyP95Ms > 0 ? `${localMetrics.latencyP95Ms}ms` : '—'}
                   </span>
                 </div>
 

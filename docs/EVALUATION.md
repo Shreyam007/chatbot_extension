@@ -69,6 +69,7 @@ Contextual Bandit: 90 nudges | 73 accepts | 13 dismissals | 81.1% acceptance rat
 3. **No Offline Quality Measurement:** The offline benchmark measures only regex leak detection and string grounding. It does not measure pedagogical appropriateness, mathematical correctness, or whether the hint truly guided a student to a solution.
 4. **Single Model Target:** Prompt templates and schemas were designed and calibrated against Google Gemini (`gemini-2.5-flash`). Behavior on other model families has not been verified.
 5. **Synthetic User Behavior:** The planner evaluation uses fixed persona probability distributions rather than longitudinal student telemetry.
+6. **Chat vs Proactive Hint Grounding:** Proactive hints are guaranteed to anchor to problem statements via mandatory verbatim quotes. In conversational chat, students frequently submit off-topic or general inquiries (e.g., *"who invented this problem"*); the pipeline handles these via explicit unanswerable classifications (`answerable_from_page: false`), omitting fake quote extraction.
 
 ---
 

@@ -63,7 +63,13 @@ export function buildContext(state: AgentGraphState): string {
     `- Target Hint Level: ${level}`,
     `- Estimated Topic Mastery: ${mastery !== undefined ? Math.round(mastery * 100) + '%' : 'Intermediate'}`,
     `- Previous Hints Shown: ${historySummary}`,
-    userQuery ? `- Student Question: "${userQuery.slice(0, 2000)}"` : '',
+    userQuery
+      ? `\nStudent Question:\n"${userQuery.slice(0, 2000)}"\n` +
+        `INSTRUCTIONS FOR ANSWERING STUDENT QUESTION:\n` +
+        `- Answer the student's question directly, respecting the constraints of Target Hint Level ${level}.\n` +
+        `- If the question is about problem history, author/origin, or other topics that cannot be answered from the problem statement, set answerable_from_page: false, state concisely that the problem statement does not say, and offer to help with the algorithmic problem. Do NOT hallucinate an answer or force an ungrounded hint.\n` +
+        `- If the question is answerable from the page/algorithm, set answerable_from_page: true and provide an exact word-for-word quote from the statement in groundedQuote.\n`
+      : '',
     feedbackSection,
     ``,
     `Generate the response strictly as valid structured JSON matching the requested schema.`,

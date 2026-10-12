@@ -624,14 +624,19 @@ test.describe.serial('Step 16: Playwright E2E Scenarios (Scenarios 1-9)', () => 
       await installWorkerGeminiMock(background, { mode: 'rate_limit' });
       await initExtensionSettings(background);
 
+      const page = await context.newPage();
+      await setupDomainRoutes(page);
+      await page.goto('https://leetcode.com/problems/two-sum/', { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(500);
+
       const sidepanel = await context.newPage();
       await sidepanel.setViewportSize({ width: 420, height: 750 });
       await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`, { waitUntil: 'load' });
 
       // Trigger generation to hit 429
-      const nextHintBtn = sidepanel.locator('button:has-text("Next hint")');
-      await expect(nextHintBtn).toBeVisible({ timeout: 5000 });
-      await nextHintBtn.click();
+      const reqBtn = sidepanel.locator('button:has-text("Request Level 1 Hint"), button:has-text("Next hint")').first();
+      await expect(reqBtn).toBeVisible({ timeout: 5000 });
+      await reqBtn.click();
       await sidepanel.waitForTimeout(400);
 
       // Verify S13.3 Rate Limited screen is displayed with live countdown
@@ -660,14 +665,19 @@ test.describe.serial('Step 16: Playwright E2E Scenarios (Scenarios 1-9)', () => 
       await installWorkerGeminiMock(background, { mode: 'invalid_key' });
       await initExtensionSettings(background);
 
+      const page = await context.newPage();
+      await setupDomainRoutes(page);
+      await page.goto('https://leetcode.com/problems/two-sum/', { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(500);
+
       const sidepanel = await context.newPage();
       await sidepanel.setViewportSize({ width: 420, height: 750 });
       await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`, { waitUntil: 'load' });
 
       // Trigger request to receive 403
-      const nextHintBtn = sidepanel.locator('button:has-text("Next hint")');
-      await expect(nextHintBtn).toBeVisible({ timeout: 5000 });
-      await nextHintBtn.click();
+      const reqBtn = sidepanel.locator('button:has-text("Request Level 1 Hint"), button:has-text("Next hint")').first();
+      await expect(reqBtn).toBeVisible({ timeout: 5000 });
+      await reqBtn.click();
       await sidepanel.waitForTimeout(400);
 
       // Verify S13.1 card is displayed

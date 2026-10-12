@@ -25,6 +25,21 @@ test('Step 3 E2E: Complete Onboarding flow (S01 -> S02a -> S02b) with state resu
   const extensionId = background.url().split('/')[2];
   expect(extensionId).toBeDefined();
 
+  // Mock Gemini API in Service Worker for test-connection verification
+  await background.evaluate(() => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
+      const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
+      if (urlStr.includes('generativelanguage.googleapis.com')) {
+        return new Response(JSON.stringify({ models: [{ name: 'models/gemini-2.5-flash' }] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return originalFetch(input, init);
+    };
+  });
+
   // 1. Open Options page in fresh profile (Onboarding Wizard rendered)
   const page = await context.newPage();
   await page.setViewportSize({ width: 1000, height: 800 });

@@ -28,9 +28,9 @@ test('Step 13: Mastery model, BKT calibration, and weak-topic review in Side Pan
   await page.setViewportSize({ width: 420, height: 750 });
   await page.goto(`chrome-extension://${extensionId}/sidepanel.html`, { waitUntil: 'load' });
 
-  // Pre-seed completed onboarding
-  await page.evaluate(() => {
-    return chrome.storage.local.set({
+  // Pre-seed completed onboarding and mastery records in IndexedDB
+  await page.evaluate(async () => {
+    await chrome.storage.local.set({
       onboarding_state: {
         completed: true,
         currentStep: 3,
@@ -39,6 +39,32 @@ test('Step 13: Mastery model, BKT calibration, and weak-topic review in Side Pan
         testStatus: 'success',
       },
       apiKey: 'mock-valid-gemini-key',
+    });
+
+    const openReq = indexedDB.open('unstuck_db');
+    await new Promise<void>((resolve, reject) => {
+      openReq.onsuccess = () => {
+        const db = openReq.result;
+        const tx = db.transaction('mastery', 'readwrite');
+        const store = tx.objectStore('mastery');
+        store.put({
+          topic: 'Arrays & Hashing',
+          pKnown: 0.72,
+          attempts: 5,
+          hintsUsed: 2,
+          updatedAt: Date.now(),
+        });
+        store.put({
+          topic: 'Dynamic Programming',
+          pKnown: 0.38,
+          attempts: 4,
+          hintsUsed: 5,
+          updatedAt: Date.now(),
+        });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      };
+      openReq.onerror = () => reject(openReq.error);
     });
   });
   await page.reload({ waitUntil: 'load' });
@@ -50,7 +76,7 @@ test('Step 13: Mastery model, BKT calibration, and weak-topic review in Side Pan
   await page.waitForTimeout(500);
 
   // 1. Verify Topic Mastery Section and BKT Calibrated Topics
-  await expect(page.getByText('Topic mastery')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Topic mastery' })).toBeVisible();
   await expect(page.getByText('Calibrated from Bayesian Knowledge Tracing')).toBeVisible();
   await expect(page.getByText('Arrays & Hashing').first()).toBeVisible();
   await expect(page.getByText('Dynamic Programming').first()).toBeVisible();

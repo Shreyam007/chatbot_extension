@@ -126,16 +126,13 @@ export function initBackground() {
     },
     CANCEL_GENERATION: async (req, sender) => {
       const tabId = req.tabId ?? sender?.tab?.id;
-      if (tabId !== undefined) {
-        const cancelled = GeminiClient.cancelTabRequest(tabId);
-        return {
-          type: 'GENERATION_CANCELLED',
-          success: cancelled,
-        };
-      }
+      const cancelled = GeminiClient.cancelRequest({
+        requestId: req.requestId,
+        tabId,
+      });
       return {
         type: 'GENERATION_CANCELLED',
-        success: false,
+        success: cancelled,
       };
     },
     REQUEST_HINT: async (req, sender) => {
@@ -166,6 +163,7 @@ export function initBackground() {
         model,
         tabId,
         userQuery: req.userQuery,
+        requestId: req.requestId,
       });
 
       recentTraces.unshift(result.trace);
@@ -357,6 +355,7 @@ export function initBackground() {
         model,
         tabId,
         userQuery: req.query,
+        requestId: req.requestId,
       });
 
       recentTraces.unshift(result.trace);
@@ -364,12 +363,21 @@ export function initBackground() {
         recentTraces.pop();
       }
 
+      const criticEval = result.trace.criticEvaluations[0];
+      const isCriticApproved = Boolean(
+        result.hint.checks?.leak === false &&
+        result.hint.checks?.grounded === true &&
+        !result.trace.isFallback
+      );
+
       return {
         type: 'CHAT_QUERY_RESULT',
         reply: result.hint.text,
         groundedQuote: result.hint.groundedQuote,
         confidence: result.hint.confidence,
         codeBlock: result.hint.codeBlock,
+        criticChecked: isCriticApproved,
+        answerable_from_page: (criticEval as unknown as { answerable_from_page?: boolean })?.answerable_from_page ?? true,
       };
     },
     GET_RUN_TRACES: async (_req) => {
@@ -388,17 +396,6 @@ export function initBackground() {
         hintsUsed: data.hintsUsed,
       }));
 
-      // Default populated topics for rich display if storage is currently empty
-      const populatedTopics =
-        topics.length > 0
-          ? topics
-          : [
-              { topic: 'Arrays & Hashing', pKnown: 0.72, attempts: 8, hintsUsed: 3 },
-              { topic: 'Two Pointers', pKnown: 0.68, attempts: 6, hintsUsed: 2 },
-              { topic: 'Binary Search', pKnown: 0.54, attempts: 4, hintsUsed: 4 },
-              { topic: 'Dynamic Programming', pKnown: 0.41, attempts: 5, hintsUsed: 7 },
-            ];
-
       const [events, hints, banditStats] = await Promise.all([
         getEventLogs(),
         getAllHints(),
@@ -408,34 +405,15 @@ export function initBackground() {
 
       return {
         type: 'MASTERY_PROGRESS',
-        topics: populatedTopics,
-        weeklySolved: metrics.solvedProblemsCount > 0 ? metrics.solvedProblemsCount : 6,
-        hintsPerSolve: metrics.hintsPerSolve > 0 ? metrics.hintsPerSolve : 1.8,
-        nudgeAcceptRate: metrics.nudgeAcceptanceRate > 0 ? metrics.nudgeAcceptanceRate : 0.64,
-        recentProblemHints: [
-          { id: 'P-10', hints: 3 },
-          { id: 'P-9', hints: 2 },
-          { id: 'P-8', hints: 4 },
-          { id: 'P-7', hints: 1 },
-          { id: 'P-6', hints: 2 },
-          { id: 'P-5', hints: 3 },
-          { id: 'P-4', hints: 1 },
-          { id: 'P-3', hints: 2 },
-          { id: 'P-2', hints: 1 },
-          { id: 'Latest', hints: 0 },
-        ],
+        topics,
+        weeklySolved: metrics.solvedProblemsCount,
+        hintsPerSolve: metrics.hintsPerSolve,
+        nudgeAcceptRate: metrics.nudgeAcceptanceRate,
+        recentProblemHints: [],
       };
     },
     GET_WEAK_TOPICS_REVIEW: async (_req) => {
-      let masteryRecord = await getAllMastery();
-      if (Object.keys(masteryRecord).length === 0) {
-        masteryRecord = {
-          'Arrays & Hashing': { pKnown: 0.72, attempts: 8, hintsUsed: 3, lastUpdated: Date.now() },
-          'Two Pointers': { pKnown: 0.68, attempts: 6, hintsUsed: 2, lastUpdated: Date.now() },
-          'Binary Search': { pKnown: 0.54, attempts: 4, hintsUsed: 4, lastUpdated: Date.now() },
-          'Dynamic Programming': { pKnown: 0.41, attempts: 5, hintsUsed: 7, lastUpdated: Date.now() },
-        };
-      }
+      const masteryRecord = await getAllMastery();
       const weakTopics = identifyWeakTopics(masteryRecord);
       return {
         type: 'WEAK_TOPICS_REVIEW',
