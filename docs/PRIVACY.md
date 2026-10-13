@@ -1,13 +1,16 @@
 # PRIVACY.md — Privacy Policy & Data Notice
 
-**Last Updated:** October 12, 2026  
-**Product Version:** Unstuck v1.0.0
+**Last Updated:** October 13, 2026  
+**Product Version:** Unstuck v1.0.2
 
 ---
 
 ## 1. Our Privacy Philosophy
 
 **Unstuck** was designed from first principles as a **zero-backend, privacy-first AI tutor**. We believe that learning tools should empower students without tracking them, harvesting their code, or monetizing their personal data.
+
+> **Canonical Privacy Guarantee:**  
+> *"Your key is stored only on this device (chrome.storage.local) and sent only to Google's Gemini API with your requests. We run no servers."*
 
 1. **Zero Intermediate Servers:** Unstuck operates entirely inside your local Google Chrome browser. We operate no cloud proxy servers, no telemetry ingestion collectors, and no hosted databases.
 2. **Bring Your Own Key (BYOK):** All AI interactions communicate directly and securely from your browser to Google's Gemini REST API using your personal API key from Google AI Studio.

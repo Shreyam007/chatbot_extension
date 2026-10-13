@@ -8,7 +8,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
-const zipPath = path.join(rootDir, '.output', 'unstuck-1.0.1-chrome.zip');
+const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
+const zipPath = path.join(rootDir, '.output', `unstuck-${pkg.version}-chrome.zip`);
 
 let tempExtractDir: string;
 let context: BrowserContext;

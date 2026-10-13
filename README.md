@@ -43,8 +43,7 @@
    - Completely silences content script overlays and suspends all model generation requests.
 
 8. **Zero-Backend Privacy (BYOK):**
-   - 100% client-side architecture. No proxy servers, analytics databases, or intermediary backends.
-   - Uses your personal Google Gemini API key stored strictly in encrypted `chrome.storage.local`.
+   - 100% client-side architecture. Your key is stored only on this device (`chrome.storage.local`) and sent only to Google's Gemini API with your requests. We run no servers.
 
 ---
 

@@ -147,12 +147,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+              className={`flex flex-col w-full min-w-0 ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
             >
               {msg.sender === 'user' ? (
                 /* User Bubble */
-                <div className="max-w-[85%] bg-surface-container-high border border-outline-variant/50 rounded-xl rounded-tr-xs p-3 transition-colors">
-                  <p className="font-sans text-xs text-on-surface break-words leading-relaxed select-text">
+                <div className="max-w-[85%] min-w-0 bg-surface-container-high border border-outline-variant/50 rounded-xl rounded-tr-xs p-3 transition-colors break-words">
+                  <p className="font-sans text-xs text-on-surface break-words leading-relaxed select-text [overflow-wrap:anywhere]">
                     {msg.text}
                   </p>
                   <div className="flex items-center justify-end gap-1 mt-1 text-[10px] font-mono text-outline">
@@ -171,13 +171,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 </div>
               ) : (
                 /* Assistant Bubble */
-                <article className="w-full bg-surface-container border border-outline-variant/40 rounded-xl p-3 flex flex-col gap-2.5 transition-all shadow-sm">
+                <article className="w-full min-w-0 bg-surface-container border border-outline-variant/40 rounded-xl p-3 flex flex-col gap-2.5 transition-all shadow-sm">
                   {/* Low Confidence Warning Banner (S14.4) */}
                   {msg.confidence !== undefined && msg.confidence <= 0.48 && (
-                    <div className="flex items-center justify-between gap-1.5 bg-tertiary/10 border border-tertiary/30 rounded-lg p-2 text-tertiary">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-between gap-1.5 bg-tertiary/10 border border-tertiary/30 rounded-lg p-2 text-tertiary min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
                         <AlertTriangle className="w-4 h-4 shrink-0 text-tertiary" />
-                        <span className="font-mono text-[11px] leading-tight font-medium">
+                        <span className="font-mono text-[11px] leading-tight font-medium truncate">
                           I'm not sure about this one. Treat it as a guess.
                         </span>
                       </div>
@@ -188,28 +188,28 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   )}
 
                   {/* Header: Brand & Critic status */}
-                  <div className="flex items-center justify-between gap-2 border-b border-outline-variant/25 pb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded bg-primary/20 border border-primary/50 flex items-center justify-center text-primary">
+                  <div className="flex items-center justify-between gap-2 border-b border-outline-variant/25 pb-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-5 h-5 rounded bg-primary/20 border border-primary/50 flex items-center justify-center text-primary shrink-0">
                         <Lightbulb className="w-3.5 h-3.5" />
                       </div>
-                      <span className="font-mono text-xs font-semibold text-on-surface tracking-tight">
+                      <span className="font-mono text-xs font-semibold text-on-surface tracking-tight truncate">
                         Unstuck Tutor
                       </span>
                     </div>
 
                     {msg.criticChecked && (msg.confidence ?? 1) > 0.48 ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-mono font-semibold">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-mono font-semibold shrink-0">
                         <ShieldCheck className="w-3 h-3" />
                         Critic: Checked
                       </span>
                     ) : msg.confidence !== undefined && msg.confidence <= 0.48 ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/30 text-[10px] font-mono font-semibold">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/30 text-[10px] font-mono font-semibold shrink-0">
                         <AlertTriangle className="w-3 h-3" />
                         Low confidence
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/40 text-[10px] font-mono font-semibold">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/40 text-[10px] font-mono font-semibold shrink-0">
                         <ShieldCheck className="w-3 h-3 text-outline" />
                         Critic: Unverified
                       </span>
@@ -217,13 +217,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   </div>
 
                   {/* Message body */}
-                  <div className="text-xs font-sans text-on-surface space-y-2 leading-relaxed break-words select-text">
+                  <div className="text-xs font-sans text-on-surface space-y-2 leading-relaxed break-words [overflow-wrap:anywhere] select-text">
                     <p>{msg.text}</p>
                   </div>
 
                   {/* Code block if present */}
                   {msg.codeBlock && (
-                    <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2.5 overflow-hidden">
+                    <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-2.5 overflow-hidden w-full min-w-0">
                       <div className="flex items-center justify-between text-[10px] font-mono text-outline border-b border-outline-variant/20 pb-1 mb-1.5">
                         <span className="font-medium">Detected Pattern</span>
                         <span className="text-secondary">Code Scaffold</span>
@@ -238,11 +238,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   {msg.groundedQuote && (
                     <div
                       onClick={() => onHighlightQuote(msg.groundedQuote!)}
-                      className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-secondary/50 cursor-pointer transition-colors group"
+                      className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-secondary/50 cursor-pointer transition-colors group w-full min-w-0"
                       title="Click to locate and highlight this quote on active page"
                     >
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="text-[12px] text-secondary font-mono">“</span>
+                      <div className="flex items-center gap-1.5 truncate min-w-0">
+                        <span className="text-[12px] text-secondary font-mono shrink-0">“</span>
                         <span className="font-mono text-[11px] text-on-surface-variant truncate">
                           {msg.groundedQuote}
                         </span>
@@ -338,7 +338,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             )}
           </div>
 
-          <span className="text-on-surface-variant/70 text-[10px] font-mono">
+          <span className="text-on-surface-variant/70 text-[10px] font-mono truncate max-w-[140px] min-w-0">
             Context: {siteName}
           </span>
         </div>

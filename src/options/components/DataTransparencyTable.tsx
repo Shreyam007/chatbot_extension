@@ -173,9 +173,9 @@ export const DataTransparencyTable: React.FC<DataTransparencyTableProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="p-3 bg-surface-container-low border-t border-outline-variant/30 flex items-center justify-between text-xs font-sans text-on-surface-variant">
-        <span>Curious about the exact payload structure right now?</span>
-        <span className="text-primary font-mono text-[11px]">
+      <div className="p-3 bg-surface-container-low border-t border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs font-sans text-on-surface-variant min-w-0">
+        <span className="truncate">Curious about the exact payload structure right now?</span>
+        <span className="text-primary font-mono text-[11px] truncate">
           Inspection trace visible in Side Panel Trace tab
         </span>
       </div>

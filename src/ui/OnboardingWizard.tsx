@@ -45,6 +45,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   const [latencyMs, setLatencyMs] = useState<number | undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [supportedModels, setSupportedModels] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_AI_MODEL);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load persisted onboarding state on mount
@@ -132,12 +133,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       if (res.success) {
         setTestStatus('success');
         setLatencyMs(res.latencyMs ?? 0);
-        setSupportedModels(res.supportedModels || []);
+        const models = res.supportedModels || [];
+        setSupportedModels(models);
+        const chosen = models[0] || DEFAULT_AI_MODEL;
+        setSelectedModel(chosen);
         persistState({
           apiKey: apiKey.trim(),
           testStatus: 'success',
           detectedLatencyMs: res.latencyMs,
         });
+        sendToBackground({
+          type: 'UPDATE_SETTINGS',
+          updates: { model: chosen },
+        }).catch(() => {});
       } else {
         setTestStatus('error');
         setErrorMessage(res.error || 'API key rejected. Please verify permissions.');
@@ -176,6 +184,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       apiKey: apiKey.trim(),
       enabledSites,
     });
+    try {
+      await sendToBackground({
+        type: 'UPDATE_SETTINGS',
+        updates: { model: selectedModel },
+      });
+    } catch {
+      // ignore
+    }
     if (onComplete) {
       onComplete();
     }
@@ -260,7 +276,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 </div>
                 <div className="space-y-1">
                   <h2 className="text-xs font-semibold font-mono text-on-surface">Graded hints: direction first, answer last</h2>
-                  <div className="flex items-center gap-1 font-mono text-[10px] text-primary-container">
+                  <div className="flex flex-wrap items-center gap-1 font-mono text-[10px] text-primary-container min-w-0">
                     <span className="bg-surface-container-high px-1 py-0.5 rounded text-on-surface">L1 Direction</span>
                     <span className="text-on-surface-variant">→</span>
                     <span className="bg-surface-container-high px-1 py-0.5 rounded text-on-surface">L2 Approach</span>
@@ -280,7 +296,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 <div className="space-y-0.5">
                   <h2 className="text-xs font-semibold font-mono text-on-surface">Your browsing stays on your device</h2>
                   <p className="text-[11px] text-on-surface-variant leading-tight">
-                    Zero background tracking, telemetry stays local.
+                    All behavioral telemetry stays local on your machine.
                   </p>
                 </div>
               </div>
@@ -299,9 +315,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div className="bg-surface-container/60 p-2 rounded border border-outline-variant/20 space-y-1">
+                <div className="bg-surface-container/60 p-2 rounded border border-outline-variant/20 space-y-1 min-w-0">
                   <span className="font-mono text-[10px] text-secondary font-medium block">What I watch</span>
-                  <ul className="space-y-0.5 text-on-surface-variant">
+                  <ul className="space-y-0.5 text-on-surface-variant break-words">
                     <li className="flex items-center gap-1">
                       <span className="text-primary font-bold">•</span> Active time on problem
                     </li>
@@ -314,9 +330,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   </ul>
                 </div>
 
-                <div className="bg-surface-container/60 p-2 rounded border border-outline-variant/20 space-y-1">
+                <div className="bg-surface-container/60 p-2 rounded border border-outline-variant/20 space-y-1 min-w-0">
                   <span className="font-mono text-[10px] text-tertiary font-medium block">What I never do</span>
-                  <ul className="space-y-0.5 text-on-surface-variant">
+                  <ul className="space-y-0.5 text-on-surface-variant break-words">
                     <li className="flex items-center gap-1">
                       <span className="text-error font-bold">×</span> Record your screen
                     </li>
@@ -422,10 +438,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                       setApiKey(e.target.value);
                       if (testStatus !== 'idle') setTestStatus('idle');
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleTestKey();
+                      }
+                    }}
                     onBlur={() => {
                       if (apiKey.trim()) persistState({ apiKey: apiKey.trim() });
                     }}
-                    placeholder="Paste AIzaSy... key"
+                    placeholder="Paste AIzaSy... key (Press Enter to test)"
                     className="w-full pl-8 pr-9 py-2 bg-transparent text-xs font-mono text-on-surface placeholder:text-outline/60 focus:outline-none"
                   />
                   <button
@@ -456,9 +478,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   <>
                     <Zap className="w-3.5 h-3.5 text-primary" />
                     <span>Test connection</span>
-                    <kbd className="ml-1 text-[9px] font-mono bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant/40 text-outline">
-                      Cmd+T
-                    </kbd>
                   </>
                 )}
               </button>
@@ -467,7 +486,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               {testStatus === 'idle' && (
                 <div data-testid="status-idle" className="p-2 rounded bg-surface-container-lowest text-[11px] text-outline border border-outline-variant/20 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5 text-outline" />
-                  <span>Key entered. Click <strong>Test connection</strong> to authenticate.</span>
+                  <span>Key entered. Click <strong>Test connection</strong> (or Enter) to authenticate.</span>
                 </div>
               )}
 
@@ -475,28 +494,48 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 <div data-testid="status-testing" className="p-2.5 rounded bg-surface-container-lowest border border-secondary/30 space-y-0.5 text-xs">
                   <p className="font-mono text-secondary flex items-center gap-1.5">
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    Checking connection with Gemini 2.5 Flash...
+                    Checking connection with Gemini API...
                   </p>
                   <p className="text-[10px] text-outline pl-4">Handshaking with Google AI API gateway</p>
                 </div>
               )}
 
               {testStatus === 'success' && (
-                <div data-testid="status-success" className="p-2.5 rounded bg-primary/10 border border-primary/40 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono text-primary font-medium flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-primary" />
-                      Connected — Gemini Flash & Pro ready
+                <div data-testid="status-success" className="p-2.5 rounded bg-primary/10 border border-primary/40 space-y-2 w-full min-w-0">
+                  <div className="flex items-center justify-between text-xs gap-2 min-w-0">
+                    <span className="font-mono text-primary font-medium flex items-center gap-1.5 min-w-0 truncate">
+                      <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                      <span className="truncate">Connected — {selectedModel} ready</span>
                     </span>
-                    {latencyMs && <span className="font-mono text-[10px] text-primary">{latencyMs}ms</span>}
+                    {latencyMs !== undefined && <span className="font-mono text-[10px] text-primary shrink-0">{latencyMs}ms</span>}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-primary">
-                    {(supportedModels.length > 0 ? supportedModels : ['models/gemini-2.5-flash', 'models/gemini-1.5-flash']).map((m) => (
-                      <span key={m} className="px-1.5 py-0.5 rounded bg-surface-container-lowest border border-primary/20">
-                        {m}
-                      </span>
-                    ))}
-                  </div>
+                  {supportedModels.length > 0 && (
+                    <div className="space-y-1 w-full min-w-0">
+                      <label htmlFor="model-select" className="text-[10px] font-mono text-outline block">
+                        Select Model
+                      </label>
+                      <select
+                        id="model-select"
+                        data-testid="model-select"
+                        value={selectedModel}
+                        onChange={(e) => {
+                          const newModel = e.target.value;
+                          setSelectedModel(newModel);
+                          sendToBackground({
+                            type: 'UPDATE_SETTINGS',
+                            updates: { model: newModel },
+                          }).catch(() => {});
+                        }}
+                        className="w-full min-w-0 bg-surface-container-lowest border border-primary/30 rounded-lg px-2 py-1.5 text-xs font-mono text-on-surface focus:outline-none focus:border-primary truncate"
+                      >
+                        {supportedModels.map((m) => (
+                          <option key={m} value={m} className="bg-surface-container text-on-surface font-mono text-xs">
+                            {m} {m === 'gemini-2.5-flash' || m === 'gemini-1.5-flash' ? '(Recommended)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -516,11 +555,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             </div>
 
             {/* Reassurance Micro-Card */}
-            <div className="p-2.5 rounded bg-surface-container-low border border-outline-variant/20 flex items-center gap-2.5">
-              <Shield className="w-4 h-4 text-primary shrink-0" />
-              <div className="text-[11px]">
-                <strong className="text-on-surface block font-mono">Zero Data Retention</strong>
-                <span className="text-outline">Stored in chrome.storage.local. Never synced or shared.</span>
+            <div data-testid="reassurance-card" className="p-2.5 rounded bg-surface-container-low border border-outline-variant/20 flex items-start gap-2.5 w-full min-w-0">
+              <Shield className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <div className="text-[11px] min-w-0">
+                <strong className="text-on-surface block font-mono">Local Storage Only</strong>
+                <span className="text-outline block leading-relaxed break-words">
+                  Your key is stored only on this device (chrome.storage.local) and sent only to Google's Gemini API with your requests. We run no servers.
+                </span>
               </div>
             </div>
           </div>
@@ -541,19 +582,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             {/* Platform Selection Cards */}
             <div className="space-y-2">
               {/* LeetCode */}
-              <div className="p-3 bg-surface-container rounded-lg border border-outline-variant/30 flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
+              <div className="p-3 bg-surface-container rounded-lg border border-outline-variant/30 flex items-start justify-between gap-3 w-full min-w-0">
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
                   <div className="w-7 h-7 rounded-md bg-surface-container-high flex items-center justify-center shrink-0 text-[#FFA116] border border-outline-variant/40 mt-0.5">
                     <Code2 className="w-4 h-4" />
                   </div>
-                  <div className="space-y-0.5">
+                  <div className="space-y-0.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h2 className="text-xs font-semibold font-mono text-on-surface">LeetCode</h2>
                       <span className="px-1.5 py-0.2 rounded-full font-mono text-[9px] bg-primary/10 text-primary border border-primary/30">
                         Auto-Track
                       </span>
                     </div>
-                    <p className="text-[11px] text-on-surface-variant">
+                    <p className="text-[11px] text-on-surface-variant break-words">
                       <span className="font-mono text-secondary">leetcode.com/problems/*</span> — watches timer, attempts, test cases.
                     </p>
                   </div>
@@ -578,19 +619,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               </div>
 
               {/* Codeforces */}
-              <div className="p-3 bg-surface-container rounded-lg border border-outline-variant/30 flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
+              <div className="p-3 bg-surface-container rounded-lg border border-outline-variant/30 flex items-start justify-between gap-3 w-full min-w-0">
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
                   <div className="w-7 h-7 rounded-md bg-surface-container-high flex items-center justify-center shrink-0 text-[#1890FF] border border-outline-variant/40 mt-0.5">
                     <Terminal className="w-4 h-4" />
                   </div>
-                  <div className="space-y-0.5">
+                  <div className="space-y-0.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h2 className="text-xs font-semibold font-mono text-on-surface">Codeforces</h2>
                       <span className="px-1.5 py-0.2 rounded-full font-mono text-[9px] bg-primary/10 text-primary border border-primary/30">
                         Auto-Track
                       </span>
                     </div>
-                    <p className="text-[11px] text-on-surface-variant">
+                    <p className="text-[11px] text-on-surface-variant break-words">
                       <span className="font-mono text-secondary">codeforces.com/contest/*</span> — detects verdict delays & test failures.
                     </p>
                   </div>
@@ -615,14 +656,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               </div>
 
               {/* Optional On-Demand Sites */}
-              <div className="p-3 bg-surface-container rounded-lg border border-outline-variant/30 flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
+              <div className="p-3 bg-surface-container rounded-lg border border-outline-variant/30 flex items-start justify-between gap-3 w-full min-w-0">
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
                   <div className="w-7 h-7 rounded-md bg-surface-container-high flex items-center justify-center shrink-0 text-outline border border-outline-variant/40 mt-0.5">
                     <Globe className="w-4 h-4" />
                   </div>
-                  <div className="space-y-0.5">
+                  <div className="space-y-0.5 min-w-0 flex-1">
                     <h2 className="text-xs font-semibold font-mono text-on-surface">Any other site I ask for</h2>
-                    <p className="text-[11px] text-on-surface-variant">
+                    <p className="text-[11px] text-on-surface-variant break-words">
                       On-demand permission prompt whenever you summon {APP_NAME} on documentation portals.
                     </p>
                   </div>
@@ -648,16 +689,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             </div>
 
             {/* Hint Escalation Preview */}
-            <div className="p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 space-y-1.5">
+            <div className="p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 space-y-1.5 w-full min-w-0">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="font-mono text-outline uppercase tracking-wider">Hint Escalation Model</span>
                 <span className="font-mono text-primary">Pre-armed</span>
               </div>
-              <div className="grid grid-cols-4 gap-1 text-center font-mono text-[10px]">
-                <div className="p-1 rounded bg-surface-container text-on-surface border border-outline-variant/20 truncate">L1 Direction</div>
-                <div className="p-1 rounded bg-surface-container text-on-surface border border-outline-variant/20 truncate">L2 Approach</div>
-                <div className="p-1 rounded bg-surface-container text-on-surface border border-outline-variant/20 truncate">L3 Pseudocode</div>
-                <div className="p-1 rounded bg-surface-container text-outline border border-outline-variant/10 truncate">L4 Solution</div>
+              <div className="grid grid-cols-4 gap-1 text-center font-mono text-[10px] w-full min-w-0">
+                <div className="p-1 rounded bg-surface-container text-on-surface border border-outline-variant/20 min-w-0 truncate">L1 Direction</div>
+                <div className="p-1 rounded bg-surface-container text-on-surface border border-outline-variant/20 min-w-0 truncate">L2 Approach</div>
+                <div className="p-1 rounded bg-surface-container text-on-surface border border-outline-variant/20 min-w-0 truncate">L3 Pseudocode</div>
+                <div className="p-1 rounded bg-surface-container text-outline border border-outline-variant/10 min-w-0 truncate">L4 Solution</div>
               </div>
             </div>
           </div>

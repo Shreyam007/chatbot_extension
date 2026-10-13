@@ -41,3 +41,7 @@ evaluation_results.*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Screenshots
+.screenshots/
+screenshots/

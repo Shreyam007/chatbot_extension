@@ -99,7 +99,7 @@ Every edge case defined in Section 5 of `ANTIGRAVITY.md` is tracked here. Each i
 ### G. UI, accessibility, performance
 | ID | Case | Required behaviour | Test File & Name | Status |
 |---|---|---|---|---|
-| EC-120 | Side panel width 320 to 700 | No overflow or overlap; code blocks scroll | `tests/e2e/sidepanel.test.ts` › Step 10 Side Panel: Render all tabs (verifies responsive container) | passed |
+| EC-120 | Side panel width 320 to 700 | No overflow or overlap; code blocks scroll; assert scrollWidth <= clientWidth | `tests/e2e/responsive-overflow.test.ts` › Responsive Overflow Regression (EC-120) across 320px–700px | passed |
 | EC-121 | Keyboard-only use | Full operation, visible focus, Esc closes overlays | `tests/unit/overlay.test.ts` › S08 Floating Nudge Overlay › dismisses card when Escape key pressed | passed |
 | EC-122 | Screen reader | Errors in `role=alert`; status changes in `aria-live`; stepper has proper semantics | Manual verification protocol: Tested with NVDA / ChromeVox on `role="alert"`, `aria-selected` tab semantics | manual |
 | EC-123 | Reduced motion | No essential motion; animations disabled | `tests/unit/a11y-theme.test.ts` › includes prefers-reduced-motion media query disabling transitions | passed |

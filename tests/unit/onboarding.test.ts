@@ -57,7 +57,7 @@ describe('Step 3: Onboarding State & API Key Testing', () => {
         const result = await testGeminiApiKey('some_key_string_for_testing');
         expect(result.success).toBe(true);
         expect(result.latencyMs).toBeGreaterThanOrEqual(0);
-        expect(result.supportedModels).toContain('models/gemini-2.5-flash');
+        expect(result.supportedModels).toContain('gemini-2.5-flash');
       } finally {
         globalThis.fetch = originalFetch;
       }
@@ -99,7 +99,7 @@ describe('Step 3: Onboarding State & API Key Testing', () => {
 
       const result = await testGeminiApiKey('real_looking_valid_token_abc');
       expect(result.success).toBe(true);
-      expect(result.supportedModels).toContain('models/gemini-2.5-flash');
+      expect(result.supportedModels).toContain('gemini-2.5-flash');
     });
 
     it('handles Google AI API 403 error parsing without leaking key in error message', async () => {

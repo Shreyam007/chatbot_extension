@@ -33,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Upper row: Brand, Live status pill, and action buttons */}
       <div className="flex items-center justify-between gap-2 pb-2">
         {/* Brand & Live status */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="w-6 h-6 rounded-lg bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-primary shrink-0">
             <svg
               className="w-3.5 h-3.5 text-primary"
@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
               <circle cx="12" cy="12" r="3.5" strokeDasharray="3 2" />
             </svg>
           </div>
-          <span className="text-sm font-mono font-bold text-on-surface tracking-tight truncate">
+          <span className="text-sm font-mono font-bold text-on-surface tracking-tight truncate min-w-0">
             {APP_NAME} TUTOR
           </span>
 

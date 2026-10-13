@@ -87,7 +87,7 @@ export const HintsTab: React.FC<HintsTabProps> = ({
         </div>
 
         {/* 4-Stage Horizontal Progression Nodes */}
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-4 gap-1.5 w-full min-w-0">
           {([1, 2, 3, 4] as HintLevel[]).map((lvl) => {
             const isCompleted = currentLevel > lvl;
             const isCurrent = currentLevel === lvl;
@@ -97,15 +97,15 @@ export const HintsTab: React.FC<HintsTabProps> = ({
                 <button
                   key={lvl}
                   onClick={() => onNextLevel(lvl)}
-                  className="flex flex-col items-center gap-1 p-1.5 rounded-lg bg-surface-container/60 border border-primary/30 hover:bg-surface-container transition-colors group text-center"
+                  className="flex flex-col items-center gap-1 p-1 sm:p-1.5 rounded-lg bg-surface-container/60 border border-primary/30 hover:bg-surface-container transition-colors group text-center min-w-0 w-full"
                 >
-                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/20 text-primary">
+                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/20 text-primary shrink-0">
                     <Check className="w-3.5 h-3.5" />
                   </div>
-                  <span className="font-mono text-[10px] text-on-surface group-hover:text-primary transition-colors">
+                  <span className="font-mono text-[10px] text-on-surface group-hover:text-primary transition-colors truncate w-full block">
                     L{lvl} {levelTitles[lvl].title.slice(0, 5)}
                   </span>
-                  <span className="text-[9px] font-mono text-on-surface-variant/70 leading-none">
+                  <span className="text-[9px] font-mono text-on-surface-variant/70 leading-none truncate w-full block">
                     Reviewed
                   </span>
                 </button>
@@ -116,18 +116,18 @@ export const HintsTab: React.FC<HintsTabProps> = ({
               return (
                 <div
                   key={lvl}
-                  className="flex flex-col items-center gap-1 p-1.5 rounded-lg bg-surface-container-high border-2 border-primary shadow-[0_0_8px_rgba(34,197,94,0.25)] relative text-center"
+                  className="flex flex-col items-center gap-1 p-1 sm:p-1.5 rounded-lg bg-surface-container-high border-2 border-primary shadow-[0_0_8px_rgba(34,197,94,0.25)] relative text-center min-w-0 w-full"
                 >
                   <span className="absolute -top-1.5 px-1 bg-primary text-on-primary font-mono text-[8px] rounded-full uppercase tracking-tighter">
                     Active
                   </span>
-                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary font-mono text-xs font-bold mt-0.5">
+                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary font-mono text-xs font-bold mt-0.5 shrink-0">
                     {lvl}
                   </div>
-                  <span className="font-mono text-[10px] text-primary font-semibold">
+                  <span className="font-mono text-[10px] text-primary font-semibold truncate w-full block">
                     L{lvl} {levelTitles[lvl].title.slice(0, 5)}
                   </span>
-                  <span className="text-[9px] font-mono text-primary/80 leading-none">
+                  <span className="text-[9px] font-mono text-primary/80 leading-none truncate w-full block">
                     Active
                   </span>
                 </div>
@@ -137,21 +137,21 @@ export const HintsTab: React.FC<HintsTabProps> = ({
             return (
               <div
                 key={lvl}
-                className={`flex flex-col items-center gap-1 p-1.5 rounded-lg bg-surface-container-lowest/50 border ${
+                className={`flex flex-col items-center gap-1 p-1 sm:p-1.5 rounded-lg bg-surface-container-lowest/50 border min-w-0 w-full ${
                   lvl === 4 ? 'border-tertiary-container/30 opacity-60' : 'border-outline-variant/30 opacity-70'
                 } text-center`}
               >
                 <div
-                  className={`flex items-center justify-center w-5 h-5 rounded-full ${
+                  className={`flex items-center justify-center w-5 h-5 rounded-full shrink-0 ${
                     lvl === 4 ? 'bg-tertiary-container/20 text-tertiary' : 'bg-surface-variant text-on-surface-variant'
                   }`}
                 >
                   <Lock className="w-3 h-3" />
                 </div>
-                <span className={`font-mono text-[10px] ${lvl === 4 ? 'text-tertiary' : 'text-on-surface-variant'}`}>
+                <span className={`font-mono text-[10px] truncate w-full block ${lvl === 4 ? 'text-tertiary' : 'text-on-surface-variant'}`}>
                   L{lvl} {levelTitles[lvl].title.slice(0, 5)}
                 </span>
-                <span className="text-[9px] font-mono text-on-surface-variant/60 leading-none">
+                <span className="text-[9px] font-mono text-on-surface-variant/60 leading-none truncate w-full block">
                   {lvl === 4 ? 'Guarded' : 'Next'}
                 </span>
               </div>
@@ -202,17 +202,17 @@ export const HintsTab: React.FC<HintsTabProps> = ({
         /* 2. Current Hint Card */
         <section className="bg-surface-container border border-primary/40 rounded-xl p-3.5 relative shadow-md flex flex-col gap-3">
           {/* Top meta badge & confidence score */}
-          <div className="flex items-center justify-between border-b border-outline-variant/30 pb-2">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              <h2 className="font-mono text-xs font-semibold text-on-surface">
+          <div className="flex items-center justify-between border-b border-outline-variant/30 pb-2 gap-2 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+              <h2 className="font-mono text-xs font-semibold text-on-surface truncate">
                 Hint {currentLevel} of 4 — {levelTitles[currentLevel].title}
               </h2>
             </div>
 
             {/* Confidence Badge with Tooltip */}
             <div
-              className="relative group cursor-help flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary"
+              className="relative group cursor-help flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary shrink-0"
               title="How sure the checker is that this hint matches the problem without revealing spoilers."
             >
               <span className="font-mono text-[10px] font-semibold">
@@ -326,25 +326,25 @@ export const HintsTab: React.FC<HintsTabProps> = ({
       ) : (
         /* Normal Action Controls Row */
         <section className="flex flex-col gap-2">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 w-full min-w-0">
             {/* Primary Action: Next Hint Level */}
             {currentLevel < 4 ? (
               <button
                 onClick={handleRequestNext}
                 disabled={isLoading}
-                className="bg-primary hover:bg-primary-container text-on-primary-container font-mono text-xs px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 font-semibold transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                className="bg-primary hover:bg-primary-container text-on-primary-container font-mono text-[11px] sm:text-xs px-2 sm:px-3 py-2 rounded-lg flex items-center justify-center gap-1 font-semibold transition-all shadow-sm active:scale-95 disabled:opacity-50 min-w-0"
               >
-                <span>Next hint (L{currentLevel + 1})</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span className="truncate">Next hint (L{currentLevel + 1})</span>
+                <ArrowRight className="w-3.5 h-3.5 shrink-0" />
               </button>
             ) : (
               <button
                 onClick={onMakeMoreDirect}
                 disabled={isLoading}
-                className="bg-surface-container-high border border-outline-variant text-on-surface font-mono text-xs px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
+                className="bg-surface-container-high border border-outline-variant text-on-surface font-mono text-[11px] sm:text-xs px-2 sm:px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-95 disabled:opacity-50 min-w-0"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>Explain code</span>
+                <SlidersHorizontal className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Explain code</span>
               </button>
             )}
 
@@ -352,10 +352,10 @@ export const HintsTab: React.FC<HintsTabProps> = ({
             <button
               onClick={onMakeMoreDirect}
               disabled={isLoading}
-              className="bg-surface-container-high border border-outline-variant/60 text-on-surface hover:border-outline-variant hover:bg-surface-variant font-mono text-xs px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
+              className="bg-surface-container-high border border-outline-variant/60 text-on-surface hover:border-outline-variant hover:bg-surface-variant font-mono text-[11px] sm:text-xs px-2 sm:px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-95 disabled:opacity-50 min-w-0"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>Make it more direct</span>
+              <SlidersHorizontal className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Make it direct</span>
             </button>
           </div>
 

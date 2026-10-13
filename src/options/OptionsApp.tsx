@@ -586,8 +586,8 @@ export const OptionsApp: React.FC = () => {
                     </div>
                   )}
                   {testState.status === 'idle' && (
-                    <span className="text-[11px] font-sans text-on-surface-variant">
-                      Keys are held in <code className="text-secondary font-mono">chrome.storage.local</code> only and never exported.
+                    <span className="text-[11px] font-sans text-on-surface-variant break-words">
+                      Your key is stored only on this device (<code className="text-secondary font-mono">chrome.storage.local</code>) and sent only to Google's Gemini API with your requests. We run no servers.
                     </span>
                   )}
                 </div>

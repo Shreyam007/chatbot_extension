@@ -60,14 +60,14 @@ export const Navigation: React.FC<NavigationProps> = ({
             aria-controls={`tabpanel-${tab.id}`}
             id={`tab-${tab.id}`}
             onClick={() => onTabChange(tab.id)}
-            className={`flex-1 py-2.5 flex items-center justify-center gap-1.5 text-xs font-mono transition-colors border-b-2 relative ${
+            className={`flex-1 min-w-0 py-2.5 px-1 flex items-center justify-center gap-1 sm:gap-1.5 text-xs font-mono transition-colors border-b-2 relative ${
               isActive
                 ? 'border-primary text-primary bg-surface-container/40 font-semibold'
                 : 'border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/30'
             }`}
           >
-            {tab.icon}
-            <span>{tab.label}</span>
+            <span className="shrink-0">{tab.icon}</span>
+            <span className="truncate">{tab.label}</span>
 
             {/* Notification Badge / Pill */}
             {tab.id === 'chat' && chatBadgeCount && chatBadgeCount > 0 ? (

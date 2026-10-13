@@ -1,5 +1,6 @@
 import { createLogger } from '../shared/logger';
 import { DEFAULT_AI_MODEL } from '../shared/config';
+import { filterTextGenerationModels } from '../shared/models';
 
 const logger = createLogger('ApiKeyTester');
 
@@ -16,7 +17,7 @@ export interface ApiKeyTestResult {
  */
 export async function testGeminiApiKey(
   apiKey: string,
-  modelName: string = DEFAULT_AI_MODEL
+  _modelName: string = DEFAULT_AI_MODEL
 ): Promise<ApiKeyTestResult> {
   const trimmed = apiKey.trim();
 
@@ -47,15 +48,25 @@ export async function testGeminiApiKey(
 
     if (response.ok) {
       const data = await response.json();
-      const modelList = Array.isArray(data?.models)
-        ? data.models.map((m: { name?: string }) => m.name || '').filter(Boolean)
-        : [`models/${modelName}`];
+      const sanitizedModels = filterTextGenerationModels(Array.isArray(data?.models) ? data.models : []);
 
-      logger.info('Gemini API key verified successfully', { latencyMs });
+      if (sanitizedModels.length === 0) {
+        logger.warn('Gemini API key verified, but no text generation models found');
+        return {
+          success: false,
+          error: 'API Error: No compatible text generation models (generateContent) found for this key.',
+        };
+      }
+
+      logger.info('Gemini API key verified successfully', {
+        latencyMs,
+        modelsCount: sanitizedModels.length,
+      });
+
       return {
         success: true,
         latencyMs,
-        supportedModels: modelList.slice(0, 5),
+        supportedModels: sanitizedModels.map((m) => m.id),
       };
     }
 

@@ -48,7 +48,7 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
 
   if (type === 'no_api_key' || type === 'invalid_key') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none">
+      <div className="flex-1 w-full min-w-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none">
         <div className="w-14 h-14 rounded-2xl bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-tertiary mb-3 shadow-lg">
           <Key className="w-7 h-7" />
         </div>
@@ -59,10 +59,10 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
         <h2 className="text-base font-mono font-bold text-on-surface mb-1">
           {type === 'invalid_key' ? 'Invalid API Key' : 'Connect your Gemini Key'}
         </h2>
-        <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-4 leading-relaxed">
+        <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-4 leading-relaxed break-words">
           {type === 'invalid_key'
             ? 'The configured Gemini API key failed authentication. Please verify your key in options.'
-            : 'Unstuck runs 100% in your browser using your own Gemini API key. Stored securely in chrome.storage.local.'}
+            : "Your key is stored only on this device (chrome.storage.local) and sent only to Google's Gemini API with your requests. We run no servers."}
         </p>
         <button
           onClick={onOpenSettings}
@@ -78,7 +78,7 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
 
   if (type === 'offline') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none">
+      <div className="flex-1 w-full min-w-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none">
         <div className="w-14 h-14 rounded-2xl bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-outline mb-3 shadow-lg">
           <WifiOff className="w-7 h-7" />
         </div>
@@ -88,7 +88,7 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
         <h2 className="text-base font-mono font-bold text-on-surface mb-1">
           You're offline
         </h2>
-        <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-4 leading-relaxed">
+        <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-4 leading-relaxed break-words">
           Network connection dropped. Behavioral signal tracking remains active locally, but hint generation requires internet access.
         </p>
         {onRetry && (
@@ -106,7 +106,7 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
 
   if (type === 'rate_limited') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none">
+      <div className="flex-1 w-full min-w-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none">
         <div className="w-14 h-14 rounded-2xl bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-tertiary mb-3 shadow-lg">
           <Clock className="w-7 h-7" />
         </div>
@@ -116,7 +116,7 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
         <h2 className="text-base font-mono font-bold text-on-surface mb-1">
           Quota Rate Limited
         </h2>
-        <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-3 leading-relaxed">
+        <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-3 leading-relaxed break-words">
           Gemini requests hit the per-minute quota. Live countdown is holding to prevent rejection.
         </p>
         <div className="p-2.5 rounded-lg bg-surface-container border border-outline-variant/40 font-mono text-xs text-primary mb-4">
@@ -137,7 +137,7 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
 
   if (type === 'timeout' || type === 'server_error') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none">
+      <div className="flex-1 w-full min-w-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none">
         <div className="w-14 h-14 rounded-2xl bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-error mb-3 shadow-lg">
           <AlertCircle className="w-7 h-7" />
         </div>
@@ -147,7 +147,7 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
         <h2 className="text-base font-mono font-bold text-on-surface mb-1">
           {type === 'timeout' ? 'Request Timed Out' : 'Temporary AI Service Error'}
         </h2>
-        <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-4 leading-relaxed">
+        <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-4 leading-relaxed break-words">
           The safety deadline was exceeded or the upstream endpoint was temporarily unavailable. Your context was preserved.
         </p>
         {onRetry && (
@@ -165,7 +165,7 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
 
   // restricted_page
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none">
+    <div className="flex-1 w-full min-w-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none">
       <div className="w-14 h-14 rounded-2xl bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-outline mb-3 shadow-lg">
         <ShieldAlert className="w-7 h-7" />
       </div>
@@ -175,7 +175,7 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
       <h2 className="text-base font-mono font-bold text-on-surface mb-1">
         Can't run on this page
       </h2>
-      <p className="text-xs font-sans text-on-surface-variant max-w-[280px] leading-relaxed">
+      <p className="text-xs font-sans text-on-surface-variant max-w-[280px] leading-relaxed break-words">
         Chrome extensions cannot execute scripts on chrome:// or Web Store internal pages. Navigate to LeetCode or Codeforces to start.
       </p>
     </div>

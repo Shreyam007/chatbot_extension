@@ -188,11 +188,11 @@ export const PopupApp: React.FC = () => {
     >
       {/* Top Header */}
       <header className="bg-surface-container-low border-b border-outline-variant/30 flex items-center justify-between px-3.5 py-2.5 w-full sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-surface-container flex items-center justify-center border border-outline-variant/40 text-primary">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="w-6 h-6 rounded-md bg-surface-container flex items-center justify-center border border-outline-variant/40 text-primary shrink-0">
             <Sparkles className="w-3.5 h-3.5" />
           </div>
-          <h1 className="font-mono text-sm font-semibold text-on-surface tracking-tight">
+          <h1 className="font-mono text-sm font-semibold text-on-surface tracking-tight truncate">
             {APP_NAME}
           </h1>
           {renderVariantBadge()}
@@ -207,7 +207,7 @@ export const PopupApp: React.FC = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={handleOpenOptions}
             className="p-1 rounded text-outline hover:text-on-surface hover:bg-surface-bright/20 transition-colors"
@@ -228,19 +228,19 @@ export const PopupApp: React.FC = () => {
       </header>
 
       {/* Main Body Stack */}
-      <main className="p-3.5 flex-1 flex flex-col gap-3">
+      <main className="p-3.5 flex-1 flex flex-col gap-3 min-w-0">
         {/* VARIANT 1: ACTIVE */}
         {state.variant === 'active' && (
           <>
             {/* Status Card: Watching Active */}
-            <div className="bg-surface-container rounded-xl p-3 border border-outline-variant/30 flex flex-col gap-2.5">
+            <div className="bg-surface-container rounded-xl p-3 border border-outline-variant/30 flex flex-col gap-2.5 min-w-0">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="relative flex h-2 w-2 shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
                   </span>
-                  <span className="font-mono text-xs font-semibold text-on-surface">
+                  <span className="font-mono text-xs font-semibold text-on-surface truncate">
                     Watching this page
                   </span>
                 </div>
@@ -248,7 +248,7 @@ export const PopupApp: React.FC = () => {
                 {/* Switched ON Toggle */}
                 <button
                   onClick={handleTogglePauseSwitch}
-                  className="flex items-center gap-1.5 cursor-pointer bg-transparent border-none p-0"
+                  className="flex items-center gap-1.5 cursor-pointer bg-transparent border-none p-0 shrink-0"
                   title="Pause observation"
                   aria-label="Pause observation"
                 >
@@ -260,7 +260,7 @@ export const PopupApp: React.FC = () => {
               </div>
 
               {/* Site Domain Pill */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20 font-mono text-[11px] text-on-surface-variant overflow-hidden text-ellipsis whitespace-nowrap">
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20 font-mono text-[11px] text-on-surface-variant overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
                 <Terminal className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span className="truncate">{state.siteDomain}</span>
               </div>
@@ -268,37 +268,37 @@ export const PopupApp: React.FC = () => {
 
             {/* 3 Stat Tiles Grid */}
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
+              <div className="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col min-w-0">
                 <span className="font-mono text-[9px] uppercase tracking-wider text-outline truncate">
                   Nudges
                 </span>
-                <span className="font-mono text-sm text-on-surface font-semibold mt-0.5">
+                <span className="font-mono text-sm text-on-surface font-semibold mt-0.5 truncate">
                   {state.nudgesCount}
                 </span>
-                <span className="font-mono text-[9px] text-primary mt-0.5">Tier 1</span>
+                <span className="font-mono text-[9px] text-primary mt-0.5 truncate">Tier 1</span>
               </div>
 
-              <div className="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
+              <div className="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col min-w-0">
                 <span className="font-mono text-[9px] uppercase tracking-wider text-outline truncate">
                   Accepted
                 </span>
-                <span className="font-mono text-sm text-on-surface font-semibold mt-0.5">
+                <span className="font-mono text-sm text-on-surface font-semibold mt-0.5 truncate">
                   {state.acceptedCount}
                 </span>
-                <span className="font-mono text-[9px] text-outline mt-0.5">
+                <span className="font-mono text-[9px] text-outline mt-0.5 truncate">
                   {Math.round(state.acceptRate * 100)}% rate
                 </span>
               </div>
 
-              <div className="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
+              <div className="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col min-w-0">
                 <span className="font-mono text-[9px] uppercase tracking-wider text-outline truncate">
                   Hints
                 </span>
-                <span className="font-mono text-sm text-on-surface font-semibold mt-0.5">
+                <span className="font-mono text-sm text-on-surface font-semibold mt-0.5 truncate">
                   {state.hintsUsedCount}
                   <span className="text-outline text-xs font-normal">/6</span>
                 </span>
-                <span className="font-mono text-[9px] text-outline mt-0.5">
+                <span className="font-mono text-[9px] text-outline mt-0.5 truncate">
                   {state.hintsLeftCount} left
                 </span>
               </div>

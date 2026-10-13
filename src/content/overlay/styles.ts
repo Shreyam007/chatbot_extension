@@ -379,6 +379,18 @@ export const OVERLAY_STYLES = `
   display: none !important;
 }
 
+@media (max-width: 420px) {
+  :host {
+    bottom: 12px;
+    right: 12px;
+    left: 12px;
+  }
+  .unstuck-card {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .unstuck-card,
   .unstuck-fab-pulse,

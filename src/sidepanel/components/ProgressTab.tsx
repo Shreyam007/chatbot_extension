@@ -48,8 +48,8 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
         </h2>
         <div className="grid grid-cols-3 gap-2">
           {/* Solved this week */}
-          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between">
-            <span className="font-sans text-[11px] text-on-surface-variant leading-tight">
+          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0">
+            <span className="font-sans text-[11px] text-on-surface-variant leading-tight truncate">
               Solved this week
             </span>
             <div className="my-1 flex items-baseline gap-1">
@@ -57,14 +57,14 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
                 {weeklySolved}
               </span>
             </div>
-            <div className="font-mono text-[10px] text-on-surface-variant">
+            <div className="font-mono text-[10px] text-on-surface-variant truncate">
               <span>{weeklySolved > 0 ? `${weeklySolved} completed` : '—'}</span>
             </div>
           </div>
 
           {/* Hints per solve */}
-          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between">
-            <span className="font-sans text-[11px] text-on-surface-variant leading-tight">
+          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0">
+            <span className="font-sans text-[11px] text-on-surface-variant leading-tight truncate">
               Hints per solve
             </span>
             <div className="my-1 flex items-baseline gap-1">
@@ -72,14 +72,14 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
                 {hintsPerSolve > 0 ? hintsPerSolve.toFixed(1) : '—'}
               </span>
             </div>
-            <div className="font-mono text-[10px] text-on-surface-variant">
+            <div className="font-mono text-[10px] text-on-surface-variant truncate">
               <span>{hintsPerSolve > 0 ? 'Current rate' : '—'}</span>
             </div>
           </div>
 
           {/* Nudge accept rate */}
-          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between">
-            <span className="font-sans text-[11px] text-on-surface-variant leading-tight">
+          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0">
+            <span className="font-sans text-[11px] text-on-surface-variant leading-tight truncate">
               Nudge accept
             </span>
             <div className="my-1 flex items-baseline gap-1">
@@ -87,7 +87,7 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
                 {nudgeAcceptRate > 0 ? `${Math.round(nudgeAcceptRate * 100)}%` : '—'}
               </span>
             </div>
-            <div className="font-mono text-[10px] text-on-surface-variant">
+            <div className="font-mono text-[10px] text-on-surface-variant truncate">
               <span>{nudgeAcceptRate > 0 ? 'Acceptance rate' : '—'}</span>
             </div>
           </div>
@@ -175,23 +175,23 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
                     onClick={() => toggleTopic(topic.topic)}
                     className="p-2.5 cursor-pointer hover:bg-surface-container-high/40 transition-colors flex flex-col gap-1.5"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-primary" />
+                          <ChevronDown className="w-3.5 h-3.5 text-primary shrink-0" />
                         ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant" />
+                          <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant shrink-0" />
                         )}
-                        <span className="font-mono text-xs text-on-surface font-medium">
+                        <span className="font-mono text-xs text-on-surface font-medium truncate">
                           {topic.topic}
                         </span>
                         {isWeak && (
-                          <span className="px-1.5 py-0.2 rounded-full font-mono text-[9px] bg-tertiary/20 text-tertiary border border-tertiary/30">
+                          <span className="px-1.5 py-0.2 rounded-full font-mono text-[9px] bg-tertiary/20 text-tertiary border border-tertiary/30 shrink-0">
                             Weak
                           </span>
                         )}
                       </div>
-                      <span className="font-mono text-xs font-bold text-on-surface">{pct}%</span>
+                      <span className="font-mono text-xs font-bold text-on-surface shrink-0">{pct}%</span>
                     </div>
 
                     {/* Progress Bar */}
@@ -206,19 +206,19 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
                   {/* Expanded Drilldown */}
                   {isExpanded && (
                     <div className="px-2.5 pb-2.5 pt-1 space-y-1.5 border-t border-outline-variant/20 bg-surface-container-lowest/40 font-mono text-[10px]">
-                      <div className="flex justify-between text-on-surface-variant py-0.5">
-                        <span>Practice attempts: {topic.attempts}</span>
-                        <span>Total hints: {topic.hintsUsed}</span>
+                      <div className="flex justify-between text-on-surface-variant py-0.5 min-w-0">
+                        <span className="truncate">Practice attempts: {topic.attempts}</span>
+                        <span className="truncate">Total hints: {topic.hintsUsed}</span>
                       </div>
 
                       {topic.recentProblems && topic.recentProblems.length > 0 ? (
                         topic.recentProblems.map((p, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center justify-between py-1 px-1.5 rounded bg-surface-container-high/40 text-[10px]"
+                            className="flex items-center justify-between gap-2 py-1 px-1.5 rounded bg-surface-container-high/40 text-[10px] min-w-0"
                           >
-                            <span className="text-on-surface truncate">{p.title}</span>
-                            <span className={p.mastered ? 'text-primary' : 'text-tertiary'}>
+                            <span className="text-on-surface truncate min-w-0 flex-1">{p.title}</span>
+                            <span className={`shrink-0 ${p.mastered ? 'text-primary' : 'text-tertiary'}`}>
                               {p.hintsUsed} hint{p.hintsUsed === 1 ? '' : 's'} used
                             </span>
                           </div>
@@ -238,13 +238,13 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
         {topics.some((t) => t.pKnown < 0.6) && (
           <div
             data-testid="weak-topics-review-panel"
-            className="mt-3 p-3 rounded-xl bg-tertiary/10 border border-tertiary/30 space-y-2"
+            className="mt-3 p-3 rounded-xl bg-tertiary/10 border border-tertiary/30 space-y-2 min-w-0"
           >
             <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-tertiary">
-              <BookOpen className="w-4 h-4 text-tertiary" />
-              <span>Recommended Topic Review</span>
+              <BookOpen className="w-4 h-4 text-tertiary shrink-0" />
+              <span className="truncate">Recommended Topic Review</span>
             </div>
-            <p className="font-sans text-[11px] text-on-surface-variant leading-relaxed">
+            <p className="font-sans text-[11px] text-on-surface-variant leading-relaxed break-words">
               Your mastery is calibrated lowest in{' '}
               <strong className="text-on-surface font-semibold">
                 {topics
@@ -261,13 +261,13 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
                   <div
                     key={t.topic}
                     data-testid="weak-topic-recommendation"
-                    className="flex items-center justify-between p-2 rounded-lg bg-surface-container-low border border-outline-variant/30 text-[11px] font-mono"
+                    className="flex items-center justify-between gap-2 p-2 rounded-lg bg-surface-container-low border border-outline-variant/30 text-[11px] font-mono min-w-0"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-tertiary" />
-                      <span className="text-on-surface">{t.topic}</span>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-tertiary shrink-0" />
+                      <span className="text-on-surface truncate">{t.topic}</span>
                     </div>
-                    <span className="text-tertiary font-bold">{Math.round(t.pKnown * 100)}%</span>
+                    <span className="text-tertiary font-bold shrink-0">{Math.round(t.pKnown * 100)}%</span>
                   </div>
                 ))}
             </div>
