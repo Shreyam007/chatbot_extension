@@ -68,11 +68,28 @@ export class ContentScriptController {
       const res = await sendToBackground<{ type: string; settings: Settings }>({ type: 'GET_SETTINGS' });
       const gating = evaluateTrackingGating(res.settings);
 
+      // Context extraction is essential for Hints & Chat, regardless of signal tracking
+      this.extractAndCacheContext();
+
+      // Retry extraction after 500ms and 1500ms to catch React/Next.js hydration on fresh loads
+      setTimeout(() => {
+        if (!this.isDestroyed) {
+          this.extractAndCacheContext();
+        }
+      }, 500);
+
+      setTimeout(() => {
+        if (!this.isDestroyed) {
+          this.extractAndCacheContext();
+        }
+      }, 1500);
+
       if (!gating.trackingActive) {
         logger.info(`Observing nothing on ${window.location.hostname}: ${gating.reason} (Chat-only mode)`);
         // Mount overlay in collapsed state for chat access without signal tracking
         this.overlay.mount();
         this.overlay.collapseToFab();
+        this.setupDOMObserver();
         return;
       }
 
@@ -115,8 +132,8 @@ export class ContentScriptController {
       this.handleNavigation(newUrl);
     });
 
-    // 4. Setup verdict observer (EC-045, EC-046)
-    this.setupVerdictObserver();
+    // 4. Setup DOM & verdict observer (EC-045, EC-046)
+    this.setupDOMObserver();
 
     // 5. Setup periodic signal reporting (every 15s)
     this.reportIntervalId = window.setInterval(() => {
@@ -163,19 +180,38 @@ export class ContentScriptController {
     }, 500);
   }
 
-  private setupVerdictObserver(): void {
+  public getCurrentContext(): PageContext | null {
+    return this.currentContext;
+  }
+
+  private setupDOMObserver(): void {
     if (typeof MutationObserver === 'undefined') return;
 
     this.mutationObserver = new MutationObserver(() => {
-      if (!this.currentAdapter.detectVerdict) return;
+      // 1. Verdict detection (EC-045, EC-046)
+      if (this.currentAdapter.detectVerdict) {
+        const verdict = this.currentAdapter.detectVerdict(document);
+        if (verdict) {
+          if (verdict.verdict === 'wrong') {
+            this.collector?.addVerdictResult(verdict);
+          } else if (verdict.verdict === 'accepted') {
+            logger.info('Accepted verdict detected! Marking problem solved (EC-046)');
+            this.overlay.hideAll();
+          }
+        }
+      }
 
-      const verdict = this.currentAdapter.detectVerdict(document);
-      if (verdict) {
-        if (verdict.verdict === 'wrong') {
-          this.collector?.addVerdictResult(verdict);
-        } else if (verdict.verdict === 'accepted') {
-          logger.info('Accepted verdict detected! Marking problem solved (EC-046)');
-          this.overlay.hideAll();
+      // 2. React hydration observer: if statement was empty or placeholder, re-extract when DOM settles
+      if (
+        !this.currentContext ||
+        this.currentContext.statementText.includes('loading...') ||
+        this.currentContext.title === 'Two Sum'
+      ) {
+        const hasContent = document.querySelector(
+          'div[data-track-load="description_content"], .elfjS, div.question-content, .text-title-large, div[data-cy="question-title"]'
+        );
+        if (hasContent) {
+          this.extractAndCacheContext();
         }
       }
     });
@@ -187,9 +223,20 @@ export class ContentScriptController {
   }
 
   private async reportSignals(): Promise<void> {
-    if (this.isDestroyed || !this.collector || !this.currentContext) return;
+    if (this.isDestroyed || !this.currentContext) return;
 
-    const signals = this.collector.getSnapshot();
+    const signals = this.collector
+      ? this.collector.getSnapshot()
+      : {
+          dwellMs: 0,
+          scrollReversals: 0,
+          idleMs: 0,
+          wrongSubmissions: 0,
+          tabSwitches: 0,
+          activeMs: 0,
+          windowStart: Date.now() - 1000,
+          windowEnd: Date.now(),
+        };
 
     try {
       await sendToBackground({
@@ -205,13 +252,13 @@ export class ContentScriptController {
     }
   }
 
-  private handleNudgeOffered(decision: { reason: string; utility: number }): void {
+  private handleNudgeOffered(decision: { reason: string; utility: number; contextBucket?: string }): void {
     const isContest = this.currentAdapter.detectContest(new URL(window.location.href), document);
     if (isContest) return;
 
     const hostname = window.location.hostname;
     const normSite = hostname.toLowerCase().includes('codeforces') ? 'codeforces' : 'leetcode';
-    const bucket = `${normSite}:high:intermediate`;
+    const bucket = decision.contextBucket || `${normSite}:high:intermediate`;
 
     this.overlay.showNudge({
       title: 'Stuck on this part?',
@@ -372,6 +419,9 @@ export function initContentScript(): ContentScriptController {
       if (message?.type === 'HIGHLIGHT_PAGE_TEXT' && typeof message.text === 'string') {
         const found = highlightTextInPage(message.text);
         sendResponse({ ok: true, found });
+      } else if (message?.type === 'GET_PAGE_CONTEXT') {
+        const ctx = activeController?.getCurrentContext() || null;
+        sendResponse({ ok: true, context: ctx });
       }
     });
   }

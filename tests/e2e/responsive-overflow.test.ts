@@ -119,7 +119,7 @@ test.describe('EC-120: Responsive Overflow Regression Suite (320px - 700px)', ()
       background = await context.waitForEvent('serviceworker');
     }
 
-    extensionId = background.url().split('/')[2];
+    extensionId = background.url().split('/')[2] || '';
     expect(extensionId).toBeDefined();
 
     // Mock Gemini API in Service Worker to return 8+ models including TTS, audio, embedding, preview models

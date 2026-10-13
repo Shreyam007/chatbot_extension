@@ -335,7 +335,8 @@ export const GetPopupStateResponseSchema = z.object({
   acceptedCount: z.number(),
   acceptRate: z.number(),
   hintsUsedCount: z.number(),
-  hintsLeftCount: z.number(),
+  hintsLeftCount: z.number().optional(),
+  selectedModel: z.string().optional(),
   demoMode: z.boolean().optional(),
 });
 

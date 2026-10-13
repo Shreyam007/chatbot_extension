@@ -467,8 +467,9 @@ export const SidePanelApp: React.FC = () => {
       {/* Solved Summary Modal (S12) */}
       {showSolvedModal && (
         <SolvedModal
-          problemTitle={context?.title ?? '1. Two Sum'}
+          problemTitle={context?.title || 'Current Problem'}
           hintsUsedCount={currentLevel}
+          topic={context?.tags?.[0] ?? '—'}
           onDismiss={() => setShowSolvedModal(false)}
         />
       )}

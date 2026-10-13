@@ -66,6 +66,10 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
     expect(container.textContent).toContain('Hints');
     expect(container.textContent).toContain('Open side panel');
     expect(container.textContent).toContain('Pause for 1 hour');
+    expect(container.textContent).not.toContain('Tier 1');
+    expect(container.textContent).not.toContain('/6');
+    expect(container.textContent).not.toContain('⌥S');
+    expect(container.textContent).not.toContain('Local LLM');
   });
 
   it('renders Variant 2 (Paused) with pause warning, progress track, and resume button', async () => {

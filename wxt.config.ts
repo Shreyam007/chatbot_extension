@@ -4,7 +4,7 @@ export default defineConfig({
   manifest: {
     name: 'Unstuck',
     description: 'Proactive, explainable tutoring assistant for coding problems.',
-    version: '1.0.2',
+    version: '1.0.3',
     icons: {
       16: 'icon-16.png',
       32: 'icon-32.png',

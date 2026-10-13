@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { APP_VERSION } from '../../src/shared/config';
 
 describe('Built Manifest V3 Validation', () => {
   const manifestPath = path.resolve(__dirname, '../../.output/chrome-mv3/manifest.json');
@@ -11,7 +12,7 @@ describe('Built Manifest V3 Validation', () => {
 
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.name).toBe('Unstuck');
-    expect(manifest.version).toBe('1.0.1');
+    expect(manifest.version).toBe(APP_VERSION);
     expect(manifest.icons?.['16']).toBe('icon-16.png');
     expect(manifest.icons?.['128']).toBe('icon-128.png');
     expect(manifest.action?.default_icon?.['16']).toBe('icon-16.png');

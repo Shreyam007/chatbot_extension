@@ -15,7 +15,7 @@ import {
   ArrowRight,
   Dock,
 } from 'lucide-react';
-import { APP_NAME, APP_VERSION } from '../shared/config';
+import { APP_NAME, APP_VERSION, DEFAULT_AI_MODEL } from '../shared/config';
 import { sendToBackground } from '../shared/messaging';
 import type { PopupVariant } from '../shared/messaging/protocol';
 
@@ -34,7 +34,8 @@ interface PopupState {
   acceptedCount: number;
   acceptRate: number;
   hintsUsedCount: number;
-  hintsLeftCount: number;
+  hintsLeftCount?: number;
+  selectedModel?: string;
   demoMode?: boolean;
 }
 
@@ -50,6 +51,7 @@ const DEFAULT_POPUP_STATE: PopupState = {
   acceptRate: 0,
   hintsUsedCount: 0,
   hintsLeftCount: 0,
+  selectedModel: DEFAULT_AI_MODEL,
   demoMode: false,
 };
 
@@ -77,7 +79,8 @@ export const PopupApp: React.FC = () => {
           acceptedCount: res.acceptedCount ?? 0,
           acceptRate: res.acceptRate ?? 0,
           hintsUsedCount: res.hintsUsedCount ?? 0,
-          hintsLeftCount: res.hintsLeftCount ?? 0,
+          hintsLeftCount: res.hintsLeftCount,
+          selectedModel: res.selectedModel || DEFAULT_AI_MODEL,
           demoMode: Boolean(res.demoMode),
         });
       }
@@ -275,7 +278,7 @@ export const PopupApp: React.FC = () => {
                 <span className="font-mono text-sm text-on-surface font-semibold mt-0.5 truncate">
                   {state.nudgesCount}
                 </span>
-                <span className="font-mono text-[9px] text-primary mt-0.5 truncate">Tier 1</span>
+                <span className="font-mono text-[9px] text-outline mt-0.5 truncate">Offered</span>
               </div>
 
               <div className="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col min-w-0">
@@ -286,7 +289,7 @@ export const PopupApp: React.FC = () => {
                   {state.acceptedCount}
                 </span>
                 <span className="font-mono text-[9px] text-outline mt-0.5 truncate">
-                  {Math.round(state.acceptRate * 100)}% rate
+                  {state.acceptRate > 0 ? `${Math.round(state.acceptRate * 100)}% rate` : '—'}
                 </span>
               </div>
 
@@ -296,10 +299,9 @@ export const PopupApp: React.FC = () => {
                 </span>
                 <span className="font-mono text-sm text-on-surface font-semibold mt-0.5 truncate">
                   {state.hintsUsedCount}
-                  <span className="text-outline text-xs font-normal">/6</span>
                 </span>
                 <span className="font-mono text-[9px] text-outline mt-0.5 truncate">
-                  {state.hintsLeftCount} left
+                  Used
                 </span>
               </div>
             </div>
@@ -314,12 +316,7 @@ export const PopupApp: React.FC = () => {
                   <Dock className="w-4 h-4" />
                   Open side panel
                 </span>
-                <div className="flex items-center gap-1.5">
-                  <kbd className="font-mono text-[10px] bg-on-primary/20 px-1.5 py-0.5 rounded">
-                    ⌥S
-                  </kbd>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </div>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
               <button
@@ -346,7 +343,9 @@ export const PopupApp: React.FC = () => {
                       Paused on {state.siteDomain.split('/')[0]}
                     </h2>
                     <p className="font-sans text-[11px] text-outline mt-1">
-                      Resumes in 42m or click below
+                      {state.pauseRemainingMs !== undefined && state.pauseRemainingMs > 0
+                        ? `Resumes in ${Math.ceil(state.pauseRemainingMs / 60000)}m or click below`
+                        : 'Observation paused or click below to resume'}
                     </p>
                   </div>
                 </div>
@@ -362,16 +361,23 @@ export const PopupApp: React.FC = () => {
                 </button>
               </div>
 
-              {/* Countdown Progress Bar */}
-              <div className="flex flex-col gap-1 mt-1">
-                <div className="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-tertiary h-full w-[30%] rounded-full" />
+              {/* Countdown Progress Bar if snoozed */}
+              {state.pauseRemainingMs !== undefined && state.pauseRemainingMs > 0 && (
+                <div className="flex flex-col gap-1 mt-1">
+                  <div className="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-tertiary h-full rounded-full"
+                      style={{
+                        width: `${Math.min(100, Math.max(0, ((state.pauseElapsedMs || 0) / ((state.pauseElapsedMs || 0) + (state.pauseRemainingMs || 1))) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between font-mono text-[9px] text-outline">
+                    <span>{Math.floor((state.pauseElapsedMs || 0) / 60000)}m elapsed</span>
+                    <span>{Math.ceil(state.pauseRemainingMs / 60000)}m remaining</span>
+                  </div>
                 </div>
-                <div className="flex justify-between font-mono text-[9px] text-outline">
-                  <span>18m elapsed</span>
-                  <span>42m remaining</span>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Dimmed Stat Tiles Grid */}
@@ -392,7 +398,9 @@ export const PopupApp: React.FC = () => {
                 <span className="font-mono text-sm text-on-surface font-semibold mt-0.5">
                   {state.acceptedCount}
                 </span>
-                <span className="font-mono text-[9px] text-outline mt-0.5">75% rate</span>
+                <span className="font-mono text-[9px] text-outline mt-0.5">
+                  {state.acceptRate > 0 ? `${Math.round(state.acceptRate * 100)}% rate` : '—'}
+                </span>
               </div>
               <div className="bg-surface-container rounded-lg p-2 border border-outline-variant/20 flex flex-col">
                 <span className="font-mono text-[9px] uppercase tracking-wider text-outline truncate">
@@ -400,7 +408,6 @@ export const PopupApp: React.FC = () => {
                 </span>
                 <span className="font-mono text-sm text-on-surface font-semibold mt-0.5">
                   {state.hintsUsedCount}
-                  <span className="text-outline text-xs font-normal">/6</span>
                 </span>
                 <span className="font-mono text-[9px] text-outline mt-0.5">Suspended</span>
               </div>
@@ -551,7 +558,7 @@ export const PopupApp: React.FC = () => {
 
       {/* Footer Action Dock */}
       <footer className="bg-surface-container-low border-t border-outline-variant/30 px-3.5 py-2 flex items-center justify-between font-mono text-[10px] text-outline">
-        <span className="truncate">v{APP_VERSION} • Local LLM / Gemini</span>
+        <span className="truncate">v{APP_VERSION} • {state.selectedModel || DEFAULT_AI_MODEL}</span>
         <button
           onClick={handleOpenOptions}
           className="text-outline hover:text-primary transition-colors bg-transparent border-none p-0 cursor-pointer"

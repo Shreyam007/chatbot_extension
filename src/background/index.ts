@@ -319,12 +319,59 @@ export function initBackground() {
       };
     },
     GET_PROBLEM_CONTEXT: async (_req) => {
+      let context = latestPageContext;
+      if (!context && typeof chrome !== 'undefined' && chrome.tabs?.query) {
+        try {
+          const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (activeTab?.id && activeTab.url) {
+            // Try querying the active tab content script directly
+            const tabRes = await new Promise<{ ok: boolean; context: PageContext | null }>((resolve) => {
+              chrome.tabs.sendMessage(activeTab.id!, { type: 'GET_PAGE_CONTEXT' }, (res) => {
+                if (chrome.runtime?.lastError || !res) {
+                  resolve({ ok: false, context: null });
+                } else {
+                  resolve(res);
+                }
+              });
+            });
+            if (tabRes?.context) {
+              context = tabRes.context;
+              latestPageContext = context;
+            } else if (activeTab.url.includes('leetcode.com/problems/')) {
+              // Construct immediate valid context from URL slug
+              const slugMatch = activeTab.url.match(/\/problems\/([^/]+)/);
+              const slug = slugMatch ? slugMatch[1] : '';
+              if (slug) {
+                const formattedTitle = slug
+                  .split('-')
+                  .filter(Boolean)
+                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                  .join(' ');
+                const isContest = activeTab.url.includes('/contest/');
+                context = {
+                  url: `leetcode:${slug.toLowerCase()}`,
+                  site: 'leetcode',
+                  title: formattedTitle,
+                  statementText: `Problem: ${formattedTitle} (LeetCode).`,
+                  tags: [],
+                  isContest,
+                  detectedAt: Date.now(),
+                };
+                latestPageContext = context;
+              }
+            }
+          }
+        } catch (err) {
+          logger.debug('Active tab context lookup error:', err);
+        }
+      }
+
       return {
         type: 'PROBLEM_CONTEXT',
-        context: latestPageContext,
+        context,
         signals: latestSignals,
         pStuck: latestPStuck,
-        isContest: latestPageContext?.isContest ?? false,
+        isContest: context?.isContest ?? false,
         isPaused: isTutorPaused,
       };
     },
@@ -581,24 +628,33 @@ export function initBackground() {
       if (isSnoozed) {
         pauseRemainingMs = Math.max(0, plannerState.snoozeUntil - now);
         pauseElapsedMs = Math.max(0, 60 * 60 * 1000 - pauseRemainingMs);
-      } else if (isTutorPaused) {
-        pauseRemainingMs = 42 * 60 * 1000;
-        pauseElapsedMs = 18 * 60 * 1000;
       }
 
-      const history = latestPageContext ? plannerState.sessionHistories[latestPageContext.url] : undefined;
-      const nudgesCount = history?.nudgeCount || (plannerState.recentNudges.length > 0 ? plannerState.recentNudges.length : 4);
-      const acceptedCount = 3;
-      const acceptRate = 0.75;
-      const hintsUsedCount = 2;
-      const hintsLeftCount = 4;
+      // Read real metrics from the shared calculator (same source as Progress & Options)
+      const [events, hints, banditStats] = await Promise.all([
+        getEventLogs(),
+        getAllHints(),
+        getAllBanditStats(),
+      ]);
+      const metrics = calculateMetricsFromRecords(events, hints, banditStats, recentTraces);
+
+      const nudgesCount = metrics.nudgesOffered;
+      const acceptedCount = metrics.nudgesAccepted;
+      const acceptRate = metrics.nudgeAcceptanceRate;
+      const hintsUsedCount = metrics.totalHintsDelivered;
+
+      // Clean problemTitle: never hardcode 'Two Sum'
+      let cleanProblemTitle = latestPageContext?.title;
+      if (!cleanProblemTitle && tabTitle && !tabTitle.includes('LeetCode')) {
+        cleanProblemTitle = tabTitle;
+      }
 
       return {
         type: 'POPUP_STATE',
         variant,
         siteDomain: domain,
         url: activeUrl,
-        problemTitle: latestPageContext?.title || tabTitle || 'Two Sum',
+        problemTitle: cleanProblemTitle,
         problemUrl: latestPageContext?.url || activeUrl,
         isContest: latestPageContext?.isContest || false,
         isPaused,
@@ -609,7 +665,7 @@ export function initBackground() {
         acceptedCount,
         acceptRate,
         hintsUsedCount,
-        hintsLeftCount,
+        selectedModel: settings.model || DEFAULT_AI_MODEL,
         demoMode: Boolean(settings.demoMode),
       };
     },

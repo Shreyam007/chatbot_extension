@@ -76,7 +76,7 @@ export const SolvedModal: React.FC<SolvedModalProps> = ({
             </span>
             <div className="mt-1 flex items-baseline gap-1">
               <span className="font-mono text-xs font-bold text-on-surface">{hintsUsedCount}</span>
-              <span className="font-mono text-[9px] text-on-surface-variant">of 4</span>
+              <span className="font-mono text-[9px] text-on-surface-variant">used</span>
             </div>
             <span className="font-mono text-[9px] text-primary mt-0.5 truncate">
               {hintsUsedCount <= 2 ? 'Minimal help' : 'Assisted'}

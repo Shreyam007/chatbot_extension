@@ -44,6 +44,76 @@ describe('Page Adapters (Step 5)', () => {
       expect(PageContextSchema.safeParse(context).success).toBe(true);
     });
 
+    it('extracts valid PageContext from /problems/two-sum/description/ variant', () => {
+      const url = new URL('https://leetcode.com/problems/two-sum/description/');
+      const context = leetcodeAdapter.extractContext(doc, url);
+
+      expect(context).not.toBeNull();
+      expect(context?.title).toBe('1. Two Sum');
+      expect(context?.url).toBe('leetcode:two-sum');
+      expect(context?.statementText).toContain('Given an array of integers');
+      expect(PageContextSchema.safeParse(context).success).toBe(true);
+    });
+
+    it('extracts valid PageContext from /solutions and /submissions tabs (unmounted description panel)', () => {
+      // 1. Visit /problems/two-sum/ so statement is cached
+      const descUrl = new URL('https://leetcode.com/problems/two-sum/');
+      leetcodeAdapter.extractContext(doc, descUrl);
+
+      // 2. Navigate to /solutions where description DOM is unmounted and title is 'Solutions - Two Sum - LeetCode'
+      const solWin = new Window({ url: 'https://leetcode.com/problems/two-sum/solutions/' });
+      solWin.document.write('<html><head><title>Solutions - Two Sum - LeetCode</title></head><body><div id="solutions-view">Community solutions list</div></body></html>');
+      const solDoc = solWin.document as unknown as Document;
+      const solUrl = new URL('https://leetcode.com/problems/two-sum/solutions/');
+
+      const solContext = leetcodeAdapter.extractContext(solDoc, solUrl);
+      expect(solContext).not.toBeNull();
+      expect(solContext?.title).toBe('Two Sum');
+      expect(solContext?.title).not.toBe('Solutions');
+      expect(solContext?.title).not.toBe('LeetCode');
+      // Statement retrieved from cache
+      expect(solContext?.statementText).toContain('Given an array of integers');
+      expect(PageContextSchema.safeParse(solContext).success).toBe(true);
+
+      // 3. Navigate to /submissions tab
+      const subWin = new Window({ url: 'https://leetcode.com/problems/two-sum/submissions/' });
+      subWin.document.write('<html><head><title>Submissions - Two Sum - LeetCode</title></head><body><div id="submissions-view">Your submissions</div></body></html>');
+      const subDoc = subWin.document as unknown as Document;
+      const subUrl = new URL('https://leetcode.com/problems/two-sum/submissions/');
+
+      const subContext = leetcodeAdapter.extractContext(subDoc, subUrl);
+      expect(subContext).not.toBeNull();
+      expect(subContext?.title).toBe('Two Sum');
+      expect(subContext?.title).not.toBe('Submissions');
+      expect(subContext?.statementText).toContain('Given an array of integers');
+      expect(PageContextSchema.safeParse(subContext).success).toBe(true);
+    });
+
+    it('handles fresh tab load directly on /solutions without prior cache', () => {
+      const freshWin = new Window({ url: 'https://leetcode.com/problems/reverse-integer/solutions/' });
+      freshWin.document.write('<html><head><title>Solutions - Reverse Integer - LeetCode</title></head><body></body></html>');
+      const freshDoc = freshWin.document as unknown as Document;
+      const freshUrl = new URL('https://leetcode.com/problems/reverse-integer/solutions/');
+
+      const context = leetcodeAdapter.extractContext(freshDoc, freshUrl);
+      expect(context).not.toBeNull();
+      expect(context?.title).toBe('Reverse Integer');
+      expect(context?.statementText).toContain('Reverse Integer');
+      expect(PageContextSchema.safeParse(context).success).toBe(true);
+    });
+
+    it('never extracts "LeetCode" as problem title during early React hydration', () => {
+      const unhydratedWin = new Window({ url: 'https://leetcode.com/problems/3sum/' });
+      unhydratedWin.document.write('<html><head><title>LeetCode - The World\'s Leading Online Programming Learning Platform</title></head><body><div id="__next"></div></body></html>');
+      const unhydratedDoc = unhydratedWin.document as unknown as Document;
+      const unhydratedUrl = new URL('https://leetcode.com/problems/3sum/');
+
+      const context = leetcodeAdapter.extractContext(unhydratedDoc, unhydratedUrl);
+      expect(context).not.toBeNull();
+      expect(context?.title).toBe('3sum');
+      expect(context?.title).not.toContain('LeetCode');
+    });
+
     it('detects contest mode on contest URLs and pages (EC-100)', () => {
       const contestHtml = readFileSync(join(__dirname, '../fixtures/leetcode-contest.html'), 'utf-8');
       const win = new Window({
