@@ -285,6 +285,40 @@ In v1.0.1, we resolved this through five structural fixes:
 
 ---
 
+### Category F: Universal Mode Architecture, Multi-Site Permissions & Lexical Retrieval (v1.0.4)
+
+#### Q33: How does Universal Mode (v1.0.4) expand Unstuck to arbitrary websites without requesting broad `*://*/*` host permissions?
+**Answer:** In accordance with Chrome Web Store least-privilege policies, Unstuck's manifest declares host permissions strictly for competitive programming domains (`https://leetcode.com/*`, `https://codeforces.com/*`) and declares `optional_host_permissions: ['https://*/*', 'http://*/*']`.
+Arbitrary sites use two explicit user-gesture opt-in paths:
+1. **"Use on this page once"**: Leverages `activeTab` and programmatic injection (`chrome.scripting.executeScript`) for an ephemeral single-tab session without persisting host permissions.
+2. **"Always allow on this site"**: Invokes `chrome.permissions.request({ origins: [originPattern] })`. Upon native Chrome permission grant, it dynamically registers a content script (`chrome.scripting.registerContentScripts`) and persists the origin in `settings.allowedOrigins`. Users can pause, resume, or revoke origins anytime in Settings > Allowed Sites.
+
+#### Q34: What are the sensitive-page guardrails and how do they prevent privacy leaks on generic websites?
+**Answer:** Before extracting any text on generic web pages:
+1. **DOM Password & Auth Form Scan:** The extractor scans for `input[type="password"]` and authentication or payment forms (`form[action*="login"]`, `form[action*="signin"]`, `form[action*="checkout"]`, `form[action*="payment"]`, `[autocomplete*="password"]`, `[autocomplete="cc-number"]`). If detected, extraction immediately aborts (`isSensitive: true`), capturing zero page text and rendering a protective shield in the UI.
+2. **Category Pattern Blacklist:** Built-in regex heuristics block extraction on banking (`chase.com`, `bankofamerica.com`, `paypal.com`, `stripe.com/pay`), checkout/cart paths (`/checkout`, `/cart`, `/billing`), webmail (`mail.google.com`, `outlook.live.com`), health/medical portals, and password managers. Users can also configure custom regex patterns in Settings.
+3. **Form Input Pruning:** On all generic sites, the Readability extractor completely strips all `<input>`, `<textarea>`, `<select>`, and `[contenteditable]` elements so typed form inputs are never captured.
+
+#### Q35: How does in-memory BM25 lexical ranking work on long web pages, and why was it chosen over remote vector embeddings?
+**Answer:** On long technical articles or documentation (>4,000 characters), Unstuck chunks the extracted text by semantic heading boundaries (`h1`–`h4`) or 500-word blocks. It then evaluates an in-memory Okapi BM25 algorithm ($k_1=1.5, b=0.75$) with Term Frequency and Inverse Document Frequency scoring.
+BM25 was chosen because:
+- **Zero Privacy Leakage & Zero Network:** It runs purely in browser memory in <5ms without sending text to an external embedding provider or local WebAssembly model.
+- **Deterministic Token Budgeting:** It packs only the top-$K$ most relevant sections fitting the 4,000-character context budget into the Gemini prompt.
+- **Explainability:** Retrieved section titles are logged directly in the Trace tab and render as clickable citation chips that smooth-scroll to and highlight the referenced DOM section on the page.
+
+#### Q36: How does the pedagogical scaffolding adapt when viewing documentation or an article instead of a coding problem?
+**Answer:** When the content classifier detects `documentation` or `article` (via URL patterns, OpenGraph tags, or semantic heading density), the prompt generator and UI adapt the 4-tier scaffolding ladder:
+- **Level 1 — Pointer:** Directs the user to the exact paragraph or conceptual section to examine without spoiling summaries.
+- **Level 2 — Explain Simply:** Deconstructs complex terminology into accessible, plain-English conceptual explanations.
+- **Level 3 — Worked Example / Analogy:** Provides real-world analogies or illustrative code usage examples.
+- **Level 4 — Full Explanation:** Comprehensive synthesis covering edge cases, trade-offs, and background mechanics.
+Furthermore, BKT mastery updates are skipped for generic reading material, and proactive nudges default to OFF to respect focused reading.
+
+#### Q37: How does the "What will be sent to the AI" preview modal preserve user transparency?
+**Answer:** Before sending extracted generic page text to the Gemini API, the side panel presents an expandable preview modal displaying the exact character count, title, and sanitized text excerpt. The user can review, manually edit or trim the text, toggle "Include page text" off for the current query, or select "Never send page text from this site" to persist a permanent privacy override.
+
+---
+
 ## 6. Upfront Weaknesses & Technical Limitations (Honest Self-Critique)
 
 In any academic or technical defense, acknowledging system limitations demonstrates engineering rigor:

@@ -11,20 +11,20 @@ export const HINT_SCHEMA = {
     },
     codeBlock: {
       type: 'STRING',
-      description: 'Code or pseudocode snippet. ONLY allowed for Level 3 (pseudocode) or Level 4 (full code). Must be omitted for Level 1 and Level 2. REQUIRED for Level 3 pseudocode unless the question is off-topic.',
+      description: 'Code or pseudocode snippet. ONLY allowed for Level 3 or Level 4. Must be omitted for Level 1 and Level 2.',
     },
     topics: {
       type: 'ARRAY',
       items: { type: 'STRING' },
-      description: 'Algorithmic topics relevant to this hint (e.g., Two Pointers, Dynamic Programming).',
+      description: 'Topics or conceptual categories relevant to this hint.',
     },
     groundedQuote: {
       type: 'STRING',
-      description: 'An exact word-for-word quote from the problem statement that directly anchors this hint. Leave empty string if question is not answerable from page text.',
+      description: 'An exact word-for-word quote from the problem statement or page text that directly anchors this hint. Leave empty string if question is not answerable from page text.',
     },
     answerable_from_page: {
       type: 'BOOLEAN',
-      description: 'True if the question or hint is answerable from the problem statement text; false if asking about unmentioned history, authorship, or off-topic.',
+      description: 'True if the question or hint is answerable from the page text; false if asking about unmentioned history, authorship, or off-topic trivia.',
     },
     selfConfidence: {
       type: 'NUMBER',
@@ -34,7 +34,82 @@ export const HINT_SCHEMA = {
   required: ['hint', 'topics', 'selfConfidence'],
 };
 
-export function getSystemInstructionForLevel(level: HintLevel, isChat = false): string {
+export function getSystemInstructionForLevel(
+  level: HintLevel,
+  isChat = false,
+  contentType = 'problem'
+): string {
+  const isGeneric = contentType !== 'problem';
+
+  if (isGeneric) {
+    if (isChat) {
+      switch (level) {
+        case 1:
+          return (
+            'You are Unstuck, an educational tutor in conversation with a reader.\n' +
+            '- Goal: Answer the user question pedagogically with a POINTER directing them where in the page to look and what core concept to reflect on, without giving away the full answer.\n' +
+            '- HARD CONSTRAINT: Keep it concise and conceptual. Zero code blocks unless explicitly requested.\n' +
+            '- If the question cannot be answered from the page text, set answerable_from_page: false, state clearly that the page does not mention this detail, and offer a short, clearly-labelled general answer.\n' +
+            '- If quoting the page, include an exact groundedQuote substring.\n' +
+            '- If asked in Hinglish or a non-English language, reply in the user\'s language/dialect.'
+          );
+        case 2:
+          return (
+            'You are Unstuck, an educational tutor in conversation with a reader.\n' +
+            '- Goal: EXPLAIN SIMPLY in plain, jargon-free prose. Break down the complex concept into accessible concepts.\n' +
+            '- HARD CONSTRAINT: Zero dense jargon or unexplained acronyms.\n' +
+            '- If the question cannot be answered from the page, state clearly that the page does not mention this detail, and offer a short, clearly-labelled general answer.\n' +
+            '- If quoting the page, include an exact groundedQuote substring.\n' +
+            '- If asked in Hinglish or a non-English language, reply in the user\'s language/dialect.'
+          );
+        case 3:
+          return (
+            'You are Unstuck, an educational tutor providing a LEVEL 3 (WORKED EXAMPLE / ANALOGY) response.\n' +
+            '- Goal: Illustrate the concept using a concrete real-world analogy, step-by-step walkthrough, or code snippet (if documentation).\n' +
+            '- If the question cannot be answered from the page, state clearly that the page does not mention this detail, and offer a short, clearly-labelled general answer.\n' +
+            '- If quoting the page, include an exact groundedQuote substring.\n' +
+            '- If asked in Hinglish or a non-English language, reply in the user\'s language/dialect.'
+          );
+        case 4:
+          return (
+            'You are Unstuck, an educational guide providing a LEVEL 4 (FULL EXPLANATION) response.\n' +
+            '- Goal: Deliver a comprehensive, in-depth explanation covering background, nuances, edge cases, and broader implications.\n' +
+            '- If the question cannot be answered from the page, state clearly that the page does not mention this detail, and offer a short, clearly-labelled general answer.\n' +
+            '- If quoting the page, include an exact groundedQuote substring.\n' +
+            '- If asked in Hinglish or a non-English language, reply in the user\'s language/dialect.'
+          );
+      }
+    }
+
+    switch (level) {
+      case 1:
+        return (
+          'You are Unstuck, an educational tutor providing a LEVEL 1 (POINTER) hint on an article.\n' +
+          '- Goal: Point the user toward where in the text to look and what key principle to think about.\n' +
+          '- HARD CONSTRAINT: Do not summarize the entire section or give the final answer.\n' +
+          '- You MUST include an exact groundedQuote substring from the text.'
+        );
+      case 2:
+        return (
+          'You are Unstuck, an educational tutor providing a LEVEL 2 (EXPLAIN SIMPLY) hint on an article.\n' +
+          '- Goal: Explain the key ideas in plain, clear, accessible language without academic jargon.\n' +
+          '- You MUST include an exact groundedQuote substring from the text.'
+        );
+      case 3:
+        return (
+          'You are Unstuck, an educational tutor providing a LEVEL 3 (WORKED EXAMPLE / ANALOGY) hint.\n' +
+          '- Goal: Provide a concrete real-world analogy, walk-through scenario, or practical demonstration.\n' +
+          '- You MUST include an exact groundedQuote substring from the text.'
+        );
+      case 4:
+        return (
+          'You are Unstuck, an educational tutor providing a LEVEL 4 (FULL EXPLANATION).\n' +
+          '- Goal: Provide an exhaustive, rigorous explanation of the topic with all nuances and context.\n' +
+          '- You MUST include an exact groundedQuote substring from the text.'
+        );
+    }
+  }
+
   if (isChat) {
     switch (level) {
       case 1:
@@ -111,7 +186,11 @@ export async function generateHint(
 ): Promise<GeneratedHintCandidate> {
   const client = new GeminiClient(options?.apiKey);
   const isChat = Boolean(state.userQuery && state.userQuery.trim().length > 0);
-  const systemInstruction = getSystemInstructionForLevel(state.level, isChat);
+  const systemInstruction = getSystemInstructionForLevel(
+    state.level,
+    isChat,
+    state.context.contentType || 'problem'
+  );
   const prompt = state.assembledPrompt || '';
 
   state.trace.llmCallCount = (state.trace.llmCallCount || 0) + 1;

@@ -132,20 +132,24 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Problem Context Bar (if problem context is detected) */}
+      {/* Problem / Article Context Bar */}
       {context && (
         <div className="bg-surface-container border border-outline-variant/40 rounded-xl p-2.5 flex flex-col gap-1.5 mt-0.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="px-1.5 py-0.5 rounded bg-surface-container-highest text-secondary font-mono text-[10px] border border-secondary/20 shrink-0">
-                {context.site}
+              <span className="px-1.5 py-0.5 rounded bg-surface-container-highest text-secondary font-mono text-[10px] border border-secondary/20 shrink-0 capitalize">
+                {context.contentType && context.contentType !== 'problem' ? context.contentType : context.site}
               </span>
               <span className="text-on-surface font-mono text-xs font-semibold truncate" title={context.title}>
                 {context.title}
               </span>
             </div>
 
-            {context.difficulty && (
+            {context.isSensitive ? (
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full border shrink-0 text-error bg-error/10 border-error/30">
+                Guarded
+              </span>
+            ) : context.difficulty ? (
               <span
                 className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full border shrink-0 ${
                   context.difficulty.toLowerCase() === 'easy'
@@ -157,7 +161,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 {context.difficulty}
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Tags and sync indicator */}

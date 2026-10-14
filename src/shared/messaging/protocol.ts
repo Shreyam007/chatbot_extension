@@ -315,6 +315,62 @@ export const BlockSiteResponseSchema = z.object({
 export const PopupVariantSchema = z.enum(['active', 'paused', 'unsupported', 'contest']);
 export type PopupVariant = z.infer<typeof PopupVariantSchema>;
 
+export const EnableSiteOnceRequestSchema = z.object({
+  type: z.literal('ENABLE_SITE_ONCE'),
+  tabId: z.number().optional(),
+});
+
+export const EnableSiteOnceResponseSchema = z.object({
+  type: z.literal('SITE_ENABLED_ONCE'),
+  success: z.boolean(),
+  context: PageContextSchema.nullable().optional(),
+});
+
+export const AlwaysAllowOriginRequestSchema = z.object({
+  type: z.literal('ALWAYS_ALLOW_ORIGIN'),
+  origin: z.string(),
+  tabId: z.number().optional(),
+});
+
+export const AlwaysAllowOriginResponseSchema = z.object({
+  type: z.literal('ORIGIN_ALLOWED'),
+  success: z.boolean(),
+});
+
+export const RevokeOriginRequestSchema = z.object({
+  type: z.literal('REVOKE_ORIGIN'),
+  origin: z.string(),
+});
+
+export const RevokeOriginResponseSchema = z.object({
+  type: z.literal('ORIGIN_REVOKED'),
+  success: z.boolean(),
+});
+
+export const ToggleOriginPauseRequestSchema = z.object({
+  type: z.literal('TOGGLE_ORIGIN_PAUSE'),
+  origin: z.string(),
+  paused: z.boolean(),
+});
+
+export const ToggleOriginPauseResponseSchema = z.object({
+  type: z.literal('ORIGIN_PAUSE_UPDATED'),
+  success: z.boolean(),
+});
+
+export const UpdateSitePrivacyRequestSchema = z.object({
+  type: z.literal('UPDATE_SITE_PRIVACY'),
+  origin: z.string(),
+  neverSendPageText: z.boolean().optional(),
+  neverNudge: z.boolean().optional(),
+  confirmed: z.boolean().optional(),
+});
+
+export const UpdateSitePrivacyResponseSchema = z.object({
+  type: z.literal('SITE_PRIVACY_UPDATED'),
+  success: z.boolean(),
+});
+
 export const GetPopupStateRequestSchema = z.object({
   type: z.literal('GET_POPUP_STATE'),
 });
@@ -338,6 +394,11 @@ export const GetPopupStateResponseSchema = z.object({
   hintsLeftCount: z.number().optional(),
   selectedModel: z.string().optional(),
   demoMode: z.boolean().optional(),
+  isRestrictedScheme: z.boolean().optional(),
+  canEnable: z.boolean().optional(),
+  isAllowedSite: z.boolean().optional(),
+  isSingleUseActive: z.boolean().optional(),
+  contentType: z.string().optional(),
 });
 
 export const GetLocalMetricsRequestSchema = z.object({
@@ -393,6 +454,11 @@ export const BusRequestSchema = z.discriminatedUnion('type', [
   GetWeakTopicsReviewRequestSchema,
   GetLocalMetricsRequestSchema,
   ExportMetricsRequestSchema,
+  EnableSiteOnceRequestSchema,
+  AlwaysAllowOriginRequestSchema,
+  RevokeOriginRequestSchema,
+  ToggleOriginPauseRequestSchema,
+  UpdateSitePrivacyRequestSchema,
 ]);
 
 /**

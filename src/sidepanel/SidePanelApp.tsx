@@ -15,6 +15,8 @@ import { ProgressTab, type TopicProgress } from './components/ProgressTab';
 import { SolvedModal } from './components/SolvedModal';
 import { ErrorStateView, type ErrorStateType } from './components/ErrorStateView';
 import { ContextualStateView } from './components/ContextualStateView';
+import { SendPreviewModal } from './components/SendPreviewModal';
+import type { Settings } from '../shared/schemas/settings';
 
 export const SidePanelApp: React.FC = () => {
   // Onboarding & Status state
@@ -54,6 +56,15 @@ export const SidePanelApp: React.FC = () => {
   // Solved Modal
   const [showSolvedModal, setShowSolvedModal] = useState<boolean>(false);
 
+  // Settings & Send Preview Modal State
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
+  const [pendingAction, setPendingAction] = useState<
+    | { type: 'hint'; level: HintLevel }
+    | { type: 'chat'; query: string; level?: HintLevel }
+    | null
+  >(null);
+
   // 1. Initial Data Fetch
   useEffect(() => {
     // Check onboarding
@@ -63,11 +74,14 @@ export const SidePanelApp: React.FC = () => {
       })
       .catch(() => setOnboardingComplete(true));
 
-    // Fetch settings for demoMode
-    sendToBackground<{ type: string; settings: { demoMode?: boolean } }>({ type: 'GET_SETTINGS' })
+    // Fetch settings
+    sendToBackground<{ type: string; settings: Settings }>({ type: 'GET_SETTINGS' })
       .then((res) => {
-        if (res?.settings?.demoMode !== undefined) {
-          setDemoMode(Boolean(res.settings.demoMode));
+        if (res?.settings) {
+          setSettings(res.settings);
+          if (res.settings.demoMode !== undefined) {
+            setDemoMode(Boolean(res.settings.demoMode));
+          }
         }
       })
       .catch(() => {});
@@ -186,8 +200,28 @@ export const SidePanelApp: React.FC = () => {
     }
   };
 
+  const getContextOrigin = (): string => {
+    if (!context?.url) return '';
+    try {
+      return new URL(context.url).origin;
+    } catch {
+      return '';
+    }
+  };
+
+  const shouldPromptSendPreview = (): boolean => {
+    if (!context) return false;
+    // Known platforms are pre-confirmed
+    if (context.site === 'leetcode' || context.site === 'codeforces') return false;
+    const origin = getContextOrigin();
+    if (!origin) return false;
+    const isConfirmed = settings?.confirmedSendSites?.includes(origin);
+    const isNeverSend = settings?.neverSendPageTextSites?.includes(origin);
+    return !isConfirmed && !isNeverSend;
+  };
+
   // 2. Actions
-  const handleNextLevel = async (targetLevel: HintLevel) => {
+  const executeNextLevel = async (targetLevel: HintLevel) => {
     if (!context) return;
     setIsHintLoading(true);
     setErrorState(null);
@@ -229,11 +263,21 @@ export const SidePanelApp: React.FC = () => {
     }
   };
 
+  const handleNextLevel = async (targetLevel: HintLevel) => {
+    if (!context) return;
+    if (shouldPromptSendPreview()) {
+      setPendingAction({ type: 'hint', level: targetLevel });
+      setShowPreviewModal(true);
+      return;
+    }
+    executeNextLevel(targetLevel);
+  };
+
   const handleMakeMoreDirect = () => {
     handleNextLevel(Math.min(4, currentLevel + 1) as HintLevel);
   };
 
-  const handleSendMessage = async (query: string, level?: HintLevel) => {
+  const executeSendMessage = async (query: string, level?: HintLevel) => {
     if (!context) return;
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -305,6 +349,64 @@ export const SidePanelApp: React.FC = () => {
     } finally {
       setIsChatLoading(false);
     }
+  };
+
+  const handleSendMessage = async (query: string, level?: HintLevel) => {
+    if (!context) return;
+    if (shouldPromptSendPreview()) {
+      setPendingAction({ type: 'chat', query, level });
+      setShowPreviewModal(true);
+      return;
+    }
+    executeSendMessage(query, level);
+  };
+
+  const handleConfirmSendPreview = async (payload: {
+    trimmedText: string;
+    includePageText: boolean;
+    neverSendForSite: boolean;
+  }) => {
+    setShowPreviewModal(false);
+    const origin = getContextOrigin();
+    if (origin) {
+      try {
+        await sendToBackground({
+          type: 'UPDATE_SITE_PRIVACY',
+          origin,
+          neverSendPageText: payload.neverSendForSite || !payload.includePageText,
+          confirmed: true,
+        });
+        setSettings((prev) =>
+          prev
+            ? {
+                ...prev,
+                confirmedSendSites: Array.from(new Set([...(prev.confirmedSendSites || []), origin])),
+                neverSendPageTextSites:
+                  payload.neverSendForSite || !payload.includePageText
+                    ? Array.from(new Set([...(prev.neverSendPageTextSites || []), origin]))
+                    : prev.neverSendPageTextSites,
+              }
+            : prev
+        );
+      } catch {
+        // Best-effort
+      }
+    }
+
+    const action = pendingAction;
+    setPendingAction(null);
+    if (!action) return;
+
+    if (action.type === 'hint') {
+      executeNextLevel(action.level);
+    } else if (action.type === 'chat') {
+      executeSendMessage(action.query, action.level);
+    }
+  };
+
+  const handleCancelSendPreview = () => {
+    setShowPreviewModal(false);
+    setPendingAction(null);
   };
 
   const handleHighlightQuote = (quote: string) => {
@@ -406,6 +508,20 @@ export const SidePanelApp: React.FC = () => {
         ) : isContest && activeTab === 'hints' ? (
           /* Contest Fairness Lock View (S14.2) */
           <ContextualStateView type="contest" />
+        ) : context?.isSensitive && activeTab === 'hints' ? (
+          /* Sensitive Page Guardrail View */
+          <ContextualStateView
+            type="sensitive"
+            sensitiveReason={context.sensitiveReason}
+            onOpenChat={() => setActiveTab('chat')}
+          />
+        ) : context?.isSparse && activeTab === 'hints' ? (
+          /* Sparse Content Portal View */
+          <ContextualStateView
+            type="sparse"
+            onOpenChat={() => setActiveTab('chat')}
+            onSelectText={() => setActiveTab('chat')}
+          />
         ) : !context && activeTab === 'hints' ? (
           /* No Problem Detected View (S14.1) */
           <ContextualStateView
@@ -436,6 +552,7 @@ export const SidePanelApp: React.FC = () => {
                 onMakeMoreDirect={handleMakeMoreDirect}
                 onSolved={handleSolved}
                 onFeedback={handleFeedback}
+                contentType={context?.contentType}
               />
             )}
 
@@ -471,6 +588,17 @@ export const SidePanelApp: React.FC = () => {
           hintsUsedCount={currentLevel}
           topic={context?.tags?.[0] ?? '—'}
           onDismiss={() => setShowSolvedModal(false)}
+        />
+      )}
+
+      {/* Send Preview Modal */}
+      {showPreviewModal && (
+        <SendPreviewModal
+          siteOrigin={getContextOrigin()}
+          question={pendingAction?.type === 'chat' ? pendingAction.query : 'Initial hint request'}
+          extractedText={context?.selectedText || context?.statementText || ''}
+          onConfirm={handleConfirmSendPreview}
+          onCancel={handleCancelSendPreview}
         />
       )}
     </div>

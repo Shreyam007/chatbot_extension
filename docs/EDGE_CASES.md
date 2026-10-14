@@ -2,7 +2,7 @@
 
 Every edge case defined in Section 5 of `ANTIGRAVITY.md` is tracked here. Each item maps to defined behavior and an automated or verified manual test before Definition of Done.
 
-**Summary:** 60 Passed, 2 Manual, 0 Todo.
+**Summary:** 65 Passed, 2 Manual, 0 Todo.
 
 ---
 
@@ -25,7 +25,11 @@ Every edge case defined in Section 5 of `ANTIGRAVITY.md` is tracked here. Each i
 ### B. Pages and DOM
 | ID | Case | Required behaviour | Test File & Name | Status |
 |---|---|---|---|---|
-| EC-020 | Unknown site | Generic extraction; offer "select text to ask about" | `tests/unit/adapters.test.ts` › Generic Page Adapter › extracts text and returns PageContext or null | passed |
+| EC-020 | Generic / arbitrary site (Universal Mode v1.0.4) | Ephemeral 'Use once' via activeTab or persistent origin permission; Readability extraction; local BM25 ranking; sensitive page abort; 4-level doc/article ladder | `tests/unit/extractor-readability.test.ts` & `tests/unit/universal-pipeline.test.ts` | passed |
+| EC-020b | Sensitive page abort (password, auth/checkout forms, category blacklist) | Immediate abort with isSensitive: true; zero form inputs captured; protective banner rendered | `tests/unit/sensitive-guard.test.ts` › Sensitive Page Guardrail | passed |
+| EC-020c | Long-page lexical retrieval (BM25) | Local in-memory BM25 scoring; top-K section selection within 4,000 char budget; 0 network calls | `tests/unit/bm25-retrieval.test.ts` › BM25 Lexical Retrieval Engine | passed |
+| EC-020d | Sparse portal detection | Identifies portal landing pages (<60 chars text); renders honest sparse state without hallucination | `tests/unit/extractor-readability.test.ts` › handles sparse portals gracefully | passed |
+| EC-020e | Site permission revocation and lifecycle | Origins can be paused or revoked; unregisters dynamic content script and calls chrome.permissions.remove | `tests/unit/permissions.test.ts` › Step 3: Permissions & Site Management | passed |
 | EC-021 | Site DOM changed, selectors break | Adapter returns null; fallback to generic; log adapter failure; no crash | `tests/unit/adapters.test.ts` › Resilience & Error Handling › returns null gracefully on unknown DOM | passed |
 | EC-021b | LeetCode SPA tab switching (/solutions, /submissions) & Next.js hydration lag | Format URL slug into title; strip brand/tab prefixes; cache statement in memory so context is preserved across tabs; Hints tab never shows "no problem" | `tests/unit/adapters.test.ts` › LeetCode Adapter › extracts valid PageContext from /solutions and /submissions tabs & `tests/unit/popup-metrics-sync.test.ts` | passed |
 | EC-022 | SPA navigation to another problem | Reset signals, context, active hint; keep chat history per problem | `tests/unit/signals.test.ts` › SignalCollector › resets collection state across navigation intervals | passed |

@@ -37,6 +37,11 @@ interface PopupState {
   hintsLeftCount?: number;
   selectedModel?: string;
   demoMode?: boolean;
+  isRestrictedScheme?: boolean;
+  canEnable?: boolean;
+  isAllowedSite?: boolean;
+  isSingleUseActive?: boolean;
+  contentType?: string;
 }
 
 const DEFAULT_POPUP_STATE: PopupState = {
@@ -53,6 +58,9 @@ const DEFAULT_POPUP_STATE: PopupState = {
   hintsLeftCount: 0,
   selectedModel: DEFAULT_AI_MODEL,
   demoMode: false,
+  isRestrictedScheme: false,
+  canEnable: false,
+  isAllowedSite: false,
 };
 
 export const PopupApp: React.FC = () => {
@@ -82,6 +90,11 @@ export const PopupApp: React.FC = () => {
           hintsLeftCount: res.hintsLeftCount,
           selectedModel: res.selectedModel || DEFAULT_AI_MODEL,
           demoMode: Boolean(res.demoMode),
+          isRestrictedScheme: Boolean(res.isRestrictedScheme),
+          canEnable: Boolean(res.canEnable),
+          isAllowedSite: Boolean(res.isAllowedSite),
+          isSingleUseActive: Boolean(res.isSingleUseActive),
+          contentType: res.contentType,
         });
       }
     } catch {
@@ -105,6 +118,49 @@ export const PopupApp: React.FC = () => {
     } else {
       window.open(chrome.runtime?.getURL?.('sidepanel.html') || 'sidepanel.html', '_blank');
     }
+  };
+
+  const handleUseOnce = async () => {
+    try {
+      const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
+      const tabId = tabs?.[0]?.id;
+      if (tabId) {
+        await sendToBackground({ type: 'ENABLE_SITE_ONCE', tabId });
+      }
+    } catch {
+      // Best-effort
+    }
+    handleOpenSidePanel();
+  };
+
+  const handleAlwaysAllow = async () => {
+    try {
+      const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
+      const activeTab = tabs?.[0];
+      if (activeTab?.url) {
+        const parsed = new URL(activeTab.url);
+        const originPattern = `${parsed.protocol}//${parsed.host}/*`;
+        let granted = true;
+        if (typeof chrome !== 'undefined' && chrome.permissions?.request) {
+          granted = await chrome.permissions.request({ origins: [originPattern] });
+        }
+        if (granted) {
+          await sendToBackground({
+            type: 'ALWAYS_ALLOW_ORIGIN',
+            origin: originPattern,
+            tabId: activeTab.id,
+          });
+          fetchPopupState();
+        }
+      }
+    } catch {
+      // Best-effort
+    }
+    handleOpenSidePanel();
+  };
+
+  const handleOpenChatWithoutPage = () => {
+    handleOpenSidePanel();
   };
 
   const handleOpenOptions = () => {
@@ -433,70 +489,125 @@ export const PopupApp: React.FC = () => {
           </>
         )}
 
-        {/* VARIANT 3: UNSUPPORTED / RESTRICTED SCHEME */}
+        {/* VARIANT 3: UNSUPPORTED / RESTRICTED SCHEME OR UNENABLED SITE */}
         {state.variant === 'unsupported' && (
           <>
-            {/* Status Block: Unsupported Notice */}
-            <div className="bg-surface-container rounded-xl p-3 border border-outline-variant/30 flex flex-col gap-2">
-              <div className="flex items-start gap-2.5">
-                <div className="w-6 h-6 rounded-md bg-surface-container-highest flex items-center justify-center text-secondary shrink-0 mt-0.5">
-                  <Info className="w-4 h-4" />
+            {state.isRestrictedScheme ? (
+              <>
+                {/* Status Block: Restricted Browser Scheme (S13.5) */}
+                <div className="bg-surface-container rounded-xl p-3 border border-outline-variant/30 flex flex-col gap-2">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-6 h-6 rounded-md bg-surface-container-highest flex items-center justify-center text-secondary shrink-0 mt-0.5">
+                      <Info className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="font-mono text-xs font-semibold text-on-surface">
+                        I can't run on this page
+                      </h2>
+                      <p className="font-sans text-[11px] text-outline leading-relaxed mt-1">
+                        Browser internal pages, system viewers, and the Web Store are restricted by browser policy.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Target Domain Pill (Restricted) */}
+                  <div className="mt-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20 font-mono text-[10px] text-outline">
+                    <Lock className="w-3.5 h-3.5 text-error shrink-0" />
+                    <span className="truncate">Target: {state.url || 'Restricted scheme'}</span>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-mono text-xs font-semibold text-on-surface">
-                    I can't run on this page
-                  </h2>
-                  <p className="font-sans text-[11px] text-outline leading-relaxed mt-1">
-                    Unstuck only activates on supported problem pages and programming documentation.
-                  </p>
+
+                {/* Supported Sites Badge Row */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-outline">
+                    Supported out-of-the-box:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-on-surface-variant">
+                      LeetCode
+                    </span>
+                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-on-surface-variant">
+                      HackerRank
+                    </span>
+                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-on-surface-variant">
+                      Codeforces
+                    </span>
+                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-secondary">
+                      + docs
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Target Domain Pill (Restricted) */}
-              <div className="mt-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20 font-mono text-[10px] text-outline">
-                <Lock className="w-3.5 h-3.5 text-error shrink-0" />
-                <span className="truncate">Target: {state.url || 'Restricted scheme'}</span>
-              </div>
-            </div>
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2 pt-1">
+                  <button
+                    onClick={handleOpenOptions}
+                    className="w-full bg-surface-container-high text-on-surface font-mono text-xs rounded-lg px-3 py-2 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]"
+                  >
+                    <PlusCircle className="w-4 h-4 text-primary" />
+                    Add custom domain / localhost
+                  </button>
+                  <button
+                    onClick={handleOpenChatWithoutPage}
+                    className="w-full bg-surface-container text-on-surface font-mono text-xs rounded-lg px-3 py-1.5 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-outline" />
+                    Open chat without page
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Standard web page: opt-in per site (Universal Mode) */}
+                <div className="bg-surface-container rounded-xl p-3 border border-outline-variant/30 flex flex-col gap-2">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-6 h-6 rounded-md bg-surface-container-highest flex items-center justify-center text-primary shrink-0 mt-0.5">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="font-mono text-xs font-semibold text-on-surface">
+                        Enable for this site
+                      </h2>
+                      <p className="font-sans text-[11px] text-outline leading-relaxed mt-1">
+                        Unstuck is opt-in per site and privacy-first. Choose how you would like to run on this page:
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Supported Sites Badge Row */}
-            <div className="flex flex-col gap-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-outline">
-                Supported out-of-the-box:
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-on-surface-variant">
-                  LeetCode
-                </span>
-                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-on-surface-variant">
-                  HackerRank
-                </span>
-                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-on-surface-variant">
-                  Codeforces
-                </span>
-                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface-container border border-outline-variant/30 text-secondary">
-                  + docs
-                </span>
-              </div>
-            </div>
+                  <div className="mt-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20 font-mono text-[10px] text-on-surface-variant">
+                    <Terminal className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="truncate">{state.siteDomain || state.url}</span>
+                  </div>
+                </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-2 pt-1">
-              <button
-                onClick={handleOpenOptions}
-                className="w-full bg-surface-container-high text-on-surface font-mono text-xs rounded-lg px-3 py-2 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]"
-              >
-                <PlusCircle className="w-4 h-4 text-primary" />
-                Add custom domain / localhost
-              </button>
-              <button
-                onClick={handleOpenSidePanel}
-                className="w-full bg-surface-container text-on-surface font-mono text-xs rounded-lg px-3 py-1.5 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]"
-              >
-                <FileText className="w-3.5 h-3.5 text-outline" />
-                Open scratchpad panel
-              </button>
-            </div>
+                {/* 3 Actions */}
+                <div className="flex flex-col gap-2 pt-1">
+                  <button
+                    onClick={handleUseOnce}
+                    className="w-full bg-primary hover:bg-primary/90 text-on-primary font-mono text-xs font-semibold rounded-lg px-3 py-2 flex items-center justify-center gap-2 transition-colors active:scale-[0.98] shadow-sm"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    Use on this page once
+                  </button>
+
+                  <button
+                    onClick={handleAlwaysAllow}
+                    className="w-full bg-surface-container-high text-on-surface font-mono text-xs rounded-lg px-3 py-2 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]"
+                  >
+                    <Shield className="w-3.5 h-3.5 text-secondary" />
+                    Always allow on this site
+                  </button>
+
+                  <button
+                    onClick={handleOpenChatWithoutPage}
+                    className="w-full bg-surface-container text-on-surface font-mono text-xs rounded-lg px-3 py-1.5 border border-outline-variant/30 flex items-center justify-center gap-2 hover:bg-surface-bright transition-colors active:scale-[0.98]"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-outline" />
+                    Open chat without page
+                  </button>
+                </div>
+              </>
+            )}
           </>
         )}
 

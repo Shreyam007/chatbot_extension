@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>React SPA Application</title>
+</head>
+<body>
+  <div id="root">
+    <div id="loading-spinner">Loading application content...</div>
+  </div>
+  <script>
+    // Simulate React late hydration / SPA client-side rendering after 300ms
+    setTimeout(() => {
+      const root = document.getElementById('root');
+      if (root) {
+        root.innerHTML = `
+          <main class="hydrated-view">
+            <h1>Single Page Application Architecture</h1>
+            <p>Single-page applications (SPAs) load a single HTML document and dynamically update the DOM as the user interacts with the app, eliminating full page reloads.</p>
+            <h2>Client-Side Routing</h2>
+            <p>SPAs use the HTML5 History API (pushState, replaceState) to manage URL changes and browser back/forward history entirely on the client side.</p>
+          </main>
+        `;
+      }
+    }, 300);
+  </script>
+</body>
+</html>

@@ -1,7 +1,9 @@
 import type { PageAdapter, VerdictResult } from './types';
 import type { PageContext } from '../../shared/schemas/context';
-import { LIMITS } from '../../shared/config';
 import { createProblemHash } from './leetcode';
+import { checkSensitivePage } from '../extractor/sensitive';
+import { classifyContentType } from '../extractor/classifier';
+import { extractReadabilityContent } from '../extractor/readability';
 
 export const genericAdapter: PageAdapter = {
   name: 'generic',
@@ -16,54 +18,53 @@ export const genericAdapter: PageAdapter = {
 
   extractContext(doc: Document, url: URL): PageContext | null {
     try {
-      const titleElem = doc.querySelector('h1') || doc.querySelector('h2');
-      let title = titleElem?.textContent?.trim() || doc.title || '';
+      const problemHash = createProblemHash(url.hostname, url.pathname);
 
-      if (title.length > 100) {
-        title = title.slice(0, 100);
+      // 1. Sensitive Page Guardrail: Abort extraction on auth, payment, password, or blacklisted domains
+      const sensitiveCheck = checkSensitivePage(doc, url);
+      if (sensitiveCheck.isSensitive) {
+        return {
+          url: problemHash,
+          site: 'generic',
+          title: doc.title || 'Sensitive Page',
+          statementText: '',
+          tags: [],
+          isContest: false,
+          detectedAt: Date.now(),
+          contentType: 'general',
+          sections: [],
+          isSensitive: true,
+          sensitiveReason: sensitiveCheck.reason,
+          isSparse: false,
+        };
       }
 
-      // Try main content containers
-      const mainContainer =
-        doc.querySelector('main') ||
-        doc.querySelector('article') ||
-        doc.querySelector('[role="main"]') ||
-        doc.querySelector('.content') ||
-        doc.body;
+      // 2. Classify content type: 'problem' | 'documentation' | 'article' | 'general'
+      const contentType = classifyContentType(doc, url);
 
-      if (!mainContainer) {
-        return null;
-      }
+      // 3. Extract readable main content and structured sections
+      const extracted = extractReadabilityContent(doc);
 
-      // Collect paragraphs
-      const paragraphs = Array.from(mainContainer.querySelectorAll('p, pre, code'));
-      let statementText = paragraphs
-        .map((p) => p.textContent?.trim() || '')
-        .filter((t) => t.length > 20)
-        .join('\n\n');
-
-      if (!statementText && mainContainer.textContent) {
-        statementText = mainContainer.textContent.trim();
-      }
-
-      if (statementText.length > LIMITS.MAX_STATEMENT_CHARS) {
-        statementText = statementText.slice(0, LIMITS.MAX_STATEMENT_CHARS) + '... [truncated]';
-      }
-
-      if (!title && !statementText) {
-        return null;
-      }
-
-      const problemHash = createProblemHash(url.hostname, title || url.pathname);
+      // Derive relevant category tags from section headings
+      const derivedTags = extracted.sections
+        .map((s) => s.title)
+        .filter((t) => t && t.length > 2 && t.length < 35 && t !== extracted.title && t !== 'Overview')
+        .slice(0, 4);
 
       return {
         url: problemHash,
         site: 'generic',
-        title: title || 'Coding Problem',
-        statementText,
-        tags: [],
+        title: extracted.title || 'Web Document',
+        statementText: extracted.statementText,
+        tags: derivedTags,
         isContest: false,
         detectedAt: Date.now(),
+        contentType,
+        sections: extracted.sections,
+        selectedText: extracted.selectedText,
+        isSensitive: false,
+        isSparse: extracted.isSparse,
+        language: extracted.language,
       };
     } catch {
       // Defensive: never throw on unexpected DOM
@@ -75,8 +76,8 @@ export const genericAdapter: PageAdapter = {
     return null;
   },
 
-  readEditorCode(doc: Document): string | null {
-    const preCode = doc.querySelector('pre code, textarea');
-    return preCode?.textContent || null;
+  readEditorCode(_doc: Document): string | null {
+    // Explicit guardrail: Never read textareas, inputs, or user code from arbitrary generic sites
+    return null;
   },
 };

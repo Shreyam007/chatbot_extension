@@ -12,14 +12,27 @@ export function normalizeOriginPattern(domainOrPattern: string): string {
   return `https://${domainOrPattern}/*`;
 }
 
+export function extractOriginFromUrl(urlStr: string): string {
+  try {
+    const parsed = new URL(urlStr);
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return urlStr;
+  }
+}
+
+export function getScriptIdForOrigin(originPattern: string): string {
+  return `unstuck-${originPattern.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 45)}`;
+}
+
 /**
- * Requests host permission at runtime for a given site.
+ * Requests host permission at runtime for a given site origin.
  * Must be triggered by a user gesture.
  */
 export async function requestSitePermission(site: string): Promise<boolean> {
   const origin = normalizeOriginPattern(site);
   if (typeof chrome === 'undefined' || !chrome.permissions || !chrome.permissions.request) {
-    logger.debug('chrome.permissions.request not available in current environment; simulating grant');
+    logger.debug('chrome.permissions.request not available; simulating grant');
     return true;
   }
 
@@ -63,6 +76,88 @@ export async function removeSitePermission(site: string): Promise<boolean> {
     return await chrome.permissions.remove({ origins: [origin] });
   } catch (err) {
     logger.warn(`Failed to remove permission for ${origin}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Dynamically registers content script for a permanently allowed origin.
+ * Persists across browser sessions until revoked.
+ */
+export async function registerOriginContentScript(originPattern: string): Promise<boolean> {
+  const origin = normalizeOriginPattern(originPattern);
+  const scriptId = getScriptIdForOrigin(origin);
+
+  if (typeof chrome === 'undefined' || !chrome.scripting || !chrome.scripting.registerContentScripts) {
+    logger.debug('chrome.scripting.registerContentScripts not available; simulating success');
+    return true;
+  }
+
+  try {
+    // Unregister existing script if previously registered to avoid duplicates
+    try {
+      await chrome.scripting.unregisterContentScripts({ ids: [scriptId] });
+    } catch {
+      // Ignored if not found
+    }
+
+    await chrome.scripting.registerContentScripts([
+      {
+        id: scriptId,
+        matches: [origin],
+        js: ['content-scripts/content.js'],
+        runAt: 'document_idle',
+        persistAcrossSessions: true,
+      },
+    ]);
+    logger.info(`Registered dynamic content script for ${origin} (ID: ${scriptId})`);
+    return true;
+  } catch (err) {
+    logger.warn(`Failed to register content script for ${origin}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Unregisters dynamic content script when user revokes site permission.
+ */
+export async function unregisterOriginContentScript(originPattern: string): Promise<boolean> {
+  const origin = normalizeOriginPattern(originPattern);
+  const scriptId = getScriptIdForOrigin(origin);
+
+  if (typeof chrome === 'undefined' || !chrome.scripting || !chrome.scripting.unregisterContentScripts) {
+    return true;
+  }
+
+  try {
+    await chrome.scripting.unregisterContentScripts({ ids: [scriptId] });
+    logger.info(`Unregistered dynamic content script for ${origin}`);
+    return true;
+  } catch (err) {
+    logger.warn(`Failed to unregister content script for ${origin}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Injects content script into an active tab for single-use ("Use on this page once")
+ * via activeTab permission and chrome.scripting.
+ */
+export async function executeScriptOnTabOnce(tabId: number): Promise<boolean> {
+  if (typeof chrome === 'undefined' || !chrome.scripting || !chrome.scripting.executeScript) {
+    logger.debug('chrome.scripting.executeScript not available; simulating success');
+    return true;
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['content-scripts/content.js'],
+    });
+    logger.info(`Single-use content script successfully injected into tab ${tabId}`);
+    return true;
+  } catch (err) {
+    logger.error(`Failed single-use script execution on tab ${tabId}:`, err);
     return false;
   }
 }

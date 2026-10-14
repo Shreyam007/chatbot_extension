@@ -3,8 +3,8 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   manifest: {
     name: 'Unstuck',
-    description: 'Proactive, explainable tutoring assistant for coding problems.',
-    version: '1.0.3',
+    description: 'Proactive, explainable tutoring assistant for coding problems and technical pages.',
+    version: '1.0.4',
     icons: {
       16: 'icon-16.png',
       32: 'icon-32.png',

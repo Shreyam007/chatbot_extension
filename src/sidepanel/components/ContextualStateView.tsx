@@ -7,16 +7,21 @@ import {
   MessageSquare,
   MousePointerClick,
   FileText,
+  ShieldAlert,
+  AlertCircle,
 } from 'lucide-react';
 
 export type ContextualStateType =
   | 'no_problem'
   | 'contest'
-  | 'paused';
+  | 'paused'
+  | 'sensitive'
+  | 'sparse';
 
 export interface ContextualStateViewProps {
   type: ContextualStateType;
   url?: string;
+  sensitiveReason?: string;
   onResume?: () => void;
   onOpenChat?: () => void;
   onSelectText?: () => void;
@@ -26,11 +31,89 @@ export interface ContextualStateViewProps {
 export const ContextualStateView: React.FC<ContextualStateViewProps> = ({
   type,
   url: _url = '',
+  sensitiveReason,
   onResume,
   onOpenChat,
   onSelectText,
   onUseWholePage,
 }) => {
+  if (type === 'sensitive') {
+    return (
+      <div className="flex-1 w-full min-w-0 flex flex-col justify-between p-4 sm:p-5 select-none animate-fadeIn">
+        <div className="my-auto space-y-4 text-center px-1">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-error/10 border border-error/30 flex items-center justify-center text-error shadow-lg">
+            <ShieldAlert className="w-7 h-7 text-error" />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-error/15 border border-error/30 text-[10px] font-mono text-error font-bold tracking-wider uppercase">
+              Sensitive Page Guard
+            </div>
+            <h2 className="text-sm font-mono font-semibold text-on-surface leading-snug">
+              Extraction Blocked
+            </h2>
+            <p className="text-xs text-on-surface-variant leading-relaxed font-sans max-w-[280px] mx-auto break-words">
+              {sensitiveReason ||
+                'Sensitive authentication, password, or payment forms were detected on this page. Extraction is disabled to protect your privacy.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 max-w-[280px] mx-auto pt-2">
+            <button
+              onClick={onOpenChat}
+              className="w-full py-2 px-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Open Chat Without Page</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'sparse') {
+    return (
+      <div className="flex-1 w-full min-w-0 flex flex-col justify-between p-4 sm:p-5 select-none animate-fadeIn">
+        <div className="my-auto space-y-4 text-center px-1">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-surface-container-high border border-outline-variant/40 flex items-center justify-center text-secondary shadow-lg">
+            <AlertCircle className="w-7 h-7 text-secondary" />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/40 text-[10px] font-mono text-on-surface-variant">
+              Sparse Content Portal
+            </div>
+            <h2 className="text-sm font-mono font-semibold text-on-surface leading-snug">
+              Not enough readable text
+            </h2>
+            <p className="text-xs text-on-surface-variant leading-relaxed font-sans max-w-[280px] mx-auto break-words">
+              This landing page or portal contains minimal readable text. You can select specific text on the page to ask about, or chat without page context.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 max-w-[280px] mx-auto pt-2">
+            <button
+              onClick={onOpenChat}
+              className="w-full py-2 px-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Open Chat Without Page</span>
+            </button>
+
+            <button
+              onClick={onSelectText}
+              className="w-full py-2 px-3 rounded-xl bg-surface-container border border-outline-variant text-on-surface font-mono text-xs hover:bg-surface-container-high flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <MousePointerClick className="w-3.5 h-3.5 text-secondary" />
+              <span>Select text to ask about</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (type === 'no_problem') {
     return (
       <div className="flex-1 w-full min-w-0 flex flex-col justify-between p-4 sm:p-5 select-none animate-fadeIn">

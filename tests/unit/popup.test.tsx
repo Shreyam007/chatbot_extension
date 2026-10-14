@@ -21,7 +21,13 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
     vi.clearAllMocks();
     (globalThis as unknown as { chrome: unknown }).chrome = {
       sidePanel: { open: vi.fn() },
-      tabs: { query: vi.fn((_q: unknown, cb: (tabs: Array<{ id: number }>) => void) => cb([{ id: 101 }])) },
+      tabs: {
+        query: vi.fn().mockImplementation((_q: unknown, cb?: (tabs: Array<{ id: number; url?: string }>) => void) => {
+          const res = [{ id: 101, url: 'https://en.wikipedia.org/wiki/Dijkstra' }];
+          if (cb) cb(res);
+          return Promise.resolve(res);
+        }),
+      },
       runtime: { openOptionsPage: vi.fn(), getURL: vi.fn((path: string) => path) },
     };
 
@@ -102,12 +108,14 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
     expect(container.textContent).toContain('42m remaining');
   });
 
-  it('renders Variant 3 (Unsupported) with inactive badge and supported platform chips', async () => {
+  it('renders Variant 3 for restricted browser schemes (S13.5 notice)', async () => {
     vi.mocked(messaging.sendToBackground).mockResolvedValueOnce({
       type: 'POPUP_STATE',
       variant: 'unsupported',
       siteDomain: 'chrome://extensions',
       url: 'chrome://extensions',
+      isRestrictedScheme: true,
+      canEnable: false,
       isContest: false,
       isPaused: false,
       isSnoozed: false,
@@ -124,11 +132,78 @@ describe('PopupApp & 4 Variants (Step 11 — S09)', () => {
 
     expect(container.textContent).toContain('INACTIVE');
     expect(container.textContent).toContain("I can't run on this page");
+    expect(container.textContent).toContain('Browser internal pages, system viewers, and the Web Store are restricted by browser policy');
     expect(container.textContent).toContain('Target: chrome://extensions');
-    expect(container.textContent).toContain('LeetCode');
-    expect(container.textContent).toContain('Codeforces');
-    expect(container.textContent).toContain('Add custom domain / localhost');
-    expect(container.textContent).toContain('Open scratchpad panel');
+    expect(container.textContent).not.toContain('Open scratchpad panel');
+    expect(container.textContent).not.toContain('Local LLM');
+  });
+
+  it('renders Variant 3 for normal web pages with 3 Universal Mode opt-in actions', async () => {
+    vi.mocked(messaging.sendToBackground).mockResolvedValueOnce({
+      type: 'POPUP_STATE',
+      variant: 'unsupported',
+      siteDomain: 'en.wikipedia.org',
+      url: 'https://en.wikipedia.org/wiki/Dijkstra',
+      isRestrictedScheme: false,
+      canEnable: true,
+      isContest: false,
+      isPaused: false,
+      isSnoozed: false,
+      nudgesCount: 0,
+      acceptedCount: 0,
+      acceptRate: 0,
+      hintsUsedCount: 0,
+      hintsLeftCount: 0,
+    } as unknown as Record<string, unknown>);
+
+    await act(async () => {
+      root.render(<PopupApp />);
+    });
+
+    expect(container.textContent).toContain('INACTIVE');
+    expect(container.textContent).toContain('Enable for this site');
+    expect(container.textContent).toContain('Use on this page once');
+    expect(container.textContent).toContain('Always allow on this site');
+    expect(container.textContent).toContain('Open chat without page');
+    expect(container.textContent).not.toContain('Open scratchpad panel');
+    expect(container.textContent).not.toContain('Local LLM');
+  });
+
+  it('dispatches ENABLE_SITE_ONCE when clicking "Use on this page once"', async () => {
+    vi.mocked(messaging.sendToBackground).mockResolvedValue({
+      type: 'POPUP_STATE',
+      variant: 'unsupported',
+      siteDomain: 'en.wikipedia.org',
+      url: 'https://en.wikipedia.org/wiki/Dijkstra',
+      isRestrictedScheme: false,
+      canEnable: true,
+      isContest: false,
+      isPaused: false,
+      isSnoozed: false,
+      nudgesCount: 0,
+      acceptedCount: 0,
+      acceptRate: 0,
+      hintsUsedCount: 0,
+      hintsLeftCount: 0,
+    } as unknown as Record<string, unknown>);
+
+    await act(async () => {
+      root.render(<PopupApp />);
+    });
+
+    const enableOnceBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Use on this page once')
+    );
+    expect(enableOnceBtn).toBeDefined();
+
+    await act(async () => {
+      enableOnceBtn?.click();
+    });
+
+    expect(messaging.sendToBackground).toHaveBeenCalledWith({
+      type: 'ENABLE_SITE_ONCE',
+      tabId: 101,
+    });
   });
 
   it('renders Variant 4 (Contest) with fair-play badge and integrity lock notice', async () => {

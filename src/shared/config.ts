@@ -3,7 +3,7 @@
  */
 
 export const APP_NAME = 'Unstuck';
-export const APP_VERSION = '1.0.3';
+export const APP_VERSION = '1.0.4';
 
 /**
  * Gemini AI Model Configuration (Official active IDs from ai.google.dev)
@@ -91,6 +91,11 @@ export const DEFAULT_SETTINGS = {
   defaultHintLevel: 1 as const,
   enabledSites: ['leetcode.com', 'codeforces.com'],
   blockedSites: [] as string[],
+  allowedOrigins: [] as Array<{ origin: string; grantedAt: number; status: 'active' | 'paused'; enabledNudges: boolean }>,
+  neverSendPageTextSites: [] as string[],
+  neverNudgeSites: [] as string[],
+  customBlacklistPatterns: [] as string[],
+  confirmedSendSites: [] as string[],
   contestAutoDisable: true as const,
   model: DEFAULT_AI_MODEL,
   includeCodeConsent: false,

@@ -41,6 +41,14 @@ import {
 import { GeminiClient } from './llm';
 import { runAgentGraph } from './graph';
 import type { AgentRunTrace } from './graph/types';
+import {
+  executeScriptOnTabOnce,
+  registerOriginContentScript,
+  unregisterOriginContentScript,
+  removeSitePermission,
+  normalizeOriginPattern,
+  extractOriginFromUrl,
+} from '../shared/permissions';
 
 const logger = createLogger('ServiceWorker');
 
@@ -57,6 +65,7 @@ let latestSignals: SignalWindow | null = null;
 let latestPStuck: number = 0;
 let isTutorPaused: boolean = false;
 const recentTraces: AgentRunTrace[] = [];
+const singleUseTabs = new Set<number>();
 
 export function initBackground() {
   logger.info(`Background orchestrator initialized (v${APP_VERSION})`);
@@ -494,11 +503,14 @@ export function initBackground() {
       });
 
       // Update BKT mastery for problem topics
+      const isArticleOrDoc = latestPageContext?.contentType && latestPageContext.contentType !== 'problem';
       const topics =
         req.topics && req.topics.length > 0
           ? req.topics
           : latestPageContext?.tags && latestPageContext.tags.length > 0
           ? latestPageContext.tags
+          : isArticleOrDoc
+          ? [] // Skip updating mastery for generic articles with no clear programming topics
           : ['Arrays & Hashing'];
 
       const masteryRecord = await getAllMastery();
@@ -538,6 +550,167 @@ export function initBackground() {
       return {
         type: 'PAGE_TEXT_HIGHLIGHTED',
         found: true,
+      };
+    },
+    ENABLE_SITE_ONCE: async (req, sender) => {
+      let tabId = req.tabId ?? sender?.tab?.id;
+      if (!tabId) {
+        const [activeTab] = (await chrome.tabs?.query({ active: true, currentWindow: true })) || [];
+        tabId = activeTab?.id;
+      }
+      if (!tabId) {
+        return { type: 'SITE_ENABLED_ONCE', success: false };
+      }
+      singleUseTabs.add(tabId);
+      const success = await executeScriptOnTabOnce(tabId);
+
+      // Attempt immediate context fetch from newly injected tab
+      if (success) {
+        try {
+          const resp = await chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_CONTEXT' });
+          if (resp?.context) {
+            latestPageContext = resp.context;
+          }
+        } catch {
+          // May take a tick to mount
+        }
+      }
+
+      return {
+        type: 'SITE_ENABLED_ONCE',
+        success,
+        context: latestPageContext,
+      };
+    },
+    ALWAYS_ALLOW_ORIGIN: async (req) => {
+      const originPattern = normalizeOriginPattern(req.origin);
+      const originBase = extractOriginFromUrl(req.origin);
+
+      const registered = await registerOriginContentScript(originPattern);
+      const stored = await chrome.storage?.local?.get(['settings']);
+      const settings = stored?.settings || DEFAULT_SETTINGS;
+
+      const currentAllowed = settings.allowedOrigins || [];
+      const exists = currentAllowed.some((item: { origin: string }) => item.origin === originPattern || item.origin === originBase);
+      const updatedAllowed = exists
+        ? currentAllowed.map((item: { origin: string }) =>
+            item.origin === originPattern || item.origin === originBase ? { ...item, status: 'active' } : item
+          )
+        : [...currentAllowed, { origin: originBase, grantedAt: Date.now(), status: 'active', enabledNudges: false }];
+
+      const enabledSites = settings.enabledSites || ['leetcode.com', 'codeforces.com'];
+      const newEnabledSites = enabledSites.includes(originBase) ? enabledSites : [...enabledSites, originBase];
+
+      await chrome.storage?.local?.set({
+        settings: {
+          ...settings,
+          allowedOrigins: updatedAllowed,
+          enabledSites: newEnabledSites,
+        },
+      });
+
+      if (req.tabId) {
+        singleUseTabs.add(req.tabId);
+        await executeScriptOnTabOnce(req.tabId);
+      }
+
+      return {
+        type: 'ORIGIN_ALLOWED',
+        success: registered,
+      };
+    },
+    REVOKE_ORIGIN: async (req) => {
+      const originPattern = normalizeOriginPattern(req.origin);
+      const originBase = extractOriginFromUrl(req.origin);
+
+      await unregisterOriginContentScript(originPattern);
+      await removeSitePermission(originPattern);
+
+      const stored = await chrome.storage?.local?.get(['settings']);
+      const settings = stored?.settings || DEFAULT_SETTINGS;
+
+      const currentAllowed = settings.allowedOrigins || [];
+      const updatedAllowed = currentAllowed.filter(
+        (item: { origin: string }) => item.origin !== originPattern && item.origin !== originBase && item.origin !== req.origin
+      );
+      const enabledSites = (settings.enabledSites || ['leetcode.com', 'codeforces.com']).filter(
+        (s: string) => !req.origin.includes(s) && !s.includes(req.origin)
+      );
+
+      await chrome.storage?.local?.set({
+        settings: {
+          ...settings,
+          allowedOrigins: updatedAllowed,
+          enabledSites,
+        },
+      });
+
+      return {
+        type: 'ORIGIN_REVOKED',
+        success: true,
+      };
+    },
+    TOGGLE_ORIGIN_PAUSE: async (req) => {
+      const stored = await chrome.storage?.local?.get(['settings']);
+      const settings = stored?.settings || DEFAULT_SETTINGS;
+      const currentAllowed = settings.allowedOrigins || [];
+
+      const updatedAllowed = currentAllowed.map((item: { origin: string }) => {
+        if (item.origin === req.origin || normalizeOriginPattern(item.origin) === normalizeOriginPattern(req.origin)) {
+          return { ...item, status: req.paused ? 'paused' : 'active' };
+        }
+        return item;
+      });
+
+      await chrome.storage?.local?.set({
+        settings: {
+          ...settings,
+          allowedOrigins: updatedAllowed,
+        },
+      });
+
+      return {
+        type: 'ORIGIN_PAUSE_UPDATED',
+        success: true,
+      };
+    },
+    UPDATE_SITE_PRIVACY: async (req) => {
+      const stored = await chrome.storage?.local?.get(['settings']);
+      const settings = stored?.settings || DEFAULT_SETTINGS;
+
+      let neverSend = settings.neverSendPageTextSites || [];
+      if (req.neverSendPageText !== undefined) {
+        neverSend = req.neverSendPageText
+          ? Array.from(new Set([...neverSend, req.origin]))
+          : neverSend.filter((s: string) => s !== req.origin);
+      }
+
+      let neverNudge = settings.neverNudgeSites || [];
+      if (req.neverNudge !== undefined) {
+        neverNudge = req.neverNudge
+          ? Array.from(new Set([...neverNudge, req.origin]))
+          : neverNudge.filter((s: string) => s !== req.origin);
+      }
+
+      let confirmed = settings.confirmedSendSites || [];
+      if (req.confirmed !== undefined) {
+        confirmed = req.confirmed
+          ? Array.from(new Set([...confirmed, req.origin]))
+          : confirmed.filter((s: string) => s !== req.origin);
+      }
+
+      await chrome.storage?.local?.set({
+        settings: {
+          ...settings,
+          neverSendPageTextSites: neverSend,
+          neverNudgeSites: neverNudge,
+          confirmedSendSites: confirmed,
+        },
+      });
+
+      return {
+        type: 'SITE_PRIVACY_UPDATED',
+        success: true,
       };
     },
     SET_PAUSED: async (req) => {
@@ -581,11 +754,15 @@ export function initBackground() {
       let activeUrl = latestPageContext?.url || '';
       let domain = latestPageContext ? new URL(latestPageContext.url).hostname : 'leetcode.com';
       let isRestricted = false;
+      let activeTabId: number | undefined;
       const tabTitle = latestPageContext?.title || '';
 
       try {
         const tabs = (await chrome.tabs?.query({ active: true, currentWindow: true })) || [];
         const activeTab = tabs[0];
+        if (activeTab?.id) {
+          activeTabId = activeTab.id;
+        }
         if (activeTab?.url) {
           activeUrl = activeTab.url;
           try {
@@ -595,6 +772,9 @@ export function initBackground() {
               parsed.protocol.startsWith('chrome') ||
               parsed.protocol.startsWith('edge') ||
               parsed.protocol === 'about:' ||
+              parsed.protocol.startsWith('chrome-extension') ||
+              parsed.protocol.startsWith('devtools') ||
+              activeTab.url.includes('chromewebstore.google.com') ||
               parsed.protocol === 'file:'
             ) {
               isRestricted = true;
@@ -611,13 +791,22 @@ export function initBackground() {
       const isSnoozed = plannerState.snoozeUntil > now;
       const isPaused = isTutorPaused || isSnoozed;
 
+      const isSingleUseActive = Boolean(activeTabId && singleUseTabs.has(activeTabId));
+      const isBuiltinCodingSite = domain.includes('leetcode.com') || domain.includes('codeforces.com');
+      const isAllowedInSettings = (settings.allowedOrigins || []).some(
+        (ao: { origin: string; status: string }) => ao.status === 'active' && (domain.includes(ao.origin) || ao.origin.includes(domain))
+      ) || (settings.enabledSites || []).some((s: string) => domain.includes(s) || s.includes(domain));
+
+      const isAllowedSite = isBuiltinCodingSite || isAllowedInSettings || isSingleUseActive;
+      const canEnable = !isRestricted && !isAllowedSite;
+
       let variant: 'active' | 'paused' | 'unsupported' | 'contest' = 'active';
 
       if (latestPageContext?.isContest) {
         variant = 'contest';
       } else if (isPaused) {
         variant = 'paused';
-      } else if (isRestricted || (!domain.includes('leetcode.com') && !domain.includes('codeforces.com'))) {
+      } else if (isRestricted || !isAllowedSite) {
         variant = 'unsupported';
       } else {
         variant = 'active';
@@ -667,6 +856,11 @@ export function initBackground() {
         hintsUsedCount,
         selectedModel: settings.model || DEFAULT_AI_MODEL,
         demoMode: Boolean(settings.demoMode),
+        isRestrictedScheme: isRestricted,
+        canEnable,
+        isAllowedSite,
+        isSingleUseActive,
+        contentType: latestPageContext?.contentType || 'article',
       };
     },
     DELETE_ALL_DATA: async (_req) => {

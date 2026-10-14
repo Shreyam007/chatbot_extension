@@ -4,11 +4,11 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](#)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Unit Tests](https://img.shields.io/badge/Tests-267%20Passing-brightgreen.svg)](#)
-[![Playwright E2E](https://img.shields.io/badge/Playwright-9%20Passing-brightgreen.svg)](#)
+[![Unit Tests](https://img.shields.io/badge/Tests-321%20Passing-brightgreen.svg)](#)
+[![Playwright E2E](https://img.shields.io/badge/Playwright-10%20Passing-brightgreen.svg)](#)
 
-> **Unstuck** is an open-source, local-first Chrome extension that acts as a proactive, pedagogical coding tutor for competitive programming and Data Structures & Algorithms (DSA).
-> Rather than functioning as a code-generating chatbot that spoils solutions, Unstuck passively monitors cognitive struggle, decides when an intervention is justified, and dispenses structured, multi-level hints anchored strictly in problem statements.
+> **Unstuck** is an open-source, local-first Chrome extension that acts as a proactive, pedagogical coding tutor for competitive programming, documentation, and technical web reading.
+> Rather than functioning as a code-generating chatbot that spoils solutions, Unstuck passively monitors cognitive struggle, decides when an intervention is justified, and dispenses structured, multi-level hints anchored strictly in problem statements and page context.
 
 ---
 
@@ -23,26 +23,33 @@
    - Uses an $\epsilon$-greedy bandit with Bayesian prior decay to adapt to individual user dismissal patterns over time.
 
 3. **4-Tier Pedagogical Scaffolding Ladder:**
-   - **Level 1 (Direction):** High-level conceptual nudge anchored in problem statement text. Zero code.
-   - **Level 2 (Approach):** Algorithmic pattern and time/space complexity guidance. Zero code.
-   - **Level 3 (Pseudocode):** Structural template and logic outline.
-   - **Level 4 (Guarded Solution):** Complete implementation protected by an explicit double-confirmation modal to prevent accidental spoilers.
+   - **Level 1 (Direction / Pointer):** High-level conceptual nudge anchored in problem statement or article section. Zero code.
+   - **Level 2 (Approach / Explain Simply):** Algorithmic pattern or plain-English conceptual breakdown. Zero code.
+   - **Level 3 (Pseudocode / Worked Example):** Structural template, logic outline, or concrete practical analogy.
+   - **Level 4 (Guarded Solution / Full Explanation):** Complete implementation or in-depth synthesis protected by an explicit double-confirmation modal.
 
 4. **Multi-Agent Critic & Grounding Guardrails:**
    - Every candidate hint is audited by an independent Critic agent before delivery.
    - Inspects for code leakage at L1/L2, verifies statement grounding, and asserts topic relevance. Falls back to deterministic safe hints if verification fails.
 
-5. **Explainability & Telemetry Audit (Trace Tab):**
-   - Full glassbox audit trail displaying each pipeline step: generator latency, critic approval verdict, confidence scores, and token usage.
+5. **Universal Mode (v1.0.4):**
+   - Usable across any normal website (Wikipedia, MDN, documentation, blogs) with privacy-first opt-in per site ("Use on this page once" via `activeTab` or "Always allow on this site" via `chrome.permissions`).
+   - Zero always-on broad permissions: content scripts only run where explicitly granted.
+   - Sensitive-page guardrails: aborts immediately on password fields, auth/checkout forms, and category blacklist patterns.
+   - Zero reading of generic form inputs/textareas.
+   - In-memory Okapi BM25 lexical ranking for long pages with zero network calls and zero embeddings.
 
-6. **Bayesian Knowledge Tracing (Progress Tab):**
-   - Calibrates topic mastery across DSA categories (Arrays, Dynamic Programming, Graphs, etc.) using two-state BKT equations.
+6. **Explainability & Telemetry Audit (Trace Tab):**
+   - Full glassbox audit trail displaying each pipeline step: generator latency, critic approval verdict, confidence scores, retrieved BM25 sections, and token usage.
 
-7. **Fair-Play Contest Protection:**
+7. **Bayesian Knowledge Tracing (Progress Tab):**
+   - Calibrates topic mastery across DSA categories (Arrays, Dynamic Programming, Graphs, etc.) using two-state BKT equations (skipped on generic non-programming pages).
+
+8. **Fair-Play Contest Protection:**
    - Automatically detects live contest URLs on LeetCode (`/contest/`) and Codeforces (`/contest/`).
    - Completely silences content script overlays and suspends all model generation requests.
 
-8. **Zero-Backend Privacy (BYOK):**
+9. **Zero-Backend Privacy (BYOK):**
    - 100% client-side architecture. Your key is stored only on this device (`chrome.storage.local`) and sent only to Google's Gemini API with your requests. We run no servers.
 
 ---
@@ -122,11 +129,13 @@ Unstuck adheres to strict client-side data minimization:
 |---|---|---|
 | **Problem Title & Slug** | **Yes** | Anchors the tutor to the specific problem context. |
 | **Problem Statement Text** | **Yes** | Allows grounding verification and topic extraction. |
-| **Detected Problem Tags** | **Yes** | Calibrates hints to the primary data structure/algorithm. |
+| **Generic Web Page Text (Universal Mode)** | **Opt-in per site** | Sanitized readability excerpt or top BM25 sections. Preview modal allows editing or omitting before sending. |
+| **Detected Content Type / Tags** | **Yes** | Calibrates hints to programming vs documentation vs article. |
 | **Current Target Hint Level** | **Yes** | Enforces pedagogical scaffolding tier (L1 to L4). |
-| **User Code Editor Buffer** | **Optional** (Default: OFF) | Only included if the user explicitly enables "Include my code" consent in settings. |
+| **User Code Editor Buffer** | **Optional** (Default: OFF) | Only included on coding sites if the user explicitly enables "Include my code" consent in settings. Zero form inputs/textareas read on generic sites. |
 | **Keystroke Streams / Timestamps** | **NO** | Never collected or transmitted. |
-| **Browsing History / Other Tabs** | **NO** | Unstuck only executes on allowed coding domains. |
+| **Passwords / Sensitive Form Data** | **NO** | Sensitive-page guardrail halts extraction entirely on login/payment pages. |
+| **Browsing History / Other Tabs** | **NO** | Unstuck only executes on explicitly allowed or user-activated origins. |
 | **API Key** | **Direct to Google** | Communicates directly with `generativelanguage.googleapis.com` via HTTPS. |
 
 Users can view audit metrics, export their complete history as JSON/CSV/Markdown, or execute a complete cryptographically clean wipe of all IndexedDB and Chrome Storage records at any time.
@@ -140,27 +149,29 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 ├── docs/                   # Engineering specs, architecture, permissions, and defense notes
 │   ├── ARCHITECTURE.md     # Deep architecture, multi-agent graphs, message bus
 │   ├── DECISIONS.md        # Architecture Decision Records (ADRs 1–18)
-│   ├── EDGE_CASES.md       # Edge cases catalog (60 automated, 2 manual)
+│   ├── EDGE_CASES.md       # Edge cases catalog (65 automated, 2 manual)
 │   ├── EVALUATION.md       # Offline Critic benchmark and harness methodology
-│   ├── MANUAL_QA.md        # Comprehensive real-Chrome manual QA script
-│   ├── PERMISSIONS.md      # Manifest V3 permission justifications
-│   ├── PRIVACY.md          # Plain-language privacy disclosure
-│   └── VIVA_NOTES.md       # 5-minute live demo script and 30+ Q&A viva defense
+│   ├── MANUAL_QA.md        # Comprehensive real-Chrome manual QA script (v1.0.4)
+│   ├── PERMISSIONS.md      # Manifest V3 permission justifications (least privilege)
+│   ├── PRIVACY.md          # Plain-language privacy disclosure (sensitive guardrails)
+│   └── VIVA_NOTES.md       # 5-minute live demo script and 35+ Q&A viva defense
 ├── entrypoints/            # WXT extension entrypoints (background, content, popup, sidepanel, options)
 ├── public/                 # Static extension assets (icons, manifest fixtures)
 ├── scripts/                # Benchmark, packaging, and credential scanning utilities
 ├── src/
 │   ├── background/         # Service worker, multi-agent graph, bandit planner, BKT mastery
-│   ├── content/            # Signal collectors, DOM adapters (LeetCode, Codeforces), Shadow DOM overlay
-│   ├── options/            # Settings dashboard (Provider, Nudges, Privacy, Advanced)
-│   ├── popup/              # Toolbar popup UI (Quick actions, telemetry overview)
-│   ├── shared/             # Zod schemas, typed message bus, contracts
-│   ├── sidepanel/          # Native Side Panel app (Hints, Chat, Trace, Progress)
+│   ├── content/            # Signal collectors, DOM adapters, Readability extractor, Shadow DOM overlay
+│   │   ├── adapters/       # LeetCode, Codeforces, and Generic adapters
+│   │   └── extractor/      # Readability heuristics, classifier, sensitive form scanner
+│   ├── options/            # Settings dashboard (Provider, Nudges, Sites, Privacy, Advanced)
+│   ├── popup/              # Toolbar popup UI (Universal Mode enablement, telemetry overview)
+│   ├── shared/             # Zod schemas, typed message bus, BM25 retrieval, permissions
+│   ├── sidepanel/          # Native Side Panel app (Hints, Chat, Trace, Progress, SendPreviewModal)
 │   └── ui/                 # Design token system, ErrorBoundary, components
 └── tests/
-    ├── e2e/                # Playwright E2E suites (9 full scenarios, packaged smoke test)
-    ├── fixtures/           # Offline DOM fixtures for automated testing
-    └── unit/               # Vitest unit test suite (38 test files, 267 tests)
+    ├── e2e/                # Playwright E2E suites (10 full scenarios including Universal Mode)
+    ├── fixtures/           # 12 real-world HTML test fixtures (Wikipedia, MDN, blogs, auth)
+    └── unit/               # Vitest unit test suite (45 test files, 321 tests)
 ```
 
 ---

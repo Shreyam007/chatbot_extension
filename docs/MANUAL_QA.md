@@ -124,3 +124,45 @@ This checklist guides manual quality assurance for **Unstuck v1.0.0** in a real 
   2. Verify the "Permanently Erase" button remains disabled until `"DELETE"` is typed exactly.
   3. Type `"DELETE"` and confirm.
   4. Verify IndexedDB and Chrome storage are wiped, and the extension returns to the initial onboarding screen.
+
+---
+
+## 9. Universal Mode & Arbitrary Website Verification (v1.0.4)
+
+- [ ] **9.1 Toolbar Popup on Un-enabled Site (e.g. Wikipedia):**
+  1. Navigate to a technical article (e.g., `https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm`).
+  2. Click the extension toolbar icon.
+  3. Verify popup displays the Universal Mode enablement card with three distinct actions:
+     - **"Use on this page once"** (activeTab ephemeral execution)
+     - **"Always allow on en.wikipedia.org"** (origin permission request + dynamic script registration)
+     - **"Open chat without page"** (standalone tutor with zero page scraping)
+  4. Verify footer cleanly displays `v1.0.4 • <selected Gemini model>` with zero "Local LLM" or dead "Open scratchpad panel" buttons.
+- [ ] **9.2 "Use on this page once" & Readability Extraction:**
+  1. Click **"Use on this page once"**.
+  2. Verify the side panel opens immediately, showing the **"Article"** content-type badge and page domain.
+  3. In the Hints tab, verify the dynamic ladder displays **Pointer / Explain Simply / Worked Example / Full Explanation** instead of coding problem steps.
+- [ ] **9.3 "What will be sent to the AI" Preview Modal:**
+  1. Ask a question: *"What is the time complexity with a min-priority queue?"*.
+  2. Before dispatch, confirm the **Send Preview Modal** appears with character count, page title, and editable text excerpt.
+  3. Confirm the modal provides:
+     - **"Include page text"** toggle
+     - **"Never send page text from this site"** checkbox option
+  4. Click **"Send to AI"** and verify the answer grounds strictly on the extracted Dijkstra article text.
+  5. Inspect the Trace tab: verify retrieved BM25 section headings are transparently itemized.
+- [ ] **9.4 Sparse Portal Detection (e.g. wikipedia.org):**
+  1. Navigate to the landing page `https://www.wikipedia.org/` (portal without article prose).
+  2. Click **"Use on this page once"**.
+  3. Verify the Side Panel displays the honest sparse state: *"Not enough readable text found on this portal. Select specific text to ask about, or open chat without page context."*
+- [ ] **9.5 Sensitive Page Guardrail & Blacklist:**
+  1. Navigate to a login or checkout page (or load `tests/fixtures/login-form.html`).
+  2. Click the toolbar icon or trigger extraction.
+  3. Verify extraction **immediately aborts** with `isSensitive: true`.
+  4. Verify the Side Panel renders the safety banner: *"Extraction disabled on sensitive pages (login/payment forms detected)."*
+  5. Verify zero form inputs, textareas, or password values are transmitted or stored.
+- [ ] **9.6 Settings > Allowed Sites Management & Revocation:**
+  1. Click the Settings gear icon and select the **"Allowed Sites"** tab (`#sites`).
+  2. Verify all granted origins are displayed with status, grant date, and actions (**Pause**, **Resume**, **Revoke**).
+  3. Click **"Pause"**: verify origin status updates to Paused.
+  4. Click **"Revoke"**: confirm the origin is removed from storage and `chrome.permissions.remove()` is called.
+  5. Review the **Sensitive Page Blacklist** section: verify built-in categories (banking, webmail, checkout, health) are displayed and custom regex patterns can be added.
+

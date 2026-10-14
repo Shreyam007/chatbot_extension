@@ -25,18 +25,20 @@ import { APP_NAME, APP_VERSION, DEFAULT_AI_MODEL, SUPPORTED_AI_MODELS } from '..
 import { OnboardingWizard } from '../ui/OnboardingWizard';
 import { sendToBackground } from '../shared/messaging';
 import { getStoredApiKey, setStoredApiKey, getStoredSettings } from '../shared/storage';
-import type { Settings } from '../shared/schemas/settings';
+import type { Settings, AllowedOrigin } from '../shared/schemas/settings';
 import type { LocalMetricsSummary } from '../shared/metrics/types';
+import { BUILTIN_SENSITIVE_PATTERNS } from '../shared/sensitive';
+import { requestSitePermission } from '../shared/permissions';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { DataTransparencyTable } from './components/DataTransparencyTable';
 
-export type Section = 'ai' | 'nudges' | 'transparency' | 'privacy' | 'onboarding';
+export type Section = 'ai' | 'nudges' | 'transparency' | 'privacy' | 'sites' | 'onboarding';
 
 export const OptionsApp: React.FC = () => {
   const getInitialSection = (): Section => {
     if (typeof window !== 'undefined' && window.location.hash) {
       const hash = window.location.hash.replace('#', '') as Section;
-      if (['ai', 'nudges', 'transparency', 'privacy', 'onboarding'].includes(hash)) {
+      if (['ai', 'nudges', 'transparency', 'privacy', 'sites', 'onboarding'].includes(hash)) {
         return hash;
       }
     }
@@ -69,6 +71,15 @@ export const OptionsApp: React.FC = () => {
   const [demoMode, setDemoMode] = useState(false);
   const [blockedSites, setBlockedSites] = useState<string[]>([]);
 
+  // Sites & Universal Mode states
+  const [allowedOrigins, setAllowedOrigins] = useState<AllowedOrigin[]>([]);
+  const [customBlacklistPatterns, setCustomBlacklistPatterns] = useState<string[]>([]);
+  const [neverSendPageTextSites, setNeverSendPageTextSites] = useState<string[]>([]);
+  const [neverNudgeSites, setNeverNudgeSites] = useState<string[]>([]);
+  const [newDomainInput, setNewDomainInput] = useState('');
+  const [newPatternInput, setNewPatternInput] = useState('');
+  const [siteActionStatus, setSiteActionStatus] = useState<string | null>(null);
+
   // Privacy & Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -95,6 +106,21 @@ export const OptionsApp: React.FC = () => {
     } catch {
       // Best-effort
     }
+  }, []);
+
+  // Hash navigation listener
+  useEffect(() => {
+    const handleHash = () => {
+      if (typeof window !== 'undefined' && window.location.hash) {
+        const hash = window.location.hash.replace('#', '') as Section;
+        if (['ai', 'nudges', 'transparency', 'privacy', 'sites', 'onboarding'].includes(hash)) {
+          setActiveSection(hash);
+        }
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
   // Load existing settings and API key on mount
@@ -126,6 +152,10 @@ export const OptionsApp: React.FC = () => {
         setQuietHoursEnd(s.quietHours?.end || '08:00');
         setDemoMode(Boolean(s.demoMode));
         setBlockedSites(s.blockedSites || []);
+        setAllowedOrigins(s.allowedOrigins || []);
+        setCustomBlacklistPatterns(s.customBlacklistPatterns || []);
+        setNeverSendPageTextSites(s.neverSendPageTextSites || []);
+        setNeverNudgeSites(s.neverNudgeSites || []);
       }
 
       // If user has completed onboarding and no specific hash was set, switch from onboarding to ai
@@ -308,6 +338,119 @@ export const OptionsApp: React.FC = () => {
     }
   };
 
+  // Sites & Universal Mode Handlers
+  const handleAddDomain = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const raw = newDomainInput.trim();
+    if (!raw) return;
+    try {
+      let pattern = raw;
+      if (!pattern.startsWith('http://') && !pattern.startsWith('https://')) {
+        pattern = `https://${pattern}/*`;
+      } else if (!pattern.endsWith('/*') && !pattern.endsWith('*')) {
+        pattern = pattern.endsWith('/') ? `${pattern}*` : `${pattern}/*`;
+      }
+
+      const granted = await requestSitePermission(pattern);
+      if (!granted) {
+        setSiteActionStatus('Permission request cancelled or denied.');
+        setTimeout(() => setSiteActionStatus(null), 3500);
+        return;
+      }
+
+      await sendToBackground({
+        type: 'ALWAYS_ALLOW_ORIGIN',
+        origin: pattern,
+      });
+
+      setNewDomainInput('');
+      setSiteActionStatus(`Successfully allowed ${raw}`);
+      setTimeout(() => setSiteActionStatus(null), 3500);
+      await loadInitialSettings();
+    } catch (err) {
+      setSiteActionStatus(`Error: ${err instanceof Error ? err.message : String(err)}`);
+      setTimeout(() => setSiteActionStatus(null), 4000);
+    }
+  };
+
+  const handleToggleOriginPause = async (origin: string, currentStatus: 'active' | 'paused') => {
+    const nextPaused = currentStatus === 'active';
+    try {
+      await sendToBackground({
+        type: 'TOGGLE_ORIGIN_PAUSE',
+        origin,
+        paused: nextPaused,
+      });
+      setAllowedOrigins((prev) =>
+        prev.map((item) => (item.origin === origin ? { ...item, status: nextPaused ? 'paused' : 'active' } : item))
+      );
+    } catch (err) {
+      console.error('Failed to toggle origin pause:', err);
+    }
+  };
+
+  const handleRevokeOrigin = async (origin: string) => {
+    try {
+      await sendToBackground({
+        type: 'REVOKE_ORIGIN',
+        origin,
+      });
+      setAllowedOrigins((prev) => prev.filter((item) => item.origin !== origin));
+      setSiteActionStatus(`Revoked permissions for ${origin}`);
+      setTimeout(() => setSiteActionStatus(null), 3500);
+    } catch (err) {
+      console.error('Failed to revoke origin:', err);
+    }
+  };
+
+  const handleToggleNeverSendPageText = async (origin: string, currentValue: boolean) => {
+    const next = !currentValue;
+    try {
+      await sendToBackground({
+        type: 'UPDATE_SITE_PRIVACY',
+        origin,
+        neverSendPageText: next,
+      });
+      setNeverSendPageTextSites((prev) =>
+        next ? Array.from(new Set([...prev, origin])) : prev.filter((s) => s !== origin)
+      );
+    } catch (err) {
+      console.error('Failed to update page text privacy:', err);
+    }
+  };
+
+  const handleToggleNeverNudge = async (origin: string, currentValue: boolean) => {
+    const next = !currentValue;
+    try {
+      await sendToBackground({
+        type: 'UPDATE_SITE_PRIVACY',
+        origin,
+        neverNudge: next,
+      });
+      setNeverNudgeSites((prev) =>
+        next ? Array.from(new Set([...prev, origin])) : prev.filter((s) => s !== origin)
+      );
+    } catch (err) {
+      console.error('Failed to update nudge privacy:', err);
+    }
+  };
+
+  const handleAddBlacklistPattern = (e: React.FormEvent) => {
+    e.preventDefault();
+    const pattern = newPatternInput.trim();
+    if (!pattern || customBlacklistPatterns.includes(pattern)) return;
+    const updated = [...customBlacklistPatterns, pattern];
+    setCustomBlacklistPatterns(updated);
+    setNewPatternInput('');
+    saveSettingsUpdate({ customBlacklistPatterns: updated });
+  };
+
+  const handleRemoveBlacklistPattern = (pattern: string) => {
+    const updated = customBlacklistPatterns.filter((p) => p !== pattern);
+    setCustomBlacklistPatterns(updated);
+    saveSettingsUpdate({ customBlacklistPatterns: updated });
+  };
+
   return (
     <div className="min-h-screen bg-surface text-on-surface flex flex-col md:flex-row antialiased font-sans select-none">
       {/* Sidebar Navigation */}
@@ -397,6 +540,22 @@ export const OptionsApp: React.FC = () => {
               {activeSection === 'privacy' && <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
             </button>
 
+            <button
+              data-testid="tab-sites"
+              onClick={() => setActiveSection('sites')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-mono transition-colors ${
+                activeSection === 'sites'
+                  ? 'bg-surface-container-high text-primary border-l-2 border-primary font-semibold shadow-sm'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Globe className="w-4 h-4" />
+                <span>Allowed Sites</span>
+              </div>
+              {activeSection === 'sites' && <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
+            </button>
+
             <div className="pt-2">
               <button
                 data-testid="tab-onboarding"
@@ -408,7 +567,7 @@ export const OptionsApp: React.FC = () => {
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span>Setup Wizard (S01-S02)</span>
+                <span>Setup Wizard (S01–S02)</span>
               </button>
             </div>
           </nav>
@@ -438,7 +597,7 @@ export const OptionsApp: React.FC = () => {
             <span>Settings</span>
             <span>/</span>
             <span className="text-primary font-semibold capitalize">
-              {activeSection === 'ai' ? 'AI & Inference' : activeSection}
+              {activeSection === 'ai' ? 'AI & Inference' : activeSection === 'sites' ? 'Allowed Sites' : activeSection}
             </span>
           </div>
 
@@ -1287,6 +1446,305 @@ export const OptionsApp: React.FC = () => {
                     }`}
                   />
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 5. SITES & UNIVERSAL MODE */}
+        {activeSection === 'sites' && (
+          <div className="space-y-6">
+            <header className="border-b border-outline-variant/30 pb-3">
+              <h2 className="text-base font-semibold font-mono text-on-surface">Allowed Sites & Universal Mode</h2>
+              <p className="text-xs text-on-surface-variant mt-0.5">
+                Manage per-site host permissions, configure privacy preferences, and monitor sensitive page guardrails.
+              </p>
+            </header>
+
+            {siteActionStatus && (
+              <div
+                data-testid="site-action-status-banner"
+                className="p-3 rounded-xl bg-primary/10 border border-primary/30 text-xs font-mono text-primary flex items-center justify-between animate-in fade-in"
+              >
+                <span>{siteActionStatus}</span>
+                <button onClick={() => setSiteActionStatus(null)} className="text-primary hover:text-on-surface">
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Built-in Platforms Card */}
+            <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-mono font-semibold text-on-surface flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
+                    Built-in Supported Platforms
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5">
+                    Coding platforms enabled by default in manifest permissions.
+                  </p>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-primary/15 border border-primary/30 text-[10px] font-mono text-primary font-semibold">
+                  Always Ready
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/30 flex items-center justify-between">
+                  <div>
+                    <span className="font-mono text-xs font-semibold text-on-surface">LeetCode</span>
+                    <p className="font-mono text-[10px] text-outline">leetcode.com</p>
+                  </div>
+                  <span className="text-[10px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                    Active
+                  </span>
+                </div>
+                <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/30 flex items-center justify-between">
+                  <div>
+                    <span className="font-mono text-xs font-semibold text-on-surface">Codeforces</span>
+                    <p className="font-mono text-[10px] text-outline">codeforces.com</p>
+                  </div>
+                  <span className="text-[10px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                    Active
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Add Custom Domain Form Card */}
+            <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-5 space-y-4">
+              <div>
+                <h3 className="text-sm font-mono font-semibold text-on-surface flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-secondary" />
+                  Add Custom Domain / Localhost
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  Request runtime host permissions for any documentation site, blog, or local dev server.
+                </p>
+              </div>
+
+              <form onSubmit={handleAddDomain} className="flex flex-col sm:flex-row gap-2.5">
+                <input
+                  type="text"
+                  data-testid="add-custom-domain-input"
+                  value={newDomainInput}
+                  onChange={(e) => setNewDomainInput(e.target.value)}
+                  placeholder="e.g. developer.mozilla.org, localhost:3000, or wikipedia.org"
+                  className="flex-1 bg-surface-container text-on-surface font-mono text-xs px-3.5 py-2.5 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none placeholder:text-outline"
+                />
+                <button
+                  type="submit"
+                  data-testid="add-custom-domain-btn"
+                  className="px-4 py-2.5 rounded-lg bg-primary text-on-primary font-mono text-xs font-semibold hover:bg-primary/90 transition-all shrink-0 active:scale-95 shadow-sm"
+                >
+                  Add &amp; Request Permission
+                </button>
+              </form>
+
+              <p className="text-[11px] font-sans text-outline leading-relaxed">
+                Clicking Add will open Chrome&apos;s native security confirmation. Unstuck requests only the specified origin. You can pause or revoke access at any time below.
+              </p>
+            </div>
+
+            {/* Allowed Origins Table Card */}
+            <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-mono font-semibold text-on-surface">
+                    Custom Allowed Sites ({allowedOrigins.length})
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5">
+                    Origins with persistent permissions and custom privacy settings.
+                  </p>
+                </div>
+              </div>
+
+              {allowedOrigins.length === 0 ? (
+                <div
+                  data-testid="allowed-origins-empty"
+                  className="p-6 text-center rounded-lg border border-dashed border-outline-variant/40 bg-surface-container-lowest text-on-surface-variant space-y-1.5"
+                >
+                  <p className="font-mono text-xs">No custom sites allowed yet.</p>
+                  <p className="text-[11px] font-sans text-outline max-w-sm mx-auto">
+                    When you browse any website and click &quot;Always allow on this site&quot; in the toolbar popup, or add a domain above, it will be listed here.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table data-testid="allowed-origins-table" className="w-full text-left font-mono text-xs">
+                    <thead>
+                      <tr className="border-b border-outline-variant/30 text-outline text-[10px] uppercase tracking-wider">
+                        <th className="pb-2">Origin</th>
+                        <th className="pb-2">Granted</th>
+                        <th className="pb-2">Status</th>
+                        <th className="pb-2">Page Text</th>
+                        <th className="pb-2">Nudges</th>
+                        <th className="pb-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/20">
+                      {allowedOrigins.map((item) => {
+                        const isNeverSend = neverSendPageTextSites.includes(item.origin);
+                        const isNeverNudge = neverNudgeSites.includes(item.origin);
+                        return (
+                          <tr key={item.origin} data-testid={`allowed-site-row-${item.origin}`} className="hover:bg-surface-container/50">
+                            <td className="py-3 font-semibold text-on-surface pr-3">
+                              {item.origin}
+                            </td>
+                            <td className="py-3 text-[11px] text-on-surface-variant pr-3">
+                              {new Date(item.grantedAt).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 pr-3">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                  item.status === 'active'
+                                    ? 'bg-primary/10 text-primary border border-primary/20'
+                                    : 'bg-outline/10 text-outline border border-outline/20'
+                                }`}
+                              >
+                                {item.status === 'active' ? 'Active' : 'Paused'}
+                              </span>
+                            </td>
+                            <td className="py-3 pr-3">
+                              <label className="flex items-center gap-1.5 cursor-pointer text-[11px]">
+                                <input
+                                  type="checkbox"
+                                  checked={!isNeverSend}
+                                  onChange={() => handleToggleNeverSendPageText(item.origin, isNeverSend)}
+                                  className="rounded border-outline-variant text-primary focus:ring-0 w-3.5 h-3.5"
+                                />
+                                <span className={!isNeverSend ? 'text-on-surface' : 'text-outline italic'}>
+                                  {!isNeverSend ? 'Allowed' : 'Blocked'}
+                                </span>
+                              </label>
+                            </td>
+                            <td className="py-3 pr-3">
+                              <label className="flex items-center gap-1.5 cursor-pointer text-[11px]">
+                                <input
+                                  type="checkbox"
+                                  checked={!isNeverNudge}
+                                  onChange={() => handleToggleNeverNudge(item.origin, isNeverNudge)}
+                                  className="rounded border-outline-variant text-secondary focus:ring-0 w-3.5 h-3.5"
+                                />
+                                <span className={!isNeverNudge ? 'text-on-surface' : 'text-outline italic'}>
+                                  {!isNeverNudge ? 'Allowed' : 'Muted'}
+                                </span>
+                              </label>
+                            </td>
+                            <td className="py-3 text-right space-x-2">
+                              <button
+                                onClick={() => handleToggleOriginPause(item.origin, item.status)}
+                                data-testid={`pause-site-btn-${item.origin}`}
+                                className="px-2 py-1 rounded bg-surface-container hover:bg-surface-bright text-on-surface text-[11px] border border-outline-variant/40 transition-colors"
+                              >
+                                {item.status === 'active' ? 'Pause' : 'Resume'}
+                              </button>
+                              <button
+                                onClick={() => handleRevokeOrigin(item.origin)}
+                                data-testid={`revoke-site-btn-${item.origin}`}
+                                className="px-2 py-1 rounded bg-error/10 hover:bg-error/20 text-error text-[11px] border border-error/30 transition-colors"
+                              >
+                                Revoke
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Sensitive Page Guardrails Card */}
+            <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-5 space-y-4">
+              <div>
+                <h3 className="text-sm font-mono font-semibold text-on-surface flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-error" />
+                  Sensitive Page Guardrails (Automatic Blacklist)
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  To protect your security and privacy, Unstuck automatically aborts content extraction if any page matches these categories or contains password/login forms.
+                </p>
+              </div>
+
+              {/* Built-in Categories */}
+              <div className="space-y-2">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-outline">
+                  Built-in Protected Categories
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  {BUILTIN_SENSITIVE_PATTERNS.map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-surface-container rounded-lg p-2.5 border border-outline-variant/30 flex flex-col justify-between"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs font-semibold text-on-surface">
+                            {item.category}
+                          </span>
+                          <span className="text-[9px] font-mono text-error uppercase font-bold tracking-wider">
+                            Guarded
+                          </span>
+                        </div>
+                        <p className="font-sans text-[11px] text-on-surface-variant leading-snug">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Blacklist Patterns */}
+              <div className="space-y-2 pt-2 border-t border-outline-variant/20">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-outline">
+                  Custom Sensitive Blacklist Patterns
+                </span>
+                <p className="text-[11px] font-sans text-on-surface-variant">
+                  Add domain names or regex patterns where Unstuck must never extract page content.
+                </p>
+
+                <form onSubmit={handleAddBlacklistPattern} className="flex gap-2">
+                  <input
+                    type="text"
+                    data-testid="custom-pattern-input"
+                    value={newPatternInput}
+                    onChange={(e) => setNewPatternInput(e.target.value)}
+                    placeholder="e.g. internal.corp.net or /admin/secret"
+                    className="flex-1 bg-surface-container text-on-surface font-mono text-xs px-3 py-2 rounded-lg border border-outline-variant/40 focus:border-primary focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    data-testid="add-custom-pattern-btn"
+                    className="px-3.5 py-2 rounded-lg bg-surface-container border border-outline-variant text-on-surface font-mono text-xs hover:bg-surface-container-high transition-colors shrink-0"
+                  >
+                    Add Pattern
+                  </button>
+                </form>
+
+                {customBlacklistPatterns.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {customBlacklistPatterns.map((pat) => (
+                      <span
+                        key={pat}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container border border-outline-variant/40 text-xs font-mono text-on-surface"
+                      >
+                        <span>{pat}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBlacklistPattern(pat)}
+                          className="text-outline hover:text-error transition-colors"
+                          aria-label={`Remove pattern ${pat}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -53,16 +53,29 @@ export function evaluateHardGates(
     return { pass: false, reason: 'Contest detected (all nudges silenced per fair-play)' };
   }
 
-  // 3. User Site Block List (EC-062)
+  // 3. User Site Block List & Never Nudge List (EC-062)
   const isSiteBlocked = state.blockedSites?.some((blocked) => {
     return (
       blocked === context.site ||
       context.url.includes(blocked) ||
       blocked.includes(context.site)
     );
+  }) || (settings.neverNudgeSites || []).some((site) => {
+    return site === context.site || context.url.includes(site) || site.includes(context.site);
   });
   if (isSiteBlocked) {
     return { pass: false, reason: 'Site is blocked by user preferences' };
+  }
+
+  // 3b. Generic Pages: Proactive nudges OFF by default unless explicitly enabled for this site
+  const isGeneric = context.contentType && context.contentType !== 'problem';
+  if (isGeneric) {
+    const isNudgeAllowed = (settings.allowedOrigins || []).some(
+      (ao) => ao.enabledNudges && (context.url.includes(ao.origin) || ao.origin.includes(context.site))
+    );
+    if (!isNudgeAllowed) {
+      return { pass: false, reason: 'Nudges are off by default on generic sites (opt-in per site)' };
+    }
   }
 
   // 4. Snooze Active

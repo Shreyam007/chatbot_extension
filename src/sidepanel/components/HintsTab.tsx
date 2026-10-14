@@ -19,6 +19,7 @@ export interface HintsTabProps {
   currentLevel: HintLevel;
   activeHint: Hint | null;
   isLoading: boolean;
+  contentType?: 'problem' | 'article' | 'documentation' | 'general';
   onNextLevel: (targetLevel: HintLevel) => void;
   onMakeMoreDirect: () => void;
   onSolved: () => void;
@@ -29,6 +30,7 @@ export const HintsTab: React.FC<HintsTabProps> = ({
   currentLevel,
   activeHint,
   isLoading,
+  contentType,
   onNextLevel,
   onMakeMoreDirect,
   onSolved,
@@ -66,12 +68,21 @@ export const HintsTab: React.FC<HintsTabProps> = ({
     onNextLevel(4);
   };
 
-  const levelTitles: Record<HintLevel, { title: string; subtitle: string }> = {
-    1: { title: 'Direction', subtitle: 'Conceptual nudge' },
-    2: { title: 'Approach', subtitle: 'Algorithmic pattern' },
-    3: { title: 'Pseudocode', subtitle: 'Logic scaffold' },
-    4: { title: 'Full Code', subtitle: 'Working implementation' },
-  };
+  const isGeneric = contentType && contentType !== 'problem';
+
+  const levelTitles: Record<HintLevel, { title: string; subtitle: string }> = isGeneric
+    ? {
+        1: { title: 'Pointer', subtitle: 'Where in page to look' },
+        2: { title: 'Explain Simply', subtitle: 'Jargon-free explanation' },
+        3: { title: 'Worked Example', subtitle: 'Analogy or scenario' },
+        4: { title: 'Full Explanation', subtitle: 'In-depth guide' },
+      }
+    : {
+        1: { title: 'Direction', subtitle: 'Conceptual nudge' },
+        2: { title: 'Approach', subtitle: 'Algorithmic pattern' },
+        3: { title: 'Pseudocode', subtitle: 'Logic scaffold' },
+        4: { title: 'Full Code', subtitle: 'Working implementation' },
+      };
 
   return (
     <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto custom-scrollbar select-none">

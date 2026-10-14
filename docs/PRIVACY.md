@@ -1,7 +1,7 @@
 # PRIVACY.md — Privacy Policy & Data Notice
 
-**Last Updated:** October 13, 2026  
-**Product Version:** Unstuck v1.0.2
+**Last Updated:** October 14, 2026  
+**Product Version:** Unstuck v1.0.4
 
 ---
 
@@ -15,10 +15,33 @@
 1. **Zero Intermediate Servers:** Unstuck operates entirely inside your local Google Chrome browser. We operate no cloud proxy servers, no telemetry ingestion collectors, and no hosted databases.
 2. **Bring Your Own Key (BYOK):** All AI interactions communicate directly and securely from your browser to Google's Gemini REST API using your personal API key from Google AI Studio.
 3. **Local Storage First:** All interaction history, hints, Bayesian mastery vectors, and diagnostic logs are stored exclusively in your browser's local storage and IndexedDB.
+4. **Universal Mode Opt-In Per Site (v1.0.4):** Outside of the two core coding platforms (LeetCode, Codeforces), Unstuck NEVER activates, injects, or reads content from any webpage without explicit user consent.
 
 ---
 
-## 2. What Data Is Collected and Where It Lives
+## 2. Universal Mode & Sensitive Page Guardrails (v1.0.4)
+
+When browsing documentation, tech articles, blogs, or general web pages in Universal Mode:
+
+1. **Opt-in per Site:**
+   - Single-use: Clicking "Use on this page once" in the popup injects via `activeTab` only for the current tab lifecycle.
+   - Persistent: Clicking "Always allow on this site" requests runtime permission (`chrome.permissions.request`) and dynamically registers content scripts for that origin only.
+2. **First-Request Send Preview:**
+   - Before your first question or hint on any generic site, Unstuck displays a modal previewing the exact text excerpt to be sent to Gemini.
+   - You can edit/trim the text, exclude page text entirely, or mark the domain as "Never send page text".
+3. **Zero Form / Password Reading:**
+   - Unstuck strictly ignores all `<input>`, `<textarea>`, `<select>`, and `[contenteditable]` elements on generic sites. `readEditorCode` unconditionally returns `null`.
+4. **Automatic Sensitive Page Abort:**
+   - If a page contains `<input type="password">`, login/auth forms, or credit card/checkout fields, content extraction is **completely aborted** and a guarded state banner is displayed in the side panel.
+   - Built-in category blacklists automatically block extraction on banking portals, payment processors, webmail providers, electronic medical records, government identity services, and cloud password vaults. Users can add custom regex patterns in Settings > Allowed Sites.
+5. **Local Lexical BM25 Ranking:**
+   - For long documentation and articles, section selection is performed by a local, in-memory BM25 lexical retriever. It makes zero network calls and generates zero external embeddings.
+6. **Incognito Session Hygiene:**
+   - In incognito windows, all interaction logs, hints, and event recording to IndexedDB are disabled to guarantee zero data persistence.
+
+---
+
+## 3. What Data Is Collected and Where It Lives
 
 ### A. Data Stored Strictly on Your Device (100% Local)
 
@@ -27,10 +50,10 @@ The following data never leaves your browser:
 | Category | Storage Engine | Purpose | Retention |
 |---|---|---|---|
 | **API Key** | `chrome.storage.local` | Authenticates your direct requests to Google Gemini | Until deleted by user |
-| **User Settings** | `chrome.storage.local` | Difficulty, theme, quiet hours, blocked domains | Until deleted by user |
+| **User Settings** | `chrome.storage.local` | Difficulty, theme, quiet hours, allowed sites, custom blacklist | Until deleted by user |
 | **Ephemeral Session State** | `chrome.storage.session` | Deduplicating in-flight requests and active tab state | Wiped on browser close |
 | **Behavioral Signals** | Memory / Local Content Script | Active dwell time, scroll reversals, and submission clicks | Windowed buffer (resets on navigation) |
-| **Mastery Models (BKT)** | `IndexedDB` (`unstuck_store_v2`) | Calibrates topic skill levels and recommended review | Until deleted by user |
+| **Mastery Models (BKT)** | `IndexedDB` (`unstuck_store_v2`) | Calibrates topic skill levels and recommended review (coding only) | Until deleted by user |
 | **Interaction Logs** | `IndexedDB` (`unstuck_store_v2`) | Audit trail of hints generated and feedback given | Ring-buffered local storage |
 
 > [!NOTE]
@@ -38,19 +61,21 @@ The following data never leaves your browser:
 
 ---
 
-## 3. Data Egress Matrix: What Is Sent to Google Gemini
+## 4. Data Egress Matrix: What Is Sent to Google Gemini
 
-When you explicitly request an AI hint or accept a proactive nudge, the background service worker sends a structured prompt directly to `generativelanguage.googleapis.com`.
+When you explicitly request an AI hint or submit a chat question, the background service worker sends a structured prompt directly to `generativelanguage.googleapis.com`.
 
 The exact data transmission matrix is shown below:
 
 | Data Field | Sent to Google Gemini? | Guard / User Control |
 |---|---|---|
-| **Problem Title & Description** | **Yes** | Required to provide accurate algorithmic hints |
-| **Problem Constraints & Invariants** | **Yes** | Enforces valid time and space complexity boundaries |
-| **Topic Tags (e.g. Dynamic Programming)** | **Yes** | Frames pedagogical hints to the target paradigm |
-| **Submission Error Verdict (e.g. WA, TLE)** | **Yes** | Helps diagnose specific algorithmic errors |
-| **Code Editor Content** | **Gated by Consent** | **Controlled by `includeCodeConsent` toggle** in Settings. When disabled, your code editor is completely omitted from the prompt |
+| **Page / Problem Title & Excerpt** | **Yes** | Required to ground pedagogical responses. Previewed and editable via Send Preview Modal on generic sites |
+| **User Question** | **Yes** | Your explicit query in the Chat tab |
+| **User Selected Text** | **Yes (When Selected)** | Prioritized if you highlight a specific paragraph on the page |
+| **Problem Constraints & Tags** | **Yes (Coding sites)** | Enforces valid time and space complexity boundaries |
+| **Submission Error Verdict (e.g. WA, TLE)** | **Yes (Coding sites)** | Helps diagnose specific algorithmic errors |
+| **Code Editor Content** | **Gated by Consent** | **Controlled by `includeCodeConsent` toggle** in Settings. Completely disabled on generic sites |
+| **Form Inputs & Passwords** | **No (Never Extracted)** | Form fields and textareas are sanitized and stripped on generic sites |
 | **Active Dwell & Scroll Telemetry** | **No (Local Only)** | Evaluated strictly on your machine by our logistic detector |
 | **Keystrokes & Typing Cadence** | **No (Never Collected)** | Unstuck does not log keystrokes or text outside the editor |
 | **Account Credentials & Cookies** | **No (Never Collected)** | Cookies and session auth tokens are strictly stripped |

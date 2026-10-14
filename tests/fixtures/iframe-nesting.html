@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document with Nested Iframes</title>
+</head>
+<body>
+  <article>
+    <h1>Embedded Content Reference Document</h1>
+    <p>This document tests clean extraction of main text while handling same-origin and cross-origin iframes defensively.</p>
+    
+    <h2>Primary Text Section</h2>
+    <p>Standard parent document paragraph explaining the architecture of modern browser sandboxing.</p>
+
+    <!-- Cross-origin iframe that triggers CORS if accessed directly -->
+    <iframe id="cross-origin-frame" src="https://example.org/remote-embed" title="Remote Partner Embed"></iframe>
+
+    <!-- Same-origin iframe with srcdoc -->
+    <iframe id="same-origin-frame" srcdoc="<p>This is same-origin embedded helper content that should be safely read.</p>" title="Local Embed"></iframe>
+  </article>
+</body>
+</html>

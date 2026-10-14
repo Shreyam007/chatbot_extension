@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign In - Secure Portal</title>
+</head>
+<body>
+  <div class="auth-container">
+    <h1>Sign In to Your Account</h1>
+    <form action="/api/v1/auth/login" method="POST">
+      <label for="username">Username or Email</label>
+      <input type="text" id="username" name="username" autocomplete="username" required>
+      
+      <label for="pwd">Password</label>
+      <input type="password" id="pwd" name="password" autocomplete="current-password" required>
+      
+      <button type="submit">Sign In</button>
+    </form>
+  </div>
+</body>
+</html>

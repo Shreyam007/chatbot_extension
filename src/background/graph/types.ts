@@ -40,6 +40,7 @@ export interface AgentRunTrace {
   llmCallCount?: number;
   promptTokens?: number;
   candidateTokens?: number;
+  retrievedSections?: string[];
 }
 
 export interface AgentGraphState {
