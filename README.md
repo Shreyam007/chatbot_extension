@@ -121,6 +121,7 @@ For evaluation and testing without waiting for standard 15-minute cooldown timer
 
 ---
 
+
 ## Privacy Summary: What is Sent to the AI
 
 Unstuck adheres to strict client-side data minimization:
