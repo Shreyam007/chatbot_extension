@@ -65,6 +65,8 @@ export const genericAdapter: PageAdapter = {
         isSensitive: false,
         isSparse: extracted.isSparse,
         language: extracted.language,
+        statementLength: extracted.statementText.length,
+        adapterName: 'generic',
       };
     } catch {
       // Defensive: never throw on unexpected DOM

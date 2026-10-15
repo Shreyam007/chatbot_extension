@@ -75,6 +75,8 @@ export const codeforcesAdapter: PageAdapter = {
       site: 'codeforces',
       title,
       statementText,
+      statementLength: statementText.length,
+      adapterName: 'codeforces',
       tags,
       isContest,
       detectedAt: Date.now(),

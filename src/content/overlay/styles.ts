@@ -356,6 +356,11 @@ export const OVERLAY_STYLES = `
   background-color: rgba(75, 226, 119, 0.25);
   animation: unstuck-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   pointer-events: none;
+  display: none;
+}
+
+.unstuck-fab-container.unstuck-has-nudge .unstuck-fab-pulse {
+  display: block;
 }
 
 @keyframes unstuck-pulse {
@@ -373,6 +378,64 @@ export const OVERLAY_STYLES = `
   border-radius: 50%;
   background-color: #22c55e;
   border: 2px solid #171f33;
+  display: none;
+}
+
+.unstuck-fab-container.unstuck-has-nudge .unstuck-fab-dot {
+  display: block;
+}
+
+/* FAB Popover & Status Menu */
+.unstuck-fab-popover {
+  position: absolute;
+  bottom: 54px;
+  right: 0;
+  background-color: #171f33;
+  border: 1px solid rgba(75, 226, 119, 0.4);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+  padding: 8px;
+  min-width: 180px;
+  max-width: 280px;
+  pointer-events: auto;
+  z-index: 2147483647;
+  animation: unstuck-popover-in 0.15s ease-out;
+}
+
+@keyframes unstuck-popover-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.unstuck-fab-popover-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: #dae2fd;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.unstuck-fab-popover-item:hover {
+  background-color: rgba(75, 226, 119, 0.15);
+  color: #4be277;
+}
+
+.unstuck-fab-popover-notice {
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #c4c7c5;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .unstuck-hidden {

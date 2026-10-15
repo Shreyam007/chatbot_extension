@@ -204,8 +204,13 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 ## Troubleshooting
 
 - **Invalid API Key (S13.1):** Verify that your API key is active in [Google AI Studio](https://aistudio.google.com/) and that the Gemini API is enabled for your project.
-- **Quota Exceeded (HTTP 429 / S13.3):** Free-tier Gemini accounts have a 15 RPM limit. The extension displays a live countdown timer until the quota window resets.
-- **Side Panel Fails to Open:** Ensure Chrome is updated to version 114+ and that the Side Panel is enabled in your browser settings.
+- **Quota Exceeded (HTTP 429 / S13.3):**
+  - **Per-Minute Limit (15 RPM):** The extension automatically queues requests through a token bucket rate-limiter and displays a live holding countdown.
+  - **Daily Limit Exhaustion:** Free-tier keys have strict daily limits. If exhausted, Unstuck displays "Daily Quota Exhausted" and allows switching models in Options or checking usage in Google AI Studio without wasting quota on futile retries.
+  - **Low-Quota Mode:** Kept ON by default in Settings (`lowQuotaMode: true`), capping the multi-agent graph to max 2 LLM calls per hint and skipping redundant LLM critic judges when deterministic leak and grounding checks pass.
+- **Floating Star Button (FAB) Click on LeetCode:** Clicking the FAB opens the Unstuck Side Panel directly or displays an in-page tooltip fallback ("Click the Unstuck toolbar icon to open the panel"). You can also press Enter/Space or right-click the button for snooze and pause shortcuts.
+- **Why No Nudge Yet?:** Open the Unstuck toolbar popup to view the live "Why no nudge yet?" diagnostic box explaining the exact pipeline decision (e.g., active dwell time, cooldown remaining, contest mode, or bandit pacing).
+- **Console / Extension Error Logs:** As of v1.0.5, operational errors are serialized cleanly (`serializeLogData`), eliminating ambiguous `[object Object]` entries in browser extension logs.
 - **Context Invalidation After Reload:** If you reload the extension in `chrome://extensions`, refresh open LeetCode/Codeforces problem tabs to reconnect content script communication channels.
 
 ---

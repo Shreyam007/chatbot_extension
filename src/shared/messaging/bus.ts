@@ -11,11 +11,13 @@ const logger = createLogger('MessageBus');
 
 export class MessagingError extends Error {
   public readonly code: string;
+  public readonly details?: unknown;
 
-  constructor(code: string, message: string) {
+  constructor(code: string, message: string, details?: unknown) {
     super(message);
     this.name = 'MessagingError';
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -105,7 +107,7 @@ export async function sendToBackground<T = unknown>(
         }
 
         if (!response.ok) {
-          reject(new MessagingError(response.error.code, response.error.message));
+          reject(new MessagingError(response.error.code, response.error.message, response.error.details));
           return;
         }
 
@@ -185,11 +187,28 @@ export function registerBackgroundRouter(handlers: RequestHandlers): () => void 
             err && typeof err === 'object' && 'code' in err && typeof (err as { code: unknown }).code === 'string'
               ? (err as { code: string }).code
               : 'HANDLER_ERROR';
+          let details: Record<string, unknown> | undefined;
+          if (err && typeof err === 'object') {
+            const raw = err as Record<string, unknown>;
+            const candidate: Record<string, unknown> = {};
+            if (raw.retryAfterSeconds !== undefined) candidate.retryAfterSeconds = raw.retryAfterSeconds;
+            if (raw.retryAfterMs !== undefined) candidate.retryAfterMs = raw.retryAfterMs;
+            if (raw.quotaKind !== undefined) candidate.quotaKind = raw.quotaKind;
+            if (raw.isEstimate !== undefined) candidate.isEstimate = raw.isEstimate;
+            if (raw.model !== undefined) candidate.model = raw.model;
+            if (raw.s13Screen !== undefined) candidate.s13Screen = raw.s13Screen;
+            if (Object.keys(candidate).length > 0) {
+              details = candidate;
+            } else if (raw.details !== undefined) {
+              details = raw.details as Record<string, unknown>;
+            }
+          }
           sendResponse({
             ok: false,
             error: {
               code: errCode,
               message: err instanceof Error ? err.message : 'Unknown handler failure',
+              ...(details ? { details } : {}),
             },
           });
         });

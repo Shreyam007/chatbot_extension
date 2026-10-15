@@ -4,7 +4,7 @@ export default defineConfig({
   manifest: {
     name: 'Unstuck',
     description: 'Proactive, explainable tutoring assistant for coding problems and technical pages.',
-    version: '1.0.4',
+    version: '1.0.5',
     icons: {
       16: 'icon-16.png',
       32: 'icon-32.png',
@@ -34,5 +34,10 @@ export default defineConfig({
       open_in_tab: true
     }
   },
-  modules: ['@wxt-dev/module-react']
+  modules: ['@wxt-dev/module-react'],
+  vite: (env) => ({
+    build: {
+      sourcemap: env.mode === 'development',
+    },
+  }),
 });

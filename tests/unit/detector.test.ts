@@ -173,32 +173,63 @@ describe('Detector: Stuck Probability Model (Step 6)', () => {
     expect(est10m.p).toBeGreaterThanOrEqual(est5m.p);
   });
 
-  // Scenario 13
-  it('Scenario 13: EC-040 Reading carefully - 15 min dwell with 0 wrong submissions capped at 0.40', () => {
+  // Scenario 13 (Updated for v1.0.5: EC-040 reading-carefully cap preserved for article/doc pages)
+  it('Scenario 13: EC-040 Reading carefully - 15 min dwell on an article page capped at 0.40', () => {
     const signals = createMockSignals({
       dwellMs: 900_000,
       activeMs: 900_000,
       wrongSubmissions: 0,
       scrollReversals: 0,
     });
-    const estimate = estimateStuckState(signals);
+    const estimate = estimateStuckState(signals, { contentType: 'article', isProblemPage: false });
 
     expect(estimate.p).toBeLessThanOrEqual(0.40);
     expect(estimate.state).toBe('flowing');
   });
 
-  // Scenario 14
-  it('Scenario 14: EC-040 Reading carefully - 30 min dwell with 0 wrong submissions capped at 0.40', () => {
+  // Scenario 14 (Updated for v1.0.5: Sessions shorter than N minutes retain EC-040 cap)
+  it('Scenario 14: EC-040 Reading carefully - 5 min dwell on problem page with N=8 min remains capped at 0.40', () => {
     const signals = createMockSignals({
-      dwellMs: 1_800_000,
-      activeMs: 1_800_000,
+      dwellMs: 300_000,
+      activeMs: 300_000,
       wrongSubmissions: 0,
       scrollReversals: 1,
     });
-    const estimate = estimateStuckState(signals);
+    const estimate = estimateStuckState(signals, { isProblemPage: true, nudgeAfterMinutes: 8 });
 
     expect(estimate.p).toBeLessThanOrEqual(0.40);
     expect(estimate.state).toBe('flowing');
+  });
+
+  // Scenario 14b (New in v1.0.5: Time-without-progress channel triggers stuck after N minutes on problem pages)
+  it('Scenario 14b: Time-without-progress - 10 min dwell on LeetCode problem (N=8 min) smoothly exceeds 0.60 threshold', () => {
+    const signals = createMockSignals({
+      dwellMs: 600_000,
+      activeMs: 600_000,
+      wrongSubmissions: 0,
+      scrollReversals: 0,
+    });
+    const estimate = estimateStuckState(signals, { isProblemPage: true, nudgeAfterMinutes: 8, sensitivity: 'medium' });
+
+    expect(estimate.p).toBeGreaterThanOrEqual(0.60);
+    expect(estimate.state).toBe('stuck');
+    expect(estimate.nudgeText).toBe("You've been on this one a while. Want a hint?");
+    expect(estimate.isTimeOnlyTrigger).toBe(true);
+    expect(estimate.contributions.timeWithoutProgress).toBeGreaterThan(0.5);
+  });
+
+  // Scenario 14c (New in v1.0.5: Demo mode shortens detector to 20s active dwell)
+  it('Scenario 14c: Demo mode - 25s active dwell on problem page triggers stuck state without wrong submissions', () => {
+    const signals = createMockSignals({
+      dwellMs: 25_000,
+      activeMs: 25_000,
+      wrongSubmissions: 0,
+      scrollReversals: 0,
+    });
+    const estimate = estimateStuckState(signals, { isProblemPage: true, demoMode: true });
+
+    expect(estimate.p).toBeGreaterThanOrEqual(0.60);
+    expect(estimate.state).toBe('stuck');
   });
 
   // Scenario 15

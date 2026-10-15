@@ -8,6 +8,8 @@ import {
   ArrowRight,
   RefreshCw,
   Settings,
+  ExternalLink,
+  FileQuestion,
 } from 'lucide-react';
 
 export type ErrorStateType =
@@ -17,20 +19,29 @@ export type ErrorStateType =
   | 'rate_limited'
   | 'timeout'
   | 'server_error'
-  | 'restricted_page';
+  | 'restricted_page'
+  | 'no_page_context';
 
 export interface ErrorStateViewProps {
   type: ErrorStateType;
   retryAfterSeconds?: number;
+  quotaKind?: 'per_minute' | 'per_day' | 'unknown';
+  isEstimate?: boolean;
+  model?: string;
   onRetry?: () => void;
   onOpenSettings?: () => void;
+  onSelectText?: () => void;
 }
 
 export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
   type,
   retryAfterSeconds = 30,
+  quotaKind = 'per_minute',
+  isEstimate = false,
+  model,
   onRetry,
   onOpenSettings,
+  onSelectText,
 }) => {
   const [countdown, setCountdown] = useState(retryAfterSeconds);
 
@@ -39,12 +50,12 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
   }, [retryAfterSeconds]);
 
   useEffect(() => {
-    if (type !== 'rate_limited' || countdown <= 0) return;
+    if (type !== 'rate_limited' || quotaKind === 'per_day' || countdown <= 0) return;
     const timer = setInterval(() => {
       setCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [type, countdown]);
+  }, [type, quotaKind, countdown]);
 
   if (type === 'no_api_key' || type === 'invalid_key') {
     return (
@@ -105,30 +116,91 @@ export const ErrorStateView: React.FC<ErrorStateViewProps> = ({
   }
 
   if (type === 'rate_limited') {
+    const isDaily = quotaKind === 'per_day';
+
     return (
       <div className="flex-1 w-full min-w-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none">
         <div className="w-14 h-14 rounded-2xl bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-tertiary mb-3 shadow-lg">
-          <Clock className="w-7 h-7" />
+          {isDaily ? <AlertCircle className="w-7 h-7 text-amber-500" /> : <Clock className="w-7 h-7" />}
         </div>
         <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/40 text-[10px] font-mono text-tertiary mb-2">
-          S13.3 HTTP 429 Rate Limited
+          S13.3 {isDaily ? 'Daily Quota Limit' : 'HTTP 429 Rate Limited'}
         </div>
         <h2 className="text-base font-mono font-bold text-on-surface mb-1">
-          Quota Rate Limited
+          {isDaily ? 'Daily Quota Exhausted' : 'Quota Rate Limited'}
         </h2>
         <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-3 leading-relaxed break-words">
-          Gemini requests hit the per-minute quota. Live countdown is holding to prevent rejection.
+          {isDaily
+            ? `Your free-tier Gemini API key has exhausted its daily request allowance${model ? ` for ${model}` : ''}. Free daily quotas reset at midnight Pacific Time.`
+            : `Gemini requests hit the per-minute quota${model ? ` on ${model}` : ''}. Live countdown is holding to prevent rejection.`}
         </p>
-        <div className="p-2.5 rounded-lg bg-surface-container border border-outline-variant/40 font-mono text-xs text-primary mb-4">
-          <span>Cooldown: {countdown}s remaining</span>
+
+        {!isDaily && (
+          <div className="p-2.5 rounded-lg bg-surface-container border border-outline-variant/40 font-mono text-xs text-primary mb-4">
+            {countdown > 0 ? (
+              <span>Cooldown: {countdown}s remaining{isEstimate ? ' (estimated)' : ''}</span>
+            ) : (
+              <span className="text-emerald-500">Cooldown complete — ready to retry</span>
+            )}
+          </div>
+        )}
+
+        {isDaily ? (
+          <div className="flex flex-col gap-2 w-full max-w-[240px]">
+            <button
+              onClick={onOpenSettings}
+              className="px-4 py-2 rounded-xl bg-primary text-on-primary font-mono text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Switch Model in Options</span>
+            </button>
+            <a
+              href="https://aistudio.google.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="px-4 py-2 rounded-xl bg-surface-container border border-outline-variant/60 text-on-surface font-mono text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-surface-container-high transition-all"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Check Usage in AI Studio</span>
+            </a>
+          </div>
+        ) : (
+          countdown <= 0 && onRetry && (
+            <button
+              onClick={onRetry}
+              className="px-4 py-2 rounded-xl bg-primary text-on-primary font-mono text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry Generation Now</span>
+            </button>
+          )
+        )}
+      </div>
+    );
+  }
+
+  if (type === 'no_page_context') {
+    return (
+      <div className="flex-1 w-full min-w-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none">
+        <div className="w-14 h-14 rounded-2xl bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-outline mb-3 shadow-lg">
+          <FileQuestion className="w-7 h-7" />
         </div>
-        {countdown === 0 && onRetry && (
+        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/40 text-[10px] font-mono text-outline mb-2">
+          S14.1 Problem Not Detected
+        </div>
+        <h2 className="text-base font-mono font-bold text-on-surface mb-1">
+          No Problem Detected
+        </h2>
+        <p className="text-xs font-sans text-on-surface-variant max-w-[280px] mb-4 leading-relaxed break-words">
+          No problem statement found on this page. Select problem text with your cursor or switch to freeform chat.
+        </p>
+        {onSelectText && (
           <button
-            onClick={onRetry}
+            onClick={onSelectText}
             className="px-4 py-2 rounded-xl bg-primary text-on-primary font-mono text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md active:scale-95"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Retry Generation Now</span>
+            <span>Open Chat Tab</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

@@ -42,6 +42,7 @@ interface PopupState {
   isAllowedSite?: boolean;
   isSingleUseActive?: boolean;
   contentType?: string;
+  whyNoNudgeReason?: string;
 }
 
 const DEFAULT_POPUP_STATE: PopupState = {
@@ -95,6 +96,7 @@ export const PopupApp: React.FC = () => {
           isAllowedSite: Boolean(res.isAllowedSite),
           isSingleUseActive: Boolean(res.isSingleUseActive),
           contentType: res.contentType,
+          whyNoNudgeReason: res.whyNoNudgeReason,
         });
       }
     } catch {
@@ -324,6 +326,19 @@ export const PopupApp: React.FC = () => {
                 <span className="truncate">{state.siteDomain}</span>
               </div>
             </div>
+
+            {/* Why no nudge yet? Status Box */}
+            {state.whyNoNudgeReason && (
+              <div className="bg-surface-container rounded-lg p-2.5 border border-outline-variant/30 flex flex-col gap-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-outline font-mono text-[9px] uppercase tracking-wider">
+                  <Info className="w-3 h-3 text-primary shrink-0" />
+                  <span>Why no nudge yet?</span>
+                </div>
+                <p className="font-sans text-[11px] text-on-surface leading-tight break-words">
+                  {state.whyNoNudgeReason}
+                </p>
+              </div>
+            )}
 
             {/* 3 Stat Tiles Grid */}
             <div className="grid grid-cols-3 gap-2">

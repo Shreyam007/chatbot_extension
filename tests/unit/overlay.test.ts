@@ -2,10 +2,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { OverlayHost } from '../../src/content/overlay/host';
 
+vi.mock('../../src/shared/messaging', () => ({
+  sendToBackground: vi.fn().mockResolvedValue({ type: 'OPEN_SIDE_PANEL_RESULT', ok: true }),
+}));
+
 describe('OverlayHost & S08 Nudge Card (Step 11)', () => {
   let overlay: OverlayHost;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.useFakeTimers();
     const existing = document.getElementById('unstuck-overlay-root');
     if (existing) {
@@ -233,5 +238,93 @@ describe('OverlayHost & S08 Nudge Card (Step 11)', () => {
     // Both card and FAB must be hidden
     expect(card?.classList.contains('unstuck-hidden')).toBe(true);
     expect(fab?.classList.contains('unstuck-hidden')).toBe(true);
+  });
+
+  it('clicking the FAB with no active nudge sends OPEN_SIDE_PANEL (Task C.1 / S2)', async () => {
+    const { sendToBackground } = await import('../../src/shared/messaging');
+    vi.mocked(sendToBackground).mockResolvedValueOnce({ type: 'OPEN_SIDE_PANEL_RESULT', ok: true });
+
+    overlay.mount();
+    const host = document.getElementById('unstuck-overlay-root');
+    const fabBtn = host?.shadowRoot?.getElementById('unstuck-fab');
+
+    fabBtn?.click();
+
+    expect(sendToBackground).toHaveBeenCalledWith({ type: 'OPEN_SIDE_PANEL' });
+  });
+
+  it('displays fallback popover when OPEN_SIDE_PANEL fails (Task C.1)', async () => {
+    const { sendToBackground } = await import('../../src/shared/messaging');
+    vi.mocked(sendToBackground).mockResolvedValueOnce({
+      type: 'OPEN_SIDE_PANEL_RESULT',
+      ok: false,
+      error: 'SidePanel disabled',
+    });
+
+    overlay.mount();
+    const host = document.getElementById('unstuck-overlay-root');
+    const fabBtn = host?.shadowRoot?.getElementById('unstuck-fab');
+    const popover = host?.shadowRoot?.getElementById('unstuck-fab-popover');
+
+    fabBtn?.click();
+    await Promise.resolve(); // flush microtask
+
+    expect(popover?.classList.contains('unstuck-hidden')).toBe(false);
+    expect(popover?.textContent).toBe('Click the Unstuck toolbar icon to open the panel');
+  });
+
+  it('clicking the FAB when a nudge is active expands the card instead of opening side panel (Task C.2)', () => {
+    overlay.mount();
+    overlay.showNudge({ reason: 'Stuck on problem?' });
+
+    const host = document.getElementById('unstuck-overlay-root');
+    const card = host?.shadowRoot?.getElementById('unstuck-card');
+    const fab = host?.shadowRoot?.getElementById('unstuck-fab-container');
+    const fabBtn = host?.shadowRoot?.getElementById('unstuck-fab');
+
+    // Nudge is shown, green dot is active
+    expect(fabBtn?.classList.contains('unstuck-has-nudge')).toBe(true);
+
+    // User collapses to FAB
+    overlay.collapseToFab();
+    expect(card?.classList.contains('unstuck-hidden')).toBe(true);
+    expect(fab?.classList.contains('unstuck-hidden')).toBe(false);
+
+    // Clicking FAB expands card back
+    fabBtn?.click();
+    expect(card?.classList.contains('unstuck-hidden')).toBe(false);
+    expect(fab?.classList.contains('unstuck-hidden')).toBe(true);
+  });
+
+  it('supports keyboard activation (Enter / Space) on the FAB (Task C.2)', async () => {
+    const { sendToBackground } = await import('../../src/shared/messaging');
+    vi.mocked(sendToBackground).mockResolvedValue({ type: 'OPEN_SIDE_PANEL_RESULT', ok: true });
+
+    overlay.mount();
+    const host = document.getElementById('unstuck-overlay-root');
+    const fabBtn = host?.shadowRoot?.getElementById('unstuck-fab');
+
+    // Press Enter
+    fabBtn?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(sendToBackground).toHaveBeenCalledWith({ type: 'OPEN_SIDE_PANEL' });
+
+    vi.advanceTimersByTime(200);
+
+    // Press Space
+    fabBtn?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(sendToBackground).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows status popover on contextmenu / right-click of FAB (Task C.2)', () => {
+    overlay.mount();
+    const host = document.getElementById('unstuck-overlay-root');
+    const fabBtn = host?.shadowRoot?.getElementById('unstuck-fab');
+    const fabMenu = host?.shadowRoot?.getElementById('unstuck-fab-menu');
+
+    expect(fabMenu?.classList.contains('unstuck-hidden')).toBe(true);
+
+    // Right-click
+    fabBtn?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+    expect(fabMenu?.classList.contains('unstuck-hidden')).toBe(false);
   });
 });

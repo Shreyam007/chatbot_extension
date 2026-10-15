@@ -1,6 +1,7 @@
 import { DEFAULT_AI_MODEL, LIMITS } from '../../shared/config';
 import { createLogger } from '../../shared/logger';
 import { LlmError, parseHttpError } from './errors';
+import { globalRateLimiter } from './rate-limiter';
 import type {
   LlmGenerationOptions,
   LlmResponse,
@@ -11,7 +12,7 @@ import type {
 const logger = createLogger('GeminiClient');
 
 export class GeminiClient {
-  private static inFlightByTab = new Map<number, Promise<LlmResponse<unknown>>>();
+  private static inFlightByHash = new Map<string, Promise<LlmResponse<unknown>>>();
   private static abortControllersByTab = new Map<number, AbortController>();
   private static abortControllersByRequestId = new Map<string, AbortController>();
 
@@ -40,6 +41,16 @@ export class GeminiClient {
   }
 
   /**
+   * Generates a stable collision-resistant hash for request coalescing (EC-087 / Task E.3)
+   */
+  private static createRequestHash(prompt: string, options: LlmGenerationOptions): string {
+    const tab = options.tabId ?? 0;
+    const model = options.model || DEFAULT_AI_MODEL;
+    const schema = options.responseSchema ? JSON.stringify(options.responseSchema) : '';
+    return `${tab}::${model}::${prompt.length}::${prompt.slice(0, 100)}::${schema}`;
+  }
+
+  /**
    * Aborts any in-flight generation request for the given tab ID (EC-086)
    */
   public static cancelTabRequest(tabId: number): boolean {
@@ -56,7 +67,6 @@ export class GeminiClient {
       if (controller) {
         controller.abort();
         this.abortControllersByTab.delete(ids.tabId);
-        this.inFlightByTab.delete(ids.tabId);
         logger.debug(`Aborted in-flight LLM request for tab ${ids.tabId}`);
         cancelled = true;
       }
@@ -74,30 +84,44 @@ export class GeminiClient {
   }
 
   /**
+   * Resets all in-flight tracking state (useful for tests or teardown)
+   */
+  public static resetState(): void {
+    this.inFlightByHash.clear();
+    this.abortControllersByTab.clear();
+    this.abortControllersByRequestId.clear();
+  }
+
+  /**
    * Generates structured JSON output from Gemini with schema enforcement, retries,
-   * single-shot repair, and per-tab duplicate coalescing.
+   * single-shot repair, and duplicate coalescing by full request hash.
    */
   public async generateJson<T = unknown>(
     prompt: string,
     options: LlmGenerationOptions = {}
   ): Promise<LlmResponse<T>> {
-    const tabId = options.tabId;
+    const requestHash = GeminiClient.createRequestHash(prompt, options);
 
-    // In-flight coalescing per tab (EC-087)
-    if (tabId !== undefined && GeminiClient.inFlightByTab.has(tabId)) {
-      logger.debug(`Coalescing duplicate LLM request for tab ${tabId}`);
-      return GeminiClient.inFlightByTab.get(tabId)! as Promise<LlmResponse<T>>;
+    // In-flight coalescing by full request hash (F7 & Task E.3)
+    if (GeminiClient.inFlightByHash.has(requestHash)) {
+      logger.debug(`Coalescing duplicate in-flight LLM request (hash=${requestHash.slice(0, 40)}...)`);
+      return GeminiClient.inFlightByHash.get(requestHash)! as Promise<LlmResponse<T>>;
     }
 
     const executionPromise = this.executeGenerationWithRetry<T>(prompt, options);
+    GeminiClient.inFlightByHash.set(requestHash, executionPromise as Promise<LlmResponse<unknown>>);
 
-    if (tabId !== undefined) {
-      GeminiClient.inFlightByTab.set(tabId, executionPromise as Promise<LlmResponse<unknown>>);
-      executionPromise.finally(() => {
-        GeminiClient.inFlightByTab.delete(tabId);
-        GeminiClient.abortControllersByTab.delete(tabId);
+    void executionPromise
+      .catch(() => {})
+      .finally(() => {
+        GeminiClient.inFlightByHash.delete(requestHash);
+        if (options.tabId !== undefined) {
+          GeminiClient.abortControllersByTab.delete(options.tabId);
+        }
+        if (options.requestId) {
+          GeminiClient.abortControllersByRequestId.delete(options.requestId);
+        }
       });
-    }
 
     return executionPromise;
   }
@@ -115,15 +139,23 @@ export class GeminiClient {
 
     const maxRetries = options.maxRetries ?? LIMITS.MAX_LLM_RETRIES;
     let attempt = 0;
+    let currentOptions = { ...options };
 
     while (attempt <= maxRetries) {
       try {
-        return await this.callApiOnce<T>(prompt, apiKey, options);
+        return await this.callApiOnce<T>(prompt, apiKey, currentOptions);
       } catch (err) {
         attempt++;
 
         if (err instanceof LlmError) {
-          // If aborted by user, non-retryable error, or long rate-limit countdown, throw immediately
+          // Task E.2: Handle TRUNCATED_OUTPUT by retrying once with larger maxOutputTokens (4096)
+          if (err.code === 'TRUNCATED_OUTPUT' && (currentOptions.maxOutputTokens ?? 2048) < 4096 && attempt <= 1) {
+            logger.warn('Output truncated by MAX_TOKENS; retrying once with 4096 tokens budget (Task E.2)');
+            currentOptions = { ...currentOptions, maxOutputTokens: 4096 };
+            continue;
+          }
+
+          // If aborted by user, non-retryable error, or rate-limited without retry permission, throw immediately
           if (
             err.code === 'ABORTED' ||
             err.code === 'RATE_LIMITED' ||
@@ -134,8 +166,8 @@ export class GeminiClient {
           }
 
           const backoffDelay =
-            options._retryDelayMs !== undefined
-              ? options._retryDelayMs
+            currentOptions._retryDelayMs !== undefined
+              ? currentOptions._retryDelayMs
               : err.retryAfterSeconds
               ? err.retryAfterSeconds * 1000
               : Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 10000);
@@ -146,7 +178,6 @@ export class GeminiClient {
 
           await new Promise((resolve) => setTimeout(resolve, backoffDelay));
         } else {
-          // Unknown or non-LlmError
           throw err;
         }
       }
@@ -168,6 +199,17 @@ export class GeminiClient {
     // Check offline status before making fetch (EC-081)
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       throw new LlmError('OFFLINE', 'Network connection unavailable.');
+    }
+
+    // Task E.3: Acquire rate limiter token from token bucket before firing network request
+    try {
+      await globalRateLimiter.acquireToken(Math.min(timeoutMs, 25_000));
+    } catch {
+      throw new LlmError('RATE_LIMITED', 'Client rate limiter paced request to prevent quota exhaustion.', {
+        retryAfterSeconds: 10,
+        quotaKind: 'per_minute',
+        isEstimate: true,
+      });
     }
 
     const controller = new AbortController();
@@ -198,6 +240,11 @@ export class GeminiClient {
       responseMimeType: 'application/json',
     };
 
+    // Task E.2 & Finding F5: Disable thinking tokens for Flash-class models to prevent output blowout
+    if (model.toLowerCase().includes('flash')) {
+      generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    }
+
     if (options.responseSchema) {
       generationConfig.responseSchema = options.responseSchema;
     }
@@ -218,9 +265,8 @@ export class GeminiClient {
       };
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-      model
-    )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    // Task E.6: Header authentication - API key is NEVER passed in the URL query string
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
     logger.debug(`Calling Gemini model: ${model} (timeout: ${timeoutMs}ms)`);
 
@@ -231,6 +277,7 @@ export class GeminiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'x-goog-api-key': apiKey,
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
@@ -271,7 +318,7 @@ export class GeminiClient {
       } catch {
         // Response was not JSON
       }
-      throw parseHttpError(response.status, response.statusText, errorData, response.headers);
+      throw parseHttpError(response.status, response.statusText, errorData, response.headers, model);
     }
 
     let rawData: GeminiApiResponse;
@@ -283,21 +330,38 @@ export class GeminiClient {
 
     // Check Safety Blocks (EC-085)
     if (rawData.promptFeedback?.blockReason === 'SAFETY') {
-      throw new LlmError('SAFETY_BLOCKED', 'Prompt was blocked by Google AI safety filters.');
+      throw new LlmError('SAFETY_BLOCKED', 'Prompt was blocked by Google AI safety filters.', { model });
     }
 
     const candidate = rawData.candidates?.[0];
     if (!candidate) {
-      throw new LlmError('SAFETY_BLOCKED', 'Model returned an empty candidate list.');
+      throw new LlmError('SAFETY_BLOCKED', 'Model returned an empty candidate list.', { model });
     }
 
     if (candidate.finishReason === 'SAFETY') {
-      throw new LlmError('SAFETY_BLOCKED', 'Candidate generation was blocked by Google AI safety filters.');
+      throw new LlmError('SAFETY_BLOCKED', 'Candidate generation was blocked by Google AI safety filters.', { model });
     }
 
     const rawText = candidate.content?.parts?.[0]?.text || '';
     if (!rawText.trim()) {
-      throw new LlmError('SAFETY_BLOCKED', 'Model generated an empty text response.');
+      if (candidate.finishReason === 'MAX_TOKENS') {
+        throw new LlmError('TRUNCATED_OUTPUT', 'Model response reached MAX_TOKENS with empty output.', { model });
+      }
+      throw new LlmError('SAFETY_BLOCKED', 'Model generated an empty text response.', { model });
+    }
+
+    if (candidate.finishReason === 'MAX_TOKENS') {
+      try {
+        const parsed = this.cleanAndParseJson<T>(rawText);
+        const usage: TokenUsage = {
+          promptTokens: rawData.usageMetadata?.promptTokenCount ?? 0,
+          candidateTokens: rawData.usageMetadata?.candidatesTokenCount ?? 0,
+          totalTokens: rawData.usageMetadata?.totalTokenCount ?? 0,
+        };
+        return { data: parsed, rawText, usage, latencyMs, model };
+      } catch {
+        throw new LlmError('TRUNCATED_OUTPUT', 'Model response was truncated by MAX_TOKENS and could not be parsed as valid JSON.', { model });
+      }
     }
 
     const usage: TokenUsage = {
@@ -320,6 +384,7 @@ export class GeminiClient {
 
   /**
    * Tries to parse the model output as JSON. If it fails, attempts a single-shot repair request (EC-084).
+   * Handled with timeout, abort signal, and secure header authentication.
    */
   private async parseOrRepairJson<T>(
     rawText: string,
@@ -338,24 +403,32 @@ export class GeminiClient {
           `Please fix all syntax errors and return ONLY valid, well-formed JSON. Do not include explanation text.`;
 
         const repairModel = options.model || DEFAULT_AI_MODEL;
-        const repairUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-          repairModel
-        )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const repairUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(repairModel)}:generateContent`;
+
+        const repairController = new AbortController();
+        const repairTimeout = setTimeout(() => repairController.abort(), 10_000);
 
         const repairResponse = await fetch(repairUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
+            'x-goog-api-key': apiKey,
           },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: repairPrompt }] }],
             generationConfig: {
               temperature: 0.1,
               responseMimeType: 'application/json',
+              ...(repairModel.toLowerCase().includes('flash')
+                ? { thinkingConfig: { thinkingBudget: 0 } }
+                : {}),
             },
           }),
+          signal: repairController.signal,
         });
+
+        clearTimeout(repairTimeout);
 
         if (repairResponse.ok) {
           const repairData = (await repairResponse.json()) as GeminiApiResponse;
@@ -367,7 +440,7 @@ export class GeminiClient {
           }
         }
       } catch (repairErr) {
-        logger.error('JSON repair attempt failed', repairErr);
+        logger.warn('JSON repair attempt failed', repairErr);
       }
 
       throw new LlmError('MALFORMED_JSON', 'Model returned malformed JSON that could not be repaired.');

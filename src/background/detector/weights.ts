@@ -6,6 +6,7 @@ export const DEFAULT_DETECTOR_WEIGHTS: DetectorWeights = {
   weightActiveDwell: 0.55,
   weightScrollReversals: 0.35,
   weightTabSwitchRate: 0.30,
+  weightTimeWithoutProgress: 2.5,
 };
 
 export const SENSITIVITY_THRESHOLDS = {

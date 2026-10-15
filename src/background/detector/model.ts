@@ -74,7 +74,31 @@ export function estimateStuckState(
   // 1. Sanitize & extract normalized features (EC-044)
   const features = extractNormalizedFeatures(signals);
 
-  // 2. Non-linear feature transformations
+  // 2. Determine if on a problem page (LeetCode, Codeforces, HackerRank) vs generic/article
+  const isProblemPage = options.isProblemPage ?? (options.contentType === undefined || options.contentType === 'problem');
+
+  // 3. Compute effective N (nudge after N minutes of active time without progress)
+  const baseN = options.nudgeAfterMinutes ?? 8.0;
+  let effectiveN = baseN;
+  if (options.demoMode) {
+    // Demo mode: 20s active dwell
+    effectiveN = 20 / 60;
+  } else {
+    // Sensitivity scales N: high = 0.6x, medium = 1.0x, low = 1.5x
+    if (sensitivity === 'high') {
+      effectiveN = baseN * 0.6;
+    } else if (sensitivity === 'low') {
+      effectiveN = baseN * 1.5;
+    } else {
+      effectiveN = baseN * 1.0;
+    }
+  }
+
+  // Time without progress in minutes (observable active dwell since problem start or last progress)
+  const timeWithoutProgressMinutes = options.timeWithoutProgressMinutes ?? features.activeDwellMinutes;
+  const isTimeProgressActive = isProblemPage && timeWithoutProgressMinutes >= effectiveN;
+
+  // 4. Non-linear feature transformations
   // - Wrong submissions: logarithmic sub-linear scaling ln(1 + W)
   const phiWrong = Math.log(1 + features.wrongSubmissions);
   // - Active dwell: saturating tanh function tanh(D / 10)
@@ -83,32 +107,44 @@ export function estimateStuckState(
   const phiReversals = Math.min(features.scrollReversals, 10) / 5;
   // - Tab switch rate: capped linear scaling
   const phiTabRate = Math.min(features.tabSwitchRate, 6) / 3;
+  // - Time without progress ramp (only on problem pages after effectiveN)
+  let phiTime = 0;
+  if (isTimeProgressActive) {
+    const deltaT = timeWithoutProgressMinutes - effectiveN;
+    const scaleFactor = options.demoMode ? 0.035 : Math.max(0.08, effectiveN * 0.25);
+    phiTime = Math.tanh(deltaT / scaleFactor);
+  }
 
-  // 3. Compute logistic logit
+  // 5. Compute logistic logit
   const w = config.weights;
   const logit =
     w.bias +
     w.weightWrongSubmissions * phiWrong +
     w.weightActiveDwell * phiDwell +
     w.weightScrollReversals * phiReversals +
-    w.weightTabSwitchRate * phiTabRate;
+    w.weightTabSwitchRate * phiTabRate +
+    w.weightTimeWithoutProgress * phiTime;
 
-  // 4. Logistic sigmoid function
+  // 6. Logistic sigmoid function
   let pRaw = 1 / (1 + Math.exp(-logit));
   pRaw = Math.min(1, Math.max(0, pRaw));
 
-  // 5. Hard guardrails & corroboration checks
-  // EC-040: User reading carefully (dwell alone without corroborating wrong submissions or scroll reversals)
-  if (features.wrongSubmissions === 0 && features.scrollReversals <= 1) {
-    pRaw = Math.min(pRaw, config.maxDwellCapWithoutCorroboration);
+  // 7. Hard guardrails & corroboration checks
+  // On problem pages where time-without-progress >= N, the flat 0.40 and 0.45 caps are replaced by the ramp.
+  // For article, documentation, general pages, and short problem sessions (< N min), retain EC-040 reading-carefully cap.
+  if (!isTimeProgressActive) {
+    // EC-040: User reading carefully (dwell alone without corroborating wrong submissions or scroll reversals)
+    if (features.wrongSubmissions === 0 && features.scrollReversals <= 1) {
+      pRaw = Math.min(pRaw, config.maxDwellCapWithoutCorroboration);
+    }
+
+    // EC-047: Comparing examples (scroll reversals alone without wrong submissions or prolonged dwell)
+    if (features.wrongSubmissions === 0 && features.activeDwellMinutes < 3.0) {
+      pRaw = Math.min(pRaw, config.maxReversalsCapWithoutCorroboration);
+    }
   }
 
-  // EC-047: Comparing examples (scroll reversals alone without wrong submissions or prolonged dwell)
-  if (features.wrongSubmissions === 0 && features.activeDwellMinutes < 3.0) {
-    pRaw = Math.min(pRaw, config.maxReversalsCapWithoutCorroboration);
-  }
-
-  // 6. Exponential smoothing
+  // 8. Exponential smoothing
   let p = pRaw;
   if (options.previousP !== undefined && !isNaN(options.previousP) && isFinite(options.previousP)) {
     const prev = Math.min(1, Math.max(0, options.previousP));
@@ -117,13 +153,13 @@ export function estimateStuckState(
   }
   p = Math.round(p * 10000) / 10000;
 
-  // 7. Check for distracted branch
+  // 9. Check for distracted branch
   // High tab switching frequency combined with low coding dwell or high idle ratio
   const isDistracted =
     features.tabSwitchRate >= 4.0 &&
     (features.activeDwellMinutes < 0.75 || features.idleRatio > 0.6);
 
-  // 8. Classify state
+  // 10. Classify state
   let state: StuckState = 'flowing';
   if (isDistracted) {
     state = 'distracted';
@@ -133,23 +169,34 @@ export function estimateStuckState(
     state = 'flowing';
   }
 
-  // 9. Explainable feature contributions (for S07 Trace)
+  // 11. Nudge copy determination
+  // Softer copy for time-only triggers on problem pages without wrong submissions
+  const isTimeOnlyTrigger = isTimeProgressActive && features.wrongSubmissions === 0;
+  const nudgeText = isTimeOnlyTrigger
+    ? "You've been on this one a while. Want a hint?"
+    : "Looks like this problem is tricky. Want a nudge?";
+
+  // 12. Explainable feature contributions (for S07 Trace & Diagnostics)
   const cDwell = Math.max(0, w.weightActiveDwell * phiDwell);
   const cWrong = Math.max(0, w.weightWrongSubmissions * phiWrong);
   const cReversals = Math.max(0, w.weightScrollReversals * phiReversals);
   const cTabs = Math.max(0, w.weightTabSwitchRate * phiTabRate);
-  const sum = cDwell + cWrong + cReversals + cTabs;
+  const cTime = Math.max(0, w.weightTimeWithoutProgress * phiTime);
+  const sum = cDwell + cWrong + cReversals + cTabs + cTime;
 
   const contributions: Record<string, number> = {
     dwell: sum > 0 ? Math.round((cDwell / sum) * 100) / 100 : 0,
     wrongSubmissions: sum > 0 ? Math.round((cWrong / sum) * 100) / 100 : 0,
     scrollReversals: sum > 0 ? Math.round((cReversals / sum) * 100) / 100 : 0,
     tabSwitches: sum > 0 ? Math.round((cTabs / sum) * 100) / 100 : 0,
+    timeWithoutProgress: sum > 0 ? Math.round((cTime / sum) * 100) / 100 : 0,
   };
 
   return {
     p,
     state,
     contributions,
+    nudgeText,
+    isTimeOnlyTrigger,
   };
 }

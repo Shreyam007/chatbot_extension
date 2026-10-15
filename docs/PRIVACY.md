@@ -1,7 +1,7 @@
 # PRIVACY.md — Privacy Policy & Data Notice
 
-**Last Updated:** October 14, 2026  
-**Product Version:** Unstuck v1.0.4
+**Last Updated:** October 15, 2026  
+**Product Version:** Unstuck v1.0.5
 
 ---
 
@@ -10,10 +10,10 @@
 **Unstuck** was designed from first principles as a **zero-backend, privacy-first AI tutor**. We believe that learning tools should empower students without tracking them, harvesting their code, or monetizing their personal data.
 
 > **Canonical Privacy Guarantee:**  
-> *"Your key is stored only on this device (chrome.storage.local) and sent only to Google's Gemini API with your requests. We run no servers."*
+> *"Your key is stored only on this device (chrome.storage.local) and sent only to Google's Gemini API via secure HTTP headers with your requests. We run no servers."*
 
 1. **Zero Intermediate Servers:** Unstuck operates entirely inside your local Google Chrome browser. We operate no cloud proxy servers, no telemetry ingestion collectors, and no hosted databases.
-2. **Bring Your Own Key (BYOK):** All AI interactions communicate directly and securely from your browser to Google's Gemini REST API using your personal API key from Google AI Studio.
+2. **Bring Your Own Key (BYOK) via Secure Headers:** All AI interactions communicate directly and securely from your browser service worker to Google's Gemini REST API using your personal API key transmitted via the `'x-goog-api-key'` HTTP header (never exposed in URL query parameters, network logs, or history).
 3. **Local Storage First:** All interaction history, hints, Bayesian mastery vectors, and diagnostic logs are stored exclusively in your browser's local storage and IndexedDB.
 4. **Universal Mode Opt-In Per Site (v1.0.4):** Outside of the two core coding platforms (LeetCode, Codeforces), Unstuck NEVER activates, injects, or reads content from any webpage without explicit user consent.
 
@@ -51,7 +51,8 @@ The following data never leaves your browser:
 |---|---|---|---|
 | **API Key** | `chrome.storage.local` | Authenticates your direct requests to Google Gemini | Until deleted by user |
 | **User Settings** | `chrome.storage.local` | Difficulty, theme, quiet hours, allowed sites, custom blacklist | Until deleted by user |
-| **Ephemeral Session State** | `chrome.storage.session` | Deduplicating in-flight requests and active tab state | Wiped on browser close |
+| **Ephemeral Session State** | `chrome.storage.session` | Deduplicating in-flight requests and per-tab state | Wiped on browser close |
+| **Nudge Diagnostics Ring Buffer** | `chrome.storage.session` | Last 50 nudge decisions (numerical metrics only, zero URLs or page text) | Wiped on browser close |
 | **Behavioral Signals** | Memory / Local Content Script | Active dwell time, scroll reversals, and submission clicks | Windowed buffer (resets on navigation) |
 | **Mastery Models (BKT)** | `IndexedDB` (`unstuck_store_v2`) | Calibrates topic skill levels and recommended review (coding only) | Until deleted by user |
 | **Interaction Logs** | `IndexedDB` (`unstuck_store_v2`) | Audit trail of hints generated and feedback given | Ring-buffered local storage |

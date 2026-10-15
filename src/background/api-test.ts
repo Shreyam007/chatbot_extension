@@ -34,11 +34,12 @@ export async function testGeminiApiKey(
 
   try {
     // Calling models listing endpoint to test credentials without consuming generation quota
-    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(trimmed)}`;
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models';
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
+        'x-goog-api-key': trimmed,
       },
       signal: controller.signal,
     });

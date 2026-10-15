@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GeminiClient, LlmError, mapCodeToS13Screen } from '../../src/background/llm';
+import { globalRateLimiter } from '../../src/background/llm/rate-limiter';
 import { createSyntheticKey } from '../helpers/keys';
 
 describe('GeminiClient & Error Mapping (Step 8)', () => {
@@ -8,6 +9,8 @@ describe('GeminiClient & Error Mapping (Step 8)', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    GeminiClient.resetState();
+    globalRateLimiter.reset();
   });
 
   afterEach(() => {
@@ -303,7 +306,7 @@ describe('GeminiClient & Error Mapping (Step 8)', () => {
     }
   });
 
-  it('coalesces duplicate requests for the same tab ID (EC-087)', async () => {
+  it('coalesces duplicate requests for the same prompt hash (EC-087 & F7)', async () => {
     let callCount = 0;
     global.fetch = vi.fn().mockImplementation(async () => {
       callCount++;
@@ -325,15 +328,20 @@ describe('GeminiClient & Error Mapping (Step 8)', () => {
     const client = new GeminiClient(TEST_API_KEY);
     const tabId = 42;
 
-    // Fire two identical tab requests concurrently
+    // Fire two identical tab requests concurrently with same prompt
     const [res1, res2] = await Promise.all([
       client.generateJson<{ coalesced: boolean }>('prompt 1', { tabId }),
-      client.generateJson<{ coalesced: boolean }>('prompt 1 duplicate', { tabId }),
+      client.generateJson<{ coalesced: boolean }>('prompt 1', { tabId }),
     ]);
 
     expect(callCount).toBe(1);
     expect(res1.data).toEqual({ coalesced: true });
     expect(res2.data).toEqual({ coalesced: true });
+
+    // Distinct prompt on same tab must execute separately (F7 fix: no cross-talk)
+    const res3 = await client.generateJson<{ coalesced: boolean }>('different prompt', { tabId });
+    expect(callCount).toBe(2);
+    expect(res3.data).toEqual({ coalesced: true });
   });
 
   it('strictly redacts API keys from error messages, ensuring zero leakage (Rule 4)', async () => {

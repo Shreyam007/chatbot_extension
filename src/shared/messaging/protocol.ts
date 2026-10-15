@@ -189,6 +189,7 @@ export const SubmitChatQueryRequestSchema = z.object({
   problemHash: z.string().min(1),
   level: HintLevelSchema.optional(),
   requestId: z.string().optional(),
+  mode: z.enum(['page', 'standalone', 'no_page']).optional(),
 });
 
 export const SubmitChatQueryResponseSchema = z.object({
@@ -371,6 +372,55 @@ export const UpdateSitePrivacyResponseSchema = z.object({
   success: z.boolean(),
 });
 
+export const OpenSidePanelRequestSchema = z.object({
+  type: z.literal('OPEN_SIDE_PANEL'),
+  tabId: z.number().optional(),
+});
+
+export const OpenSidePanelResponseSchema = z.object({
+  type: z.literal('SIDE_PANEL_OPENED'),
+  success: z.boolean(),
+  fallback: z.boolean().optional(),
+  error: z.string().optional(),
+});
+
+export const NudgeDecisionRecordSchema = z.object({
+  timestamp: z.number(),
+  tabId: z.number().optional(),
+  site: z.string(),
+  state: z.string(),
+  pStuck: z.number(),
+  features: z.object({
+    activeDwellMinutes: z.number(),
+    wrongSubmissions: z.number(),
+    scrollReversals: z.number(),
+    tabSwitchRate: z.number(),
+    idleRatio: z.number(),
+  }),
+  gateBlockedReason: z.string(),
+  banditAction: z.string(),
+  signalsArrived: z.boolean(),
+  lastSignalAgeSec: z.number(),
+  timeWithoutProgressMin: z.number().optional(),
+});
+export type NudgeDecisionRecord = z.infer<typeof NudgeDecisionRecordSchema>;
+
+export const GetNudgeDiagnosticsRequestSchema = z.object({
+  type: z.literal('GET_NUDGE_DIAGNOSTICS'),
+  tabId: z.number().optional(),
+});
+
+export const GetNudgeDiagnosticsResponseSchema = z.object({
+  type: z.literal('NUDGE_DIAGNOSTICS'),
+  latestDecision: NudgeDecisionRecordSchema.nullable(),
+  recentDecisions: z.array(NudgeDecisionRecordSchema),
+  activeThresholds: z.record(z.string(), z.number()),
+  sensitivity: z.string(),
+  nudgeAfterMinutes: z.number(),
+  whyNoNudgeReason: z.string(),
+  lastSignalAgeSec: z.number().nullable(),
+});
+
 export const GetPopupStateRequestSchema = z.object({
   type: z.literal('GET_POPUP_STATE'),
 });
@@ -399,6 +449,7 @@ export const GetPopupStateResponseSchema = z.object({
   isAllowedSite: z.boolean().optional(),
   isSingleUseActive: z.boolean().optional(),
   contentType: z.string().optional(),
+  whyNoNudgeReason: z.string().optional(),
 });
 
 export const GetLocalMetricsRequestSchema = z.object({
@@ -459,6 +510,8 @@ export const BusRequestSchema = z.discriminatedUnion('type', [
   RevokeOriginRequestSchema,
   ToggleOriginPauseRequestSchema,
   UpdateSitePrivacyRequestSchema,
+  OpenSidePanelRequestSchema,
+  GetNudgeDiagnosticsRequestSchema,
 ]);
 
 /**

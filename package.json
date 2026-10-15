@@ -1,11 +1,12 @@
 {  
   "name": "unstuck",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",
+    "build:dev": "wxt build --mode development",
     "zip": "wxt zip",
     "compile": "tsc --noEmit",
     "test": "vitest run",

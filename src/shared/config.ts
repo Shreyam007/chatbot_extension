@@ -3,7 +3,7 @@
  */
 
 export const APP_NAME = 'Unstuck';
-export const APP_VERSION = '1.0.4';
+export const APP_VERSION = '1.0.5';
 
 /**
  * Gemini AI Model Configuration (Official active IDs from ai.google.dev)
@@ -100,5 +100,7 @@ export const DEFAULT_SETTINGS = {
   model: DEFAULT_AI_MODEL,
   includeCodeConsent: false,
   demoMode: false,
+  nudgeAfterMinutes: 8,
+  lowQuotaMode: true,
 };
 

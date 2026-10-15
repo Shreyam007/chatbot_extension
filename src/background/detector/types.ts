@@ -8,6 +8,7 @@ export interface DetectorWeights {
   weightActiveDwell: number;
   weightScrollReversals: number;
   weightTabSwitchRate: number;
+  weightTimeWithoutProgress: number;
 }
 
 export interface DetectorThresholds {
@@ -37,12 +38,18 @@ export interface FeatureContributions {
   wrongSubmissions: number;
   scrollReversals: number;
   tabSwitches: number;
+  timeWithoutProgress?: number;
 }
 
 export interface DetectorOptions {
   sensitivity?: SensitivityLevel;
   previousP?: number;
   config?: Partial<DetectorConfig>;
+  contentType?: 'problem' | 'article' | 'documentation' | 'general';
+  isProblemPage?: boolean;
+  nudgeAfterMinutes?: number;
+  demoMode?: boolean;
+  timeWithoutProgressMinutes?: number;
 }
 
 export type { SignalWindow, StuckEstimate, StuckState };

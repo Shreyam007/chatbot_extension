@@ -176,6 +176,8 @@ export const leetcodeAdapter: PageAdapter = {
       title,
       difficulty,
       statementText,
+      statementLength: statementText.length,
+      adapterName: 'leetcode',
       tags,
       isContest,
       detectedAt: Date.now(),

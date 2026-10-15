@@ -5,7 +5,6 @@ import { registerBackgroundRouter, broadcastEvent } from '../shared/messaging';
 import { testGeminiApiKey } from './api-test';
 import { DEFAULT_ONBOARDING_STATE, type OnboardingState } from '../shared/schemas/onboarding';
 import type { PageContext } from '../shared/schemas/context';
-import type { SignalWindow } from '../shared/schemas/signals';
 import {
   exportAllData,
   deleteAllData,
@@ -36,7 +35,6 @@ import {
   scheduleCooldownAlarm,
   registerAlarmListeners,
   createContextBucket,
-  type PlannerState,
 } from './planner';
 import { GeminiClient } from './llm';
 import { runAgentGraph } from './graph';
@@ -49,20 +47,26 @@ import {
   normalizeOriginPattern,
   extractOriginFromUrl,
 } from '../shared/permissions';
+import {
+  getTabState,
+  setTabState,
+  removeTabState,
+  getActiveTabState,
+  getPlannerState,
+  savePlannerState,
+  rehydrateSessionState,
+} from './tab-state';
+import {
+  recordNudgeDecision,
+  getNudgeDecisionsHistory,
+  clearNudgeDecisionsHistory,
+  formatWhyNoNudgeReason,
+} from './planner/diagnostics';
+import { LlmError } from './llm/errors';
+import { clearResponseCache } from './llm/response-cache';
 
 const logger = createLogger('ServiceWorker');
 
-const plannerState: PlannerState = {
-  recentNudges: [],
-  lastNudgeTime: 0,
-  snoozeUntil: 0,
-  blockedSites: [],
-  sessionHistories: {},
-};
-
-let latestPageContext: PageContext | null = null;
-let latestSignals: SignalWindow | null = null;
-let latestPStuck: number = 0;
 let isTutorPaused: boolean = false;
 const recentTraces: AgentRunTrace[] = [];
 const singleUseTabs = new Set<number>();
@@ -70,11 +74,19 @@ const singleUseTabs = new Set<number>();
 export function initBackground() {
   logger.info(`Background orchestrator initialized (v${APP_VERSION})`);
 
+  // Rehydrate per-tab context, signals, and planner state (EC-004 / Task D.2)
+  rehydrateSessionState().catch((err) => logger.debug('Error rehydrating session state:', err));
+
   chrome.runtime.onInstalled.addListener((details) => {
     logger.info(`Extension installed/updated:`, details.reason);
     if (details.reason === 'install') {
       chrome.runtime.openOptionsPage?.();
     }
+  });
+
+  // Clean up tab state when tab closes (EC-007 / Task D.2)
+  chrome.tabs?.onRemoved?.addListener((tabId) => {
+    removeTabState(tabId).catch((err) => logger.debug('Error cleaning up tab state:', err));
   });
 
   registerAlarmListeners();
@@ -93,11 +105,13 @@ export function initBackground() {
       const stored = await chrome.storage?.local?.get(['settings', 'onboarding_state', 'apiKey']);
       const settings = stored?.settings || DEFAULT_SETTINGS;
       const apiKey = stored?.apiKey || '';
+      const { state: activeTabState } = await getActiveTabState();
+      const context = activeTabState?.context;
       return {
         type: 'STATUS',
         status: {
-          isSupportedSite: Boolean(latestPageContext && latestPageContext.site !== 'generic'),
-          isContest: Boolean(latestPageContext?.isContest),
+          isSupportedSite: Boolean(context && context.site !== 'generic'),
+          isContest: Boolean(context?.isContest),
           trackingActive: Boolean(settings.trackingEnabled),
           hasApiKey: Boolean(apiKey && apiKey.length > 0),
           selectedModel: settings.model || DEFAULT_AI_MODEL,
@@ -144,21 +158,57 @@ export function initBackground() {
         success: cancelled,
       };
     },
+    OPEN_SIDE_PANEL: async (_req, sender) => {
+      let tabId = sender?.tab?.id;
+      if (!tabId) {
+        const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
+        tabId = tabs?.[0]?.id;
+      }
+
+      if (!tabId) {
+        return { type: 'OPEN_SIDE_PANEL_RESULT', ok: false, error: 'No active tab ID available' };
+      }
+
+      if (chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
+        try {
+          await chrome.sidePanel.open({ tabId });
+          return { type: 'OPEN_SIDE_PANEL_RESULT', ok: true };
+        } catch (err: unknown) {
+          logger.warn('Failed to open sidePanel:', err);
+          return {
+            type: 'OPEN_SIDE_PANEL_RESULT',
+            ok: false,
+            error: err instanceof Error ? err.message : String(err),
+          };
+        }
+      }
+      return {
+        type: 'OPEN_SIDE_PANEL_RESULT',
+        ok: false,
+        error: 'chrome.sidePanel is not supported in this browser',
+      };
+    },
     REQUEST_HINT: async (req, sender) => {
-      const tabId = sender?.tab?.id;
+      let tabId = sender?.tab?.id;
+      if (!tabId) {
+        const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
+        tabId = tabs?.[0]?.id;
+      }
+
       const stored = await chrome.storage?.local?.get(['settings']);
       const settings = stored?.settings || DEFAULT_SETTINGS;
       const model = settings.model || DEFAULT_AI_MODEL;
 
-      const pageContext = latestPageContext ?? {
-        url: req.problemHash,
-        title: req.problemHash,
-        site: req.problemHash.includes('codeforces') ? ('codeforces' as const) : ('leetcode' as const),
-        statementText: `Problem reference: ${req.problemHash}`,
-        tags: [],
-        isContest: false,
-        detectedAt: Date.now(),
-      };
+      const tabState = tabId ? await getTabState(tabId) : undefined;
+      const pageContext = tabState?.context;
+
+      if (!pageContext || !pageContext.statementText || pageContext.statementText.trim().length === 0) {
+        throw new LlmError(
+          'NO_PAGE_CONTEXT',
+          'No problem statement detected on this page. Please select text or use whole page.',
+          { s13Screen: 'S14.1' }
+        );
+      }
 
       let targetLevel = req.level;
       if (!targetLevel) {
@@ -173,6 +223,7 @@ export function initBackground() {
         tabId,
         userQuery: req.userQuery,
         requestId: req.requestId,
+        lowQuotaMode: settings.lowQuotaMode ?? true,
       });
 
       recentTraces.unshift(result.trace);
@@ -231,17 +282,23 @@ export function initBackground() {
       };
     },
     REPORT_SIGNALS: async (req, sender) => {
-      logger.debug('Received signals report for problem:', req.context.url);
-      latestPageContext = req.context;
-      latestSignals = req.signals;
+      const tabId = sender?.tab?.id;
+      logger.debug(`Received signals report for problem: ${req.context.url}`, { tabId });
 
       const stored = await chrome.storage?.local?.get(['settings']);
       const settings = stored?.settings || DEFAULT_SETTINGS;
       const estimate = estimateStuckState(req.signals, {
         sensitivity: settings.nudgeSensitivity || 'medium',
       });
-      latestPStuck = estimate.p;
       logger.debug(`Inferred state for ${req.context.url}: ${estimate.state} (p=${estimate.p})`);
+
+      if (tabId) {
+        await setTabState(tabId, {
+          context: req.context,
+          signals: req.signals,
+          pStuck: estimate.p,
+        });
+      }
 
       // Query bandit stats for current context bucket
       const bucketKey = createContextBucket(req.context.site, estimate.p);
@@ -249,6 +306,7 @@ export function initBackground() {
       const bucketStats = banditStatsRecord[bucketKey];
 
       // Evaluate planner decision
+      const plannerState = await getPlannerState();
       const decision = decideNudge(
         req.context,
         estimate,
@@ -260,6 +318,30 @@ export function initBackground() {
           demoMode: Boolean(settings.demoMode),
         }
       );
+
+      // Record diagnostic in ring buffer (sanitized, zero raw URLs, zero page text)
+      const activeDwellMinutes = (req.signals.activeMs || 0) / 60000;
+      const idleRatio = req.signals.dwellMs > 0 ? (req.signals.idleMs || 0) / req.signals.dwellMs : 0;
+      const tabSwitchRate = req.signals.dwellMs > 0 ? (req.signals.tabSwitches || 0) / (req.signals.dwellMs / 60000) : 0;
+      await recordNudgeDecision({
+        timestamp: Date.now(),
+        tabId,
+        site: req.context.site,
+        state: estimate.state,
+        pStuck: estimate.p,
+        features: {
+          activeDwellMinutes,
+          wrongSubmissions: req.signals.wrongSubmissions || 0,
+          scrollReversals: req.signals.scrollReversals || 0,
+          tabSwitchRate,
+          idleRatio,
+        },
+        gateBlockedReason: decision.show ? 'shown' : decision.reason,
+        banditAction: decision.show ? 'show_nudge' : 'wait',
+        signalsArrived: true,
+        lastSignalAgeSec: 0,
+        timeWithoutProgressMin: (req.signals.activeMs || 0) / 60000,
+      });
 
       if (decision.show) {
         logger.info(`Nudge decision approved for ${req.context.url}: ${decision.reason}`);
@@ -279,6 +361,8 @@ export function initBackground() {
         }
         history.nudgeCount++;
         history.lastNudgeTime = now;
+
+        await savePlannerState(plannerState);
 
         scheduleCooldownAlarm(settings.cooldownMin || 15);
         broadcastEvent({
@@ -308,8 +392,10 @@ export function initBackground() {
       await recordBanditFeedback(req.contextBucket, req.action);
 
       if (req.action === 'block_site' && req.site) {
+        const plannerState = await getPlannerState();
         if (!plannerState.blockedSites.includes(req.site)) {
           plannerState.blockedSites.push(req.site);
+          await savePlannerState(plannerState);
         }
       }
 
@@ -328,47 +414,25 @@ export function initBackground() {
       };
     },
     GET_PROBLEM_CONTEXT: async (_req) => {
-      let context = latestPageContext;
-      if (!context && typeof chrome !== 'undefined' && chrome.tabs?.query) {
+      const { tabId, state: activeTabState } = await getActiveTabState();
+      let context = activeTabState?.context ?? null;
+      const signals = activeTabState?.signals ?? null;
+      const pStuck = activeTabState?.pStuck ?? 0;
+
+      if (!context && tabId && typeof chrome !== 'undefined' && chrome.tabs?.sendMessage) {
         try {
-          const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          if (activeTab?.id && activeTab.url) {
-            // Try querying the active tab content script directly
-            const tabRes = await new Promise<{ ok: boolean; context: PageContext | null }>((resolve) => {
-              chrome.tabs.sendMessage(activeTab.id!, { type: 'GET_PAGE_CONTEXT' }, (res) => {
-                if (chrome.runtime?.lastError || !res) {
-                  resolve({ ok: false, context: null });
-                } else {
-                  resolve(res);
-                }
-              });
-            });
-            if (tabRes?.context) {
-              context = tabRes.context;
-              latestPageContext = context;
-            } else if (activeTab.url.includes('leetcode.com/problems/')) {
-              // Construct immediate valid context from URL slug
-              const slugMatch = activeTab.url.match(/\/problems\/([^/]+)/);
-              const slug = slugMatch ? slugMatch[1] : '';
-              if (slug) {
-                const formattedTitle = slug
-                  .split('-')
-                  .filter(Boolean)
-                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                  .join(' ');
-                const isContest = activeTab.url.includes('/contest/');
-                context = {
-                  url: `leetcode:${slug.toLowerCase()}`,
-                  site: 'leetcode',
-                  title: formattedTitle,
-                  statementText: `Problem: ${formattedTitle} (LeetCode).`,
-                  tags: [],
-                  isContest,
-                  detectedAt: Date.now(),
-                };
-                latestPageContext = context;
+          const tabRes = await new Promise<{ ok: boolean; context: PageContext | null }>((resolve) => {
+            chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_CONTEXT' }, (res) => {
+              if (chrome.runtime?.lastError || !res) {
+                resolve({ ok: false, context: null });
+              } else {
+                resolve(res);
               }
-            }
+            });
+          });
+          if (tabRes?.context) {
+            context = tabRes.context;
+            await setTabState(tabId, { context });
           }
         } catch (err) {
           logger.debug('Active tab context lookup error:', err);
@@ -378,8 +442,8 @@ export function initBackground() {
       return {
         type: 'PROBLEM_CONTEXT',
         context,
-        signals: latestSignals,
-        pStuck: latestPStuck,
+        signals,
+        pStuck,
         isContest: context?.isContest ?? false,
         isPaused: isTutorPaused,
       };
@@ -392,26 +456,48 @@ export function initBackground() {
       };
     },
     SUBMIT_CHAT_QUERY: async (req, sender) => {
-      const tabId = sender?.tab?.id;
+      let tabId = sender?.tab?.id;
+      if (!tabId) {
+        const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
+        tabId = tabs?.[0]?.id;
+      }
+
       const stored = await chrome.storage?.local?.get(['settings']);
       const settings = stored?.settings || DEFAULT_SETTINGS;
       const model = settings.model || DEFAULT_AI_MODEL;
 
-      const pageContext = latestPageContext ?? {
-        url: req.problemHash,
-        title: req.problemHash,
-        site: req.problemHash.includes('codeforces') ? ('codeforces' as const) : ('leetcode' as const),
-        statementText: `Problem reference: ${req.problemHash}`,
-        tags: [],
-        isContest: false,
-        detectedAt: Date.now(),
-      };
+      const isStandalone = req.mode === 'standalone' || req.mode === 'no_page';
+      let pageContext: PageContext;
+
+      if (isStandalone) {
+        pageContext = {
+          url: 'about:blank#standalone',
+          title: 'General Coding Assistant',
+          site: 'generic',
+          statementText: 'Standalone coding query. No page context required.',
+          tags: [],
+          isContest: false,
+          detectedAt: Date.now(),
+        };
+      } else {
+        const tabState = tabId ? await getTabState(tabId) : undefined;
+        const ctx = tabState?.context;
+        if (!ctx || !ctx.statementText || ctx.statementText.trim().length === 0) {
+          throw new LlmError(
+            'NO_PAGE_CONTEXT',
+            'No problem statement detected on this page. Please select text or use whole page.',
+            { s13Screen: 'S14.1' }
+          );
+        }
+        pageContext = ctx;
+      }
 
       const result = await runAgentGraph(pageContext, req.level ?? 1, {
         model,
         tabId,
         userQuery: req.query,
         requestId: req.requestId,
+        lowQuotaMode: settings.lowQuotaMode ?? true,
       });
 
       recentTraces.unshift(result.trace);
@@ -419,7 +505,6 @@ export function initBackground() {
         recentTraces.pop();
       }
 
-      const criticEval = result.trace.criticEvaluations[0];
       const isCriticApproved = Boolean(
         result.hint.checks?.leak === false &&
         result.hint.checks?.grounded === true &&
@@ -433,7 +518,45 @@ export function initBackground() {
         confidence: result.hint.confidence,
         codeBlock: result.hint.codeBlock,
         criticChecked: isCriticApproved,
-        answerable_from_page: (criticEval as unknown as { answerable_from_page?: boolean })?.answerable_from_page ?? true,
+        answerable_from_page: result.candidateHint?.answerable_from_page ?? true,
+      };
+    },
+    GET_NUDGE_DIAGNOSTICS: async (req, sender) => {
+      let targetTabId = req.tabId ?? sender?.tab?.id;
+      if (!targetTabId) {
+        const { tabId } = await getActiveTabState();
+        targetTabId = tabId;
+      }
+      const history = await getNudgeDecisionsHistory();
+      const latestDecision = history.find((h) => !targetTabId || h.tabId === targetTabId) || history[0] || null;
+
+      const stored = await chrome.storage?.local?.get(['settings']);
+      const settings = stored?.settings || DEFAULT_SETTINGS;
+      const sensitivity = settings.nudgeSensitivity || 'medium';
+      const thresholds: Record<string, number> = {
+        low: 0.75,
+        medium: 0.60,
+        high: 0.45,
+      };
+      const activeThreshold = thresholds[sensitivity] ?? 0.60;
+
+      let lastSignalAgeSec: number | null = null;
+      if (latestDecision) {
+        lastSignalAgeSec = Math.max(0, (Date.now() - latestDecision.timestamp) / 1000);
+        latestDecision.lastSignalAgeSec = lastSignalAgeSec;
+      }
+
+      const whyNoNudgeReason = formatWhyNoNudgeReason(latestDecision, activeThreshold);
+
+      return {
+        type: 'NUDGE_DIAGNOSTICS',
+        latestDecision,
+        recentDecisions: history.slice(0, 10),
+        activeThresholds: thresholds,
+        sensitivity,
+        nudgeAfterMinutes: settings.nudgeAfterMinutes ?? 8,
+        whyNoNudgeReason,
+        lastSignalAgeSec,
       };
     },
     GET_RUN_TRACES: async (_req) => {
@@ -503,12 +626,14 @@ export function initBackground() {
       });
 
       // Update BKT mastery for problem topics
-      const isArticleOrDoc = latestPageContext?.contentType && latestPageContext.contentType !== 'problem';
+      const { state: activeTabState } = await getActiveTabState();
+      const pageContext = activeTabState?.context;
+      const isArticleOrDoc = pageContext?.contentType && pageContext.contentType !== 'problem';
       const topics =
         req.topics && req.topics.length > 0
           ? req.topics
-          : latestPageContext?.tags && latestPageContext.tags.length > 0
-          ? latestPageContext.tags
+          : pageContext?.tags && pageContext.tags.length > 0
+          ? pageContext.tags
           : isArticleOrDoc
           ? [] // Skip updating mastery for generic articles with no clear programming topics
           : ['Arrays & Hashing'];
@@ -565,11 +690,13 @@ export function initBackground() {
       const success = await executeScriptOnTabOnce(tabId);
 
       // Attempt immediate context fetch from newly injected tab
+      let injectedContext: PageContext | null = null;
       if (success) {
         try {
           const resp = await chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_CONTEXT' });
           if (resp?.context) {
-            latestPageContext = resp.context;
+            injectedContext = resp.context;
+            await setTabState(tabId, { context: injectedContext });
           }
         } catch {
           // May take a tick to mount
@@ -579,7 +706,7 @@ export function initBackground() {
       return {
         type: 'SITE_ENABLED_ONCE',
         success,
-        context: latestPageContext,
+        context: injectedContext,
       };
     },
     ALWAYS_ALLOW_ORIGIN: async (req) => {
@@ -723,7 +850,9 @@ export function initBackground() {
     },
     SET_SNOOZE: async (req) => {
       const until = Date.now() + req.durationMinutes * 60 * 1000;
+      const plannerState = await getPlannerState();
       plannerState.snoozeUntil = until;
+      await savePlannerState(plannerState);
       logger.info(`Snooze set until ${new Date(until).toISOString()} (${req.durationMinutes} min)`);
       return {
         type: 'SNOOZE_SET',
@@ -731,8 +860,10 @@ export function initBackground() {
       };
     },
     BLOCK_SITE: async (req) => {
+      const plannerState = await getPlannerState();
       if (!plannerState.blockedSites.includes(req.domain)) {
         plannerState.blockedSites.push(req.domain);
+        await savePlannerState(plannerState);
       }
       const stored = await chrome.storage?.local?.get(['settings']);
       const settings = stored?.settings || DEFAULT_SETTINGS;
@@ -751,18 +882,17 @@ export function initBackground() {
     GET_POPUP_STATE: async () => {
       const stored = await chrome.storage?.local?.get(['settings']);
       const settings = stored?.settings || DEFAULT_SETTINGS;
-      let activeUrl = latestPageContext?.url || '';
-      let domain = latestPageContext ? new URL(latestPageContext.url).hostname : 'leetcode.com';
+      const { tabId: activeTabId, state: activeTabState } = await getActiveTabState();
+      const pageContext = activeTabState?.context;
+
+      let activeUrl = pageContext?.url || '';
+      let domain = pageContext ? (pageContext.site === 'generic' ? new URL(pageContext.url).hostname : pageContext.site + '.com') : 'leetcode.com';
       let isRestricted = false;
-      let activeTabId: number | undefined;
-      const tabTitle = latestPageContext?.title || '';
+      const tabTitle = pageContext?.title || '';
 
       try {
         const tabs = (await chrome.tabs?.query({ active: true, currentWindow: true })) || [];
         const activeTab = tabs[0];
-        if (activeTab?.id) {
-          activeTabId = activeTab.id;
-        }
         if (activeTab?.url) {
           activeUrl = activeTab.url;
           try {
@@ -787,6 +917,7 @@ export function initBackground() {
         logger.debug('Error querying active tab for popup state', err);
       }
 
+      const plannerState = await getPlannerState();
       const now = Date.now();
       const isSnoozed = plannerState.snoozeUntil > now;
       const isPaused = isTutorPaused || isSnoozed;
@@ -802,7 +933,7 @@ export function initBackground() {
 
       let variant: 'active' | 'paused' | 'unsupported' | 'contest' = 'active';
 
-      if (latestPageContext?.isContest) {
+      if (pageContext?.isContest) {
         variant = 'contest';
       } else if (isPaused) {
         variant = 'paused';
@@ -833,10 +964,17 @@ export function initBackground() {
       const hintsUsedCount = metrics.totalHintsDelivered;
 
       // Clean problemTitle: never hardcode 'Two Sum'
-      let cleanProblemTitle = latestPageContext?.title;
+      let cleanProblemTitle = pageContext?.title;
       if (!cleanProblemTitle && tabTitle && !tabTitle.includes('LeetCode')) {
         cleanProblemTitle = tabTitle;
       }
+
+      // Compute whyNoNudgeReason for popup display
+      const history = await getNudgeDecisionsHistory();
+      const latestDecision = history.find((h) => !activeTabId || h.tabId === activeTabId) || history[0] || null;
+      const sensitivity = settings.nudgeSensitivity || 'medium';
+      const thresholds: Record<string, number> = { low: 0.75, medium: 0.60, high: 0.45 };
+      const whyNoNudgeReason = formatWhyNoNudgeReason(latestDecision, thresholds[sensitivity] ?? 0.60);
 
       return {
         type: 'POPUP_STATE',
@@ -844,8 +982,8 @@ export function initBackground() {
         siteDomain: domain,
         url: activeUrl,
         problemTitle: cleanProblemTitle,
-        problemUrl: latestPageContext?.url || activeUrl,
-        isContest: latestPageContext?.isContest || false,
+        problemUrl: pageContext?.url || activeUrl,
+        isContest: pageContext?.isContest || false,
         isPaused,
         isSnoozed,
         pauseRemainingMs,
@@ -860,16 +998,21 @@ export function initBackground() {
         canEnable,
         isAllowedSite,
         isSingleUseActive,
-        contentType: latestPageContext?.contentType || 'article',
+        contentType: pageContext?.contentType || 'article',
+        whyNoNudgeReason,
       };
     },
     DELETE_ALL_DATA: async (_req) => {
       await deleteAllData();
-      plannerState.recentNudges = [];
-      plannerState.lastNudgeTime = 0;
-      plannerState.snoozeUntil = 0;
-      plannerState.blockedSites = [];
-      plannerState.sessionHistories = {};
+      clearResponseCache();
+      await clearNudgeDecisionsHistory();
+      await savePlannerState({
+        recentNudges: [],
+        lastNudgeTime: 0,
+        snoozeUntil: 0,
+        blockedSites: [],
+        sessionHistories: {},
+      });
       return {
         type: 'DELETE_ALL_DATA_RESULT',
         success: true,

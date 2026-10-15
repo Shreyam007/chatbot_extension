@@ -667,7 +667,35 @@ Testing Manifest V3 extensions requires native Chromium execution with the exten
 8. **SPA Navigation:** Switching problems on LeetCode/Codeforces resets dwell signals and active hints while preserving prior conversation history in local storage.
 9. **Chaos Resilience:** Killing the background service worker mid-session tests instant state rehydration from `chrome.storage.session` and IndexedDB.
 10. **Multi-Tab Isolation:** Independent problem tabs maintain segregated signal windows, in-flight hint requests, and UI state without cross-talk.
-11. **Packaged Smoke Test:** Automated test extracts `.output/unstuck-1.0.0-chrome.zip` to a temporary directory and loads it into Chromium to verify that the release package boots all entry points cleanly.
+11. **Packaged Smoke Test:** Automated test extracts `.output/unstuck-1.0.5-chrome.zip` to a temporary directory and loads it into Chromium to verify that the release package boots all entry points cleanly.
+
+---
+
+## 16. Stabilization Architecture & Free-Tier Resilience (v1.0.5)
+
+### 1. Per-Tab Isolation & Session State Rehydration (`tab-state.ts`)
+- **Memory + Session Storage:** Per-tab contexts, signals, and inferred $P(\text{stuck})$ are stored in a memory `Map<number, TabState>` backed by `chrome.storage.session`.
+- **Worker Sleep Resilience (EC-004):** When the Manifest V3 background service worker terminates after 30 seconds of inactivity, `rehydrateSessionState()` instantly rehydrates tab states and planner state (`recentNudges`, `snoozeUntil`, `sessionHistories`) on wakeup.
+- **Tab Lifecycle Cleanup (EC-007):** `chrome.tabs.onRemoved` deletes the closed tab's memory and session storage slice, preventing state leaks across tabs.
+- **Zero Fabricated Contexts:** Removes all synthetic fallback statements (e.g. `Problem reference: ...`). Queries content scripts directly; returns `context: null` if not found.
+
+### 2. Sanitized Diagnostics Ring Buffer (`src/background/planner/diagnostics.ts`)
+- **50-Entry Session Ring Buffer:** Records each nudge evaluation decision in `chrome.storage.session` under `nudge_decisions_ring_buffer`.
+- **Zero Leaks Privacy:** Stores only domain/site hashes and numeric signal features (dwell minutes, wrong submissions, scroll reversals, tab switch rates). Raw URLs and extracted statement texts are strictly omitted.
+- **Explainability API:** `formatWhyNoNudgeReason()` translates raw gate and bandit decisions into human-friendly explanations for the popup (e.g., *"Bandit pacing"*, *"Contest mode active"*, *"Cooldown active (120s remaining)"*).
+
+### 3. Smooth Time-Without-Progress Ramp
+Replaces flat static caps with a smooth hyperbolic tangent ramp on problem pages once dwell time reaches $N_{\text{eff}}$ (`nudgeAfterMinutes`, default 8 min; 20s in demo mode):
+$$P(\text{stuck}) = P_0 + (1 - P_0) \cdot \tanh\left(\frac{t - N_{\text{eff}}}{\tau}\right)$$
+- Guarantees gentle stuck nudges after prolonged inactivity even with zero wrong submissions.
+- Preserves the EC-040 reading-carefully cap on articles and documentation pages.
+
+### 4. Free-Tier Quota & Rate Limiter (`src/background/llm/`)
+- **Header Authentication:** Passes API keys via `'x-goog-api-key'` HTTP headers instead of query parameters (preventing proxy and log exposure).
+- **Thinking Budget:** Sets `thinkingConfig: { thinkingBudget: 0 }` for Flash models, preventing internal reasoning tokens from inflating response time and quota usage.
+- **Token Bucket Rate Limiter (`rate-limiter.ts`):** Enforces a conservative 10 RPM token bucket (below the 15 RPM free-tier threshold). Burst calls are queued smoothly.
+- **Session Response Cache (`response-cache.ts`):** 15-minute TTL in-memory cache keyed by model, mode, target level, and user query. Identical requests return cached hints with zero additional LLM consumption.
+- **Low-Quota Mode:** Kept ON by default in Settings, capping the multi-agent graph to max 2 LLM calls per hint and skipping redundant LLM critic judges when deterministic leak and substring grounding checks pass.
 
 
 

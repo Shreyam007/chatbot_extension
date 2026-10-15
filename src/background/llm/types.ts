@@ -11,8 +11,21 @@ export type LlmErrorCode =
   | 'SERVER_ERROR'
   | 'SAFETY_BLOCKED'
   | 'MALFORMED_JSON'
+  | 'TRUNCATED_OUTPUT'
+  | 'NO_PAGE_CONTEXT'
   | 'ABORTED'
   | 'UNKNOWN';
+
+export type QuotaKind = 'per_minute' | 'per_day' | 'unknown';
+
+export interface Parsed429Details {
+  kind: QuotaKind;
+  retryAfterSeconds?: number;
+  retryAfterMs?: number;
+  quotaMetric?: string;
+  model?: string;
+  isEstimate?: boolean;
+}
 
 export type S13ScreenTarget =
   | 'S13.1' // Missing or invalid key
@@ -20,6 +33,7 @@ export type S13ScreenTarget =
   | 'S13.3' // Rate limit with Retry-After countdown
   | 'S13.4' // Server error or timeout
   | 'S13.5' // Restricted or safety blocked
+  | 'S14.1' // No page context
   | 'NONE';
 
 export interface TokenUsage {

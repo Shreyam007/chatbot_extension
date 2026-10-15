@@ -231,7 +231,9 @@ Before presenting the viva, create and verify a backup screen recording followin
 3. **Guardrail Enforceability:** We can enforce deterministic hard constraints (e.g. clamping $p \le 0.40$ during careful reading, or $p \le 0.45$ during example comparison) that are impossible to guarantee in deep black-box networks.
 
 #### Q20: How does the detector distinguish between "stuck" and "reading carefully"?
-**Answer:** The "Reading Carefully Protection" rule (EC-040) enforces that when wrong submissions $W = 0$ and scroll reversals $R \le 1$, $p_{\text{stuck}}$ is strictly capped at $\le 0.40$, regardless of how long the user dwells on the statement. Similarly, the "Distracted" classifier detects rapid tab switching ($\ge 4$ switches/min) with low active dwell ($< 45$s) and classifies the state as distracted rather than stuck.
+**Answer:** The "Reading Carefully Protection" rule (EC-040) enforces that when wrong submissions $W = 0$ and scroll reversals $R \le 1$, $p_{\text{stuck}}$ is strictly capped at $\le 0.40$ during the initial phase ($t < N_{\text{eff}}$ minutes). However, in v1.0.5, to prevent learners from being indefinitely neglected while thinking quietly on hard problems (S3), once active dwell without progress exceeds $N_{\text{eff}}$ (default 8 minutes; 20 seconds in Demo Mode), the model transitions through a smooth hyperbolic tangent ramp:
+$$P(\text{stuck}) = P_0 + (1 - P_0) \tanh\left(\frac{t - N_{\text{eff}}}{\tau}\right)$$
+This smoothly elevates $P(\text{stuck})$ past the threshold ($0.60$) and presents a soft, supportive nudge (*"You've been on this one a while. Want a hint?"*). On documentation and article pages, the hard 0.40 cap remains permanent. Similarly, the "Distracted" classifier detects rapid tab switching ($\ge 4$ switches/min) with low active dwell ($< 45$s) and classifies the state as distracted rather than stuck.
 
 #### Q21: How does the Contextual Bandit decide whether to show a nudge?
 **Answer:** It uses an expected utility formulation:
@@ -269,7 +271,10 @@ If $U(s) < 0.50$, the planner suppresses the nudge. If $U(s) \ge 0.50$, it queri
 **Answer:** The adapter checks the URL pathname for `/contest/` (LeetCode) or active contest rounds (Codeforces). When a contest is detected, the extension engages a hard fair-play lock (EC-100): all signal collection, background planners, nudge overlays, and hint requests are completely disabled. The Side Panel and Toolbar Popup render the locked shield view (S14.2 / Variant 4).
 
 #### Q30: How does Unstuck handle Google Gemini HTTP 429 rate limits?
-**Answer:** When Gemini returns HTTP 429 (`ResourceExhausted`), our LLM client inspects the `Retry-After` header. It maps this to the `RATE_LIMITED` error code (S13.3) and passes the duration to the UI, which displays an active countdown timer. When the countdown reaches zero, the action button re-enables automatically.
+**Answer:** When Gemini returns HTTP 429 (`RESOURCE_EXHAUSTED`), our LLM client parses the response headers (`Retry-After`) and response body (`RetryInfo.retryDelay` and Google RPC `QuotaFailure` violations). It classifies the event into `per_minute` (RPM burst) or `per_day` (RPD quota exhaustion):
+- For `per_minute`: The UI presents an active countdown holding timer that never shows "0s remaining" while the quota window is closed.
+- For `per_day`: The UI displays 'Daily Quota Exhausted', completely hides the futile auto-retry button, and directs the user to 'Switch model' (e.g., Flash 1.5) or 'Check usage in Google AI Studio'.
+Furthermore, client-side requests are paced through a 10 RPM token bucket and deduplicated by request hash to prevent accidental bursts.
 
 #### Q31: How do React Error Boundaries ensure fault isolation?
 **Answer:** Every major tab and panel is wrapped in an independent `ErrorBoundary`. If an uncaught rendering error occurs in the Trace tab's SVG canvas, only that tab displays a fallback error card; the Hints and Chat tabs continue functioning normally without unmounting the root application.
@@ -316,6 +321,57 @@ Furthermore, BKT mastery updates are skipped for generic reading material, and p
 
 #### Q37: How does the "What will be sent to the AI" preview modal preserve user transparency?
 **Answer:** Before sending extracted generic page text to the Gemini API, the side panel presents an expandable preview modal displaying the exact character count, title, and sanitized text excerpt. The user can review, manually edit or trim the text, toggle "Include page text" off for the current query, or select "Never send page text from this site" to persist a permanent privacy override.
+
+---
+
+### Category G: Production Stabilization, Quota Management & Signal Fidelity (v1.0.5)
+
+#### Q38: What caused symptom S1 (`[Unstuck][AgentGraph][ERROR] hint_generator execution failed [object Object]`), and how did v1.0.5 resolve it?
+**Answer:** Two root causes contributed to S1:
+1. `console.error` parameter coercion: Handled operational errors (HTTP 429, timeouts, offline states) were passed directly to `console.error` as error objects. In Chrome extension service workers, objects passed to `console.error` are stringified by the Chromium logging bridge as `[object Object]` and flagged in `chrome://extensions` as severe runtime crashes.
+2. In v1.0.5, we introduced `logger.operationalError` and `serializeLogData`. Handled operational failures are string-serialized into concise, single-line messages with zero raw secrets (e.g., `"[LlmError 429: RESOURCE_EXHAUSTED (per_minute)]"`) and routed to `console.warn` or `console.debug`. `console.error` is reserved exclusively for unhandled programming bugs and invariant violations.
+
+#### Q39: Why did the stuck detector previously fail to trigger on long idle or reading times (S3), and how does the smooth $\tanh$ time ramp fix it?
+**Answer:** Previously, the logistic model had a large negative intercept ($-1.80$). Without wrong submissions ($W = 0$) and scroll reversals ($R \le 1$), the logit remained low and a hard cap clamped $P(\text{stuck}) \le 0.40$. Even after 10–15 minutes of quiet thinking on LeetCode, $P(\text{stuck})$ hovered around $0.20$, far below the $0.60$ threshold.
+In v1.0.5, we replaced the flat cap with a time-without-progress hyperbolic tangent ramp:
+$$P(\text{stuck}) = P_0 + (1 - P_0) \tanh\left(\frac{t - N_{\text{eff}}}{\tau}\right)$$
+where $N_{\text{eff}} = \text{nudgeAfterMinutes}$ (default 8 minutes; 20 seconds in Demo Mode) and $\tau = 4.0$ minutes. For $t < N_{\text{eff}}$, careful reading is protected. For $t \ge N_{\text{eff}}$, $P(\text{stuck})$ rises smoothly toward threshold. When triggered primarily by time, the UI delivers softer copy: *"You've been on this one a while. Want a hint?"*. Furthermore, the Toolbar Popup features a "Why no nudge yet?" diagnostic status box explaining whether the system is cooling down, reading without struggle, or waiting for signals.
+
+#### Q40: How does v1.0.5 handle Gemini API free-tier rate limits and quota exhaustion (S4)?
+**Answer:** Previous versions treated all HTTP 429 errors identically, setting an arbitrary 3-second timer that showed "0s remaining" while the quota window remained closed. In v1.0.5, we built deep parser support for Google RPC `RetryInfo` and `QuotaFailure` violations:
+1. **Per-Minute Limits (`per_minute`):** The LLM client extracts `RetryInfo.retryDelay` or `Retry-After`. The UI displays an active holding countdown timer that never shows 0s while waiting, disabling retry until the window clears.
+2. **Per-Day Quota Exhaustion (`per_day`):** When the daily free-tier quota (1,500 RPD on Flash) is reached, auto-retry buttons are completely removed to prevent useless API pounding. The UI informs the user that daily quota resets at midnight Pacific Time and provides direct links to switch models or check usage in Google AI Studio.
+3. **Preventive Token Bucket:** All outbound calls pass through an in-memory 10 RPM token bucket rate limiter, preventing burst requests.
+4. **Session Response Cache:** Identical queries within a 15-minute window are served from an in-memory session cache, consuming 0 tokens.
+
+#### Q41: How does the Floating Action Button (FAB) open the Chrome Side Panel (S2), and how does it fall back?
+**Answer:** When the user clicks the FAB on a coding page:
+1. The content script sends a typed `OPEN_SIDE_PANEL` message to the background service worker.
+2. The service worker calls `chrome.sidePanel.open({ tabId })`.
+3. In browser environments where `chrome.sidePanel.open` requires direct top-level user gestures or is unsupported, the call rejects gracefully. The service worker catches this and returns `{ success: false, fallback: true }`.
+4. The content script receives the fallback signal and renders an accessible in-page tooltip popover directing the user to click the Unstuck icon in the Chrome toolbar.
+Additionally, the FAB supports keyboard activation (`Enter` / `Space`), right-click context menu options (Open Side Panel, Pause, Snooze 30m), and displays an active green dot only when a nudge is active or a hint is ready.
+
+#### Q42: What is `lowQuotaMode` and how does the two-stage Critic design reduce LLM token consumption by 60%?
+**Answer:** Under the original design, every hint request invoked the LLM generator followed by an LLM Critic judge, plus up to 3 retries, consuming 2 to 6 LLM calls per hint.
+In v1.0.5, `lowQuotaMode` (enabled by default) restructures the Critic into two strict stages:
+1. **Deterministic Guardrails First:** Zero-token regex leak detectors, level constraints, and problem statement substring quote grounding are evaluated locally in JavaScript.
+2. **Judge Bypass:** In `lowQuotaMode`, once all deterministic checks pass, the LLM Critic judge is skipped, labeling the hint as `Checked (basic)`. If deterministic checks fail, retries are budgeted and capped at 2 LLM calls maximum.
+This single optimization cuts per-hint token consumption by over 60%, drastically extending the student's free-tier daily quota.
+
+#### Q43: How does per-tab state management ensure isolation across multiple concurrent coding tabs while surviving Manifest V3 service worker termination?
+**Answer:** Previously, page contexts and signals were stored in module-level singletons in RAM, causing multi-tab cross-talk and data loss whenever the service worker suspended after 30 seconds of inactivity.
+In v1.0.5, we implemented `TabStateManager`:
+- Each tab maintains an isolated `TabState` record keyed by `tabId` containing its own `PageContext`, `SignalWindow`, `pStuck`, and timestamp.
+- Tab states are synchronized to `chrome.storage.session`. When the service worker reawakens on any runtime message, it immediately rehydrates state from session storage.
+- Closed tabs are cleanly evicted on `chrome.tabs.onRemoved`.
+- All background handlers (`REQUEST_HINT`, `GET_PROBLEM_CONTEXT`, `SUBMIT_CHAT_QUERY`) resolve state strictly for the requesting `tabId`, eliminating cross-tab contamination.
+
+#### Q44: Why did Gemini Flash models occasionally truncate output or fail with empty responses in structured generation (F5)?
+**Answer:** On `gemini-2.5-flash`, internal reasoning tokens are counted against the declared `maxOutputTokens` budget. When generating structured JSON, if the model spends reasoning tokens internally, it can exhaust the output token budget before finishing the JSON payload. This produced truncated or empty responses, which legacy code misclassified as `SAFETY_BLOCKED`.
+In v1.0.5:
+1. We pass `thinkingConfig: { thinkingBudget: 0 }` for structured generation, dedicating 100% of the token budget to the JSON response.
+2. We detect `MAX_TOKENS` finishReason as a typed `TRUNCATED_OUTPUT` error and perform a bounded retry with an expanded 4096-token budget.
 
 ---
 

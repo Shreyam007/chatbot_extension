@@ -33,6 +33,8 @@ export const SettingsSchema = z.object({
   model: z.string().min(1).default(DEFAULT_AI_MODEL),
   includeCodeConsent: z.boolean().default(false),
   demoMode: z.boolean().default(false),
+  nudgeAfterMinutes: z.number().min(2).max(30).default(8),
+  lowQuotaMode: z.boolean().default(true),
 });
 
 export type QuietHours = z.infer<typeof QuietHoursSchema>;

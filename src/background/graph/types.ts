@@ -38,6 +38,7 @@ export interface AgentRunTrace {
   isFallback: boolean;
   model: string;
   llmCallCount?: number;
+  lowQuotaMode?: boolean;
   promptTokens?: number;
   candidateTokens?: number;
   retrievedSections?: string[];
@@ -72,4 +73,6 @@ export interface AgentGraphOptions {
   history?: Hint[];
   mockCriticPass?: boolean;
   timeoutMs?: number;
+  lowQuotaMode?: boolean;
+  noPage?: boolean;
 }

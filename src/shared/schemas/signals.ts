@@ -20,6 +20,8 @@ export const StuckEstimateSchema = z.object({
   p: z.number().min(0).max(1),
   state: StuckStateSchema,
   contributions: z.record(z.string(), z.number()).default({}),
+  nudgeText: z.string().optional(),
+  isTimeOnlyTrigger: z.boolean().optional(),
 });
 
 export const NudgeDecisionSchema = z.object({
@@ -28,6 +30,7 @@ export const NudgeDecisionSchema = z.object({
   utility: z.number(),
   cost: z.number(),
   contextBucket: z.string(),
+  nudgeText: z.string().optional(),
 });
 
 export type SignalWindow = z.infer<typeof SignalWindowSchema>;

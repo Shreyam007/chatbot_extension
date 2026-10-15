@@ -1,5 +1,6 @@
 import { OVERLAY_STYLES } from './styles';
 import { createLogger } from '../../shared/logger';
+import { sendToBackground } from '../../shared/messaging';
 
 const logger = createLogger('OverlayHost');
 
@@ -22,7 +23,9 @@ export class OverlayHost {
   private cardElement: HTMLElement | null = null;
   private fabElement: HTMLElement | null = null;
   private snoozeMenuElement: HTMLElement | null = null;
+  private fabMenuElement: HTMLElement | null = null;
   private autoDismissTimer: number | null = null;
+  private popoverTimer: number | null = null;
   private isContest: boolean = false;
 
   private currentOptions: NudgeCardOptions | null = null;
@@ -167,19 +170,26 @@ export class OverlayHost {
 
       <!-- Compact 40px Circular FAB Beacon -->
       <div id="unstuck-fab-container" class="unstuck-fab-container" data-testid="unstuck-fab-beacon">
-        <button id="unstuck-fab" class="unstuck-fab" title="Open Unstuck AI Tutor" aria-label="Open Unstuck Tutor" tabindex="-1">
+        <button id="unstuck-fab" class="unstuck-fab" title="Unstuck AI Tutor (Click to open panel)" aria-label="Open Unstuck Tutor" tabindex="0">
           <span class="unstuck-fab-pulse"></span>
           <span class="unstuck-fab-dot"></span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
           </svg>
         </button>
+        <div id="unstuck-fab-popover" class="unstuck-fab-popover unstuck-hidden" role="tooltip"></div>
+        <div id="unstuck-fab-menu" class="unstuck-snooze-menu unstuck-hidden" style="bottom: 48px; right: 0;">
+          <button class="unstuck-snooze-item" data-action="fab-open-panel">Open panel</button>
+          <button class="unstuck-snooze-item" data-action="fab-pause-site">Pause on this site</button>
+          <button class="unstuck-snooze-item" data-action="fab-snooze-30">Snooze 30 min</button>
+        </div>
       </div>
     `;
 
     this.cardElement = this.shadowRoot.getElementById('unstuck-card');
     this.fabElement = this.shadowRoot.getElementById('unstuck-fab-container');
     this.snoozeMenuElement = this.shadowRoot.getElementById('unstuck-snooze-menu');
+    this.fabMenuElement = this.shadowRoot.getElementById('unstuck-fab-menu');
 
     const header = this.shadowRoot.getElementById('unstuck-header');
     const showHintBtn = this.shadowRoot.getElementById('unstuck-show-hint-btn');
@@ -222,18 +232,65 @@ export class OverlayHost {
       this.toggleSnoozeMenu();
     });
 
-    fabBtn?.addEventListener('click', () => {
+    // FAB activation: open side panel or expand active nudge (Task C)
+    let lastFabActivationTime = 0;
+    const handleFabActivation = async () => {
+      const now = Date.now();
+      if (now - lastFabActivationTime < 100) return;
+      lastFabActivationTime = now;
+
+      this.fabMenuElement?.classList.add('unstuck-hidden');
+      if (this.currentOptions && this.cardElement?.classList.contains('unstuck-hidden')) {
+        this.expandCard();
+        return;
+      }
       if (this.currentOptions?.onShowHint) {
         this.currentOptions.onShowHint();
+        return;
+      }
+
+      // No active nudge: open side panel via typed message (Task C.1)
+      try {
+        const res = await sendToBackground<{ type: string; ok?: boolean; error?: string }>({
+          type: 'OPEN_SIDE_PANEL',
+        });
+        if (!res?.ok) {
+          this.showFabPopover('Click the Unstuck toolbar icon to open the panel');
+        }
+      } catch (err) {
+        logger.debug('Failed to open side panel via message:', err);
+        this.showFabPopover('Click the Unstuck toolbar icon to open the panel');
+      }
+    };
+
+    fabBtn?.addEventListener('click', () => {
+      handleFabActivation();
+    });
+
+    fabBtn?.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleFabActivation();
       }
     });
 
-    // Snooze menu action handlers
+    // Right-click / contextmenu on FAB: show status options popover (Task C.2)
+    fabBtn?.addEventListener('contextmenu', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggleFabMenu();
+    });
+
+    // Snooze & FAB menu action handlers
     this.shadowRoot.querySelectorAll('.unstuck-snooze-item').forEach((item) => {
       item.addEventListener('mousedown', preventFocusLoss as EventListener);
       item.addEventListener('click', (e) => {
         const action = (e.currentTarget as HTMLElement).getAttribute('data-action');
-        this.handleSnoozeAction(action);
+        if (action?.startsWith('fab-')) {
+          this.handleFabMenuAction(action);
+        } else {
+          this.handleSnoozeAction(action);
+        }
       });
     });
   }
@@ -246,6 +303,57 @@ export class OverlayHost {
     } else {
       this.snoozeMenuElement.classList.add('unstuck-hidden');
     }
+  }
+
+  private toggleFabMenu(): void {
+    if (!this.fabMenuElement) return;
+    const isHidden = this.fabMenuElement.classList.contains('unstuck-hidden');
+    if (isHidden) {
+      this.fabMenuElement.classList.remove('unstuck-hidden');
+    } else {
+      this.fabMenuElement.classList.add('unstuck-hidden');
+    }
+  }
+
+  private handleFabMenuAction(action: string | null): void {
+    this.fabMenuElement?.classList.add('unstuck-hidden');
+    if (action === 'fab-open-panel') {
+      sendToBackground({ type: 'OPEN_SIDE_PANEL' }).catch(() => {
+        this.showFabPopover('Click the Unstuck toolbar icon to open the panel');
+      });
+    } else if (action === 'fab-pause-site') {
+      const hostname = window.location.hostname;
+      sendToBackground({ type: 'BLOCK_SITE', domain: hostname }).catch(() => {});
+      this.showFabPopover(`Paused on ${hostname}`);
+    } else if (action === 'fab-snooze-30') {
+      sendToBackground({ type: 'SET_SNOOZE', durationMinutes: 30 }).catch(() => {});
+      this.showFabPopover('Snoozed for 30 minutes');
+    }
+  }
+
+  public showFabPopover(text: string, durationMs = 4000): void {
+    const popover = this.shadowRoot?.getElementById('unstuck-fab-popover');
+    if (!popover) return;
+    popover.textContent = text;
+    popover.classList.remove('unstuck-hidden');
+    if (this.popoverTimer !== null) {
+      clearTimeout(this.popoverTimer);
+    }
+    this.popoverTimer = window.setTimeout(() => {
+      popover.classList.add('unstuck-hidden');
+      this.popoverTimer = null;
+    }, durationMs);
+  }
+
+  public expandCard(): void {
+    if (!this.currentOptions) return;
+    this.cardElement?.classList.remove('unstuck-hidden');
+    this.fabElement?.classList.add('unstuck-hidden');
+    this.fabMenuElement?.classList.add('unstuck-hidden');
+    this.clearAutoDismiss();
+    this.autoDismissTimer = window.setTimeout(() => {
+      this.autoDismiss();
+    }, 8000);
   }
 
   private handleSnoozeAction(action: string | null): void {
@@ -389,6 +497,8 @@ export class OverlayHost {
     this.cardElement?.classList.remove('unstuck-hidden');
     this.fabElement?.classList.add('unstuck-hidden');
     this.snoozeMenuElement?.classList.add('unstuck-hidden');
+    this.fabMenuElement?.classList.add('unstuck-hidden');
+    this.shadowRoot?.getElementById('unstuck-fab')?.classList.add('unstuck-has-nudge');
 
     this.clearAutoDismiss();
     // 8-second auto dismiss countdown
@@ -400,19 +510,25 @@ export class OverlayHost {
 
   public dismiss(): void {
     this.clearAutoDismiss();
+    const onDismiss = this.currentOptions?.onDismiss;
+    this.currentOptions = null;
+    this.shadowRoot?.getElementById('unstuck-fab')?.classList.remove('unstuck-has-nudge');
     this.collapseToFab();
-    if (this.currentOptions?.onDismiss) {
-      this.currentOptions.onDismiss();
+    if (onDismiss) {
+      onDismiss();
     }
   }
 
   public autoDismiss(): void {
     this.clearAutoDismiss();
+    const opts = this.currentOptions;
+    this.currentOptions = null;
+    this.shadowRoot?.getElementById('unstuck-fab')?.classList.remove('unstuck-has-nudge');
     this.collapseToFab();
-    if (this.currentOptions?.onIgnore) {
-      this.currentOptions.onIgnore();
-    } else if (this.currentOptions?.onDismiss) {
-      this.currentOptions.onDismiss();
+    if (opts?.onIgnore) {
+      opts.onIgnore();
+    } else if (opts?.onDismiss) {
+      opts.onDismiss();
     }
   }
 
@@ -455,6 +571,10 @@ export class OverlayHost {
 
   public destroy(): void {
     this.clearAutoDismiss();
+    if (this.popoverTimer !== null) {
+      clearTimeout(this.popoverTimer);
+      this.popoverTimer = null;
+    }
     window.removeEventListener('keydown', this.boundOnKeyDown);
     window.removeEventListener('pointermove', this.boundOnPointerMove);
     window.removeEventListener('pointerup', this.boundOnPointerUp);
@@ -466,5 +586,6 @@ export class OverlayHost {
     this.cardElement = null;
     this.fabElement = null;
     this.snoozeMenuElement = null;
+    this.fabMenuElement = null;
   }
 }

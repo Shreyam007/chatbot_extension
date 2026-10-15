@@ -11,6 +11,7 @@ import type {
   AgentGraphOptions,
   AgentRunTrace,
   TraceNodeTiming,
+  GeneratedHintCandidate,
 } from './types';
 import type { PageContext } from '../../shared/schemas/context';
 import type { Hint, HintLevel } from '../../shared/schemas/hints';
@@ -25,13 +26,16 @@ export async function runAgentGraph(
   context: PageContext,
   level: HintLevel,
   options: AgentGraphOptions = {}
-): Promise<{ hint: Hint; trace: AgentRunTrace }> {
+): Promise<{ hint: Hint; trace: AgentRunTrace; candidateHint?: GeneratedHintCandidate }> {
   const startTime = Date.now();
   // Chat queries cap retries to 1 for interactive responsiveness; hints allow configured retries (default 2)
   const maxRetries = options.maxRetries ?? (options.userQuery ? 1 : LIMITS.MAX_CRITIC_RETRIES);
   const timeoutMs = options.timeoutMs ?? 30000;
   const deadlineMs = startTime + timeoutMs;
-  const MAX_TOTAL_LLM_CALLS = options.userQuery ? 4 : 8;
+  const isLowQuota = options.lowQuotaMode ?? false;
+  const MAX_TOTAL_LLM_CALLS = options.maxRetries !== undefined
+    ? (options.maxRetries + 1) * (isLowQuota ? 1 : 2)
+    : (isLowQuota ? 2 : 4);
   let totalLlmCalls = 0;
   const problemHash = context.url;
 
@@ -113,12 +117,12 @@ export async function runAgentGraph(
         selfConfidence: state.candidateHint.selfConfidence,
       });
     } catch (genErr) {
-      logger.error('hint_generator execution failed', genErr);
+      logger.operationalError('hint_generator execution failed', genErr);
       recordNodeTiming('hint_generator', genStart, { error: String(genErr) });
       const errCode = (genErr as { code?: string })?.code;
       if (
         (genErr instanceof LlmError || Boolean(errCode)) &&
-        ['NO_KEY', 'INVALID_KEY', 'RATE_LIMITED', 'OFFLINE'].includes(errCode || '')
+        ['NO_KEY', 'INVALID_KEY', 'RATE_LIMITED', 'OFFLINE', 'TIMEOUT', 'NO_PAGE_CONTEXT'].includes(errCode || '')
       ) {
         throw genErr;
       }
@@ -135,8 +139,11 @@ export async function runAgentGraph(
       apiKey: options.apiKey,
       mockCriticPass: options.mockCriticPass,
       requestId: options.requestId,
+      lowQuotaMode: isLowQuota,
     });
-    totalLlmCalls++;
+    if (!isLowQuota) {
+      totalLlmCalls++;
+    }
 
     state.criticResult = evaluation;
     trace.criticEvaluations.push(evaluation);
@@ -222,8 +229,12 @@ export async function runAgentGraph(
   recordNodeTiming('deliver', deliverStart);
   logger.info(`Agent graph finished in ${trace.totalDurationMs}ms (fallback=${trace.isFallback})`);
 
+  trace.llmCallCount = totalLlmCalls;
+  trace.lowQuotaMode = isLowQuota;
+
   return {
     hint: deliveredHint,
     trace,
+    candidateHint: state.candidateHint,
   };
 }

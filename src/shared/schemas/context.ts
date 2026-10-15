@@ -28,6 +28,8 @@ export const PageContextSchema = z.object({
   sensitiveReason: z.string().optional(),
   isSparse: z.boolean().optional(),
   language: z.string().optional(),
+  statementLength: z.number().optional(),
+  adapterName: z.string().optional(),
 });
 
 export type SiteType = z.infer<typeof SiteTypeSchema>;

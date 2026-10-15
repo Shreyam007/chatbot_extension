@@ -37,6 +37,7 @@ export function decideNudge(
       utility: 0,
       cost: interruptionCost,
       contextBucket,
+      nudgeText: estimate.nudgeText,
     };
   }
 
@@ -52,6 +53,7 @@ export function decideNudge(
       utility,
       cost: interruptionCost,
       contextBucket,
+      nudgeText: estimate.nudgeText,
     };
   }
 
@@ -65,6 +67,7 @@ export function decideNudge(
       utility,
       cost: interruptionCost,
       contextBucket,
+      nudgeText: estimate.nudgeText,
     };
   }
 
@@ -79,5 +82,6 @@ export function decideNudge(
     utility,
     cost: interruptionCost,
     contextBucket,
+    nudgeText: estimate.nudgeText,
   };
 }

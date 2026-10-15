@@ -41,6 +41,9 @@ export const SidePanelApp: React.FC = () => {
   const [isHintLoading, setIsHintLoading] = useState<boolean>(false);
   const [errorState, setErrorState] = useState<ErrorStateType | null>(null);
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number>(3);
+  const [quotaKind, setQuotaKind] = useState<'per_minute' | 'per_day' | 'unknown'>('per_minute');
+  const [isEstimate, setIsEstimate] = useState<boolean>(false);
+  const [errorModel, setErrorModel] = useState<string | undefined>(undefined);
 
   // Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -244,15 +247,31 @@ export const SidePanelApp: React.FC = () => {
     } catch (err: unknown) {
       const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: unknown }).code) : '';
       const msg = err instanceof Error ? err.message : String(err);
+      const details =
+        err && typeof err === 'object' && 'details' in err
+          ? (err as { details: { quotaKind?: 'per_minute' | 'per_day' | 'unknown'; retryAfterSeconds?: number; retryAfterMs?: number; isEstimate?: boolean; model?: string } }).details
+          : undefined;
+
+      const qKind = details?.quotaKind || (msg.includes('per_day') || msg.includes('daily') ? 'per_day' : 'per_minute');
+      const waitSec = details?.retryAfterSeconds || (details?.retryAfterMs ? Math.ceil(details.retryAfterMs / 1000) : 10);
+      const estimate = Boolean(details?.isEstimate);
+      const mod = details?.model || settings?.model;
+
+      setQuotaKind(qKind);
+      setRetryAfterSeconds(waitSec);
+      setIsEstimate(estimate);
+      setErrorModel(mod);
+
       if (code === 'NO_KEY' || msg.includes('NO_KEY')) {
         setErrorState('no_api_key');
       } else if (code === 'INVALID_KEY' || msg.includes('INVALID_KEY') || msg.includes('403') || msg.includes('permission_denied')) {
         setErrorState('invalid_key');
+      } else if (code === 'NO_PAGE_CONTEXT' || msg.includes('NO_PAGE_CONTEXT')) {
+        setErrorState('no_page_context');
       } else if (code === 'TIMEOUT' || msg.includes('TIMEOUT') || msg.includes('timed out')) {
         setErrorState('timeout');
       } else if (code === 'RATE_LIMITED' || msg.includes('RATE_LIMITED') || msg.includes('429')) {
         setErrorState('rate_limited');
-        setRetryAfterSeconds(3);
       } else if (code === 'OFFLINE' || msg.includes('OFFLINE') || msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('connection')) {
         setErrorState('offline');
       } else {
@@ -325,13 +344,27 @@ export const SidePanelApp: React.FC = () => {
     } catch (err: unknown) {
       const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: unknown }).code) : '';
       const msg = err instanceof Error ? err.message : String(err);
+      const details =
+        err && typeof err === 'object' && 'details' in err
+          ? (err as { details: { quotaKind?: 'per_minute' | 'per_day' | 'unknown'; retryAfterSeconds?: number; retryAfterMs?: number; isEstimate?: boolean; model?: string } }).details
+          : undefined;
+
+      const qKind = details?.quotaKind || (msg.includes('per_day') || msg.includes('daily') ? 'per_day' : 'per_minute');
+      const waitSec = details?.retryAfterSeconds || (details?.retryAfterMs ? Math.ceil(details.retryAfterMs / 1000) : 10);
+      const estimate = Boolean(details?.isEstimate);
+      const mod = details?.model || settings?.model;
+
+      setQuotaKind(qKind);
+      setRetryAfterSeconds(waitSec);
+      setIsEstimate(estimate);
+      setErrorModel(mod);
+
       if (code === 'NO_KEY' || msg.includes('NO_KEY')) {
         setErrorState('no_api_key');
       } else if (code === 'INVALID_KEY' || msg.includes('INVALID_KEY') || msg.includes('403') || msg.includes('permission_denied')) {
         setErrorState('invalid_key');
       } else if (code === 'RATE_LIMITED' || msg.includes('RATE_LIMITED') || msg.includes('429')) {
         setErrorState('rate_limited');
-        setRetryAfterSeconds(3);
       } else if (code === 'OFFLINE' || msg.includes('OFFLINE')) {
         setErrorState('offline');
       } else {
@@ -495,12 +528,19 @@ export const SidePanelApp: React.FC = () => {
           /* No API Key Error View (S13.1) */
           <ErrorStateView type="no_api_key" onOpenSettings={handleOpenSettings} />
         ) : errorState ? (
-          /* Error views (S13.3 - S13.5) */
+          /* Error views (S13.3 - S13.5, S14.1) */
           <ErrorStateView
             type={errorState}
             retryAfterSeconds={retryAfterSeconds}
+            quotaKind={quotaKind}
+            isEstimate={isEstimate}
+            model={errorModel}
             onRetry={() => handleNextLevel(currentLevel)}
             onOpenSettings={handleOpenSettings}
+            onSelectText={() => {
+              setErrorState(null);
+              setActiveTab('chat');
+            }}
           />
         ) : isPaused && activeTab === 'hints' ? (
           /* Paused Contextual View (S14.3) */

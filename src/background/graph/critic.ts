@@ -91,7 +91,14 @@ export const CRITIC_SCHEMA = {
 export async function evaluateHint(
   candidate: GeneratedHintCandidate,
   state: AgentGraphState,
-  options?: { model?: string; tabId?: number; apiKey?: string; mockCriticPass?: boolean; requestId?: string }
+  options?: {
+    model?: string;
+    tabId?: number;
+    apiKey?: string;
+    mockCriticPass?: boolean;
+    requestId?: string;
+    lowQuotaMode?: boolean;
+  }
 ): Promise<CriticEvaluation> {
   const statementText = state.context.statementText || '';
 
@@ -132,6 +139,19 @@ export async function evaluateHint(
       relevant: false,
       confidence: 0.1,
       reason: 'Quote not found in problem statement.',
+    };
+  }
+
+  // In low quota mode (default ON for free tier), skip LLM judge to stay within 2 LLM calls per request (Task E.2)
+  if (options?.lowQuotaMode) {
+    logger.debug('Low quota mode active: skipping LLM judge call, relying on deterministic verification');
+    return {
+      pass: true,
+      leak: false,
+      grounded: true,
+      relevant: true,
+      confidence: 0.85,
+      reason: 'Passed deterministic safety & grounding checks (low quota mode).',
     };
   }
 
