@@ -5,6 +5,7 @@ import type { PageContext } from '../shared/schemas/context';
 import type { Hint, HintLevel } from '../shared/schemas/hints';
 import type { SignalWindow } from '../shared/schemas/signals';
 import type { AgentRunTrace } from '../background/graph/types';
+import type { SubmitChatQueryResponse } from '../shared/messaging/protocol';
 
 import { Header } from './components/Header';
 import { Navigation, type SidePanelTab } from './components/Navigation';
@@ -311,15 +312,7 @@ export const SidePanelApp: React.FC = () => {
     const requestId = `chat-req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
     try {
-      const res = await sendToBackground<{
-        type: string;
-        reply: string;
-        groundedQuote?: string;
-        confidence: number;
-        codeBlock?: string;
-        criticChecked?: boolean;
-        answerable_from_page?: boolean;
-      }>({
+      const res = await sendToBackground<SubmitChatQueryResponse>({
         type: 'SUBMIT_CHAT_QUERY',
         query,
         problemHash: context.url,
@@ -328,17 +321,42 @@ export const SidePanelApp: React.FC = () => {
       });
 
       if (res) {
-        const assistantMsg: ChatMessage = {
-          id: `asst-${Date.now()}`,
-          sender: 'assistant',
-          text: res.reply,
-          timestamp: Date.now(),
-          groundedQuote: res.groundedQuote,
-          confidence: res.confidence,
-          codeBlock: res.codeBlock,
-          criticChecked: Boolean(res.criticChecked),
-        };
-        setMessages((prev) => [...prev, assistantMsg]);
+        if (res.success && res.reply) {
+          const assistantMsg: ChatMessage = {
+            id: `asst-${Date.now()}`,
+            sender: 'assistant',
+            text: res.reply,
+            timestamp: Date.now(),
+            groundedQuote: res.groundedQuote,
+            confidence: res.confidence,
+            codeBlock: res.codeBlock,
+            criticChecked: Boolean(res.criticChecked),
+            badgeStatus: res.badgeStatus,
+            retrievalMode: res.retrievalMode,
+            coverageStats: res.coverageStats,
+            llmCallCount: res.llmCallCount,
+            model: res.model,
+            sectionsUsed: res.sectionsUsed,
+          };
+          setMessages((prev) => [...prev, assistantMsg]);
+        } else {
+          const assistantMsg: ChatMessage = {
+            id: `asst-err-${Date.now()}`,
+            sender: 'assistant',
+            text: res.reply || `I couldn't produce a verified answer based on this page (${res.errorReason || 'Grounding checks could not verify the draft'}).`,
+            timestamp: Date.now(),
+            isError: true,
+            errorReason: res.errorReason,
+            errorCode: res.errorCode,
+            unverifiedDraft: res.unverifiedDraft,
+            badgeStatus: res.badgeStatus || 'unverified',
+            retrievalMode: res.retrievalMode,
+            coverageStats: res.coverageStats,
+            llmCallCount: res.llmCallCount,
+            model: res.model,
+          };
+          setMessages((prev) => [...prev, assistantMsg]);
+        }
         loadTelemetryAndMastery();
       }
     } catch (err: unknown) {
@@ -580,6 +598,8 @@ export const SidePanelApp: React.FC = () => {
                 onSendMessage={handleSendMessage}
                 onHighlightQuote={handleHighlightQuote}
                 siteName={context?.site ?? 'LeetCode'}
+                contentType={context?.contentType}
+                isTruncatedPage={Boolean(context?.isTruncated)}
               />
             )}
 

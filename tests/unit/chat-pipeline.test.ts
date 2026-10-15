@@ -199,7 +199,7 @@ describe('Chat Pipeline & Critic Grounding Tests', () => {
         userQuery: q,
         mockCriticPass: true,
       });
-      results.push(res.hint.text);
+      results.push(res.hint!.text);
     }
 
     // 1. Assert all 3 prompts captured contain the respective user query

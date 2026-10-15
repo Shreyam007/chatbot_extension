@@ -160,9 +160,9 @@ export function initBackground() {
     },
     OPEN_SIDE_PANEL: async (_req, sender) => {
       let tabId = sender?.tab?.id;
-      if (!tabId) {
-        const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
-        tabId = tabs?.[0]?.id;
+      if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
+        const { tabId: activeId } = await getActiveTabState();
+        tabId = activeId;
       }
 
       if (!tabId) {
@@ -190,17 +190,26 @@ export function initBackground() {
     },
     REQUEST_HINT: async (req, sender) => {
       let tabId = sender?.tab?.id;
-      if (!tabId) {
-        const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
-        tabId = tabs?.[0]?.id;
+      if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
+        const { tabId: activeId } = await getActiveTabState();
+        tabId = activeId;
       }
 
       const stored = await chrome.storage?.local?.get(['settings']);
       const settings = stored?.settings || DEFAULT_SETTINGS;
       const model = settings.model || DEFAULT_AI_MODEL;
 
-      const tabState = tabId ? await getTabState(tabId) : undefined;
-      const pageContext = tabState?.context;
+      let tabState = tabId ? await getTabState(tabId) : undefined;
+      let pageContext = tabState?.context;
+
+      if (!pageContext || !pageContext.statementText || pageContext.statementText.trim().length === 0) {
+        const { tabId: fallbackId, state: fallbackState } = await getActiveTabState();
+        if (fallbackState?.context?.statementText && fallbackState.context.statementText.trim().length > 0) {
+          tabId = fallbackId;
+          tabState = fallbackState;
+          pageContext = fallbackState.context;
+        }
+      }
 
       if (!pageContext || !pageContext.statementText || pageContext.statementText.trim().length === 0) {
         throw new LlmError(
@@ -233,7 +242,7 @@ export function initBackground() {
 
       return {
         type: 'HINT_RESULT',
-        hint: result.hint,
+        hint: result.hint!,
       };
     },
     GET_ONBOARDING: async (_req) => {
@@ -457,9 +466,9 @@ export function initBackground() {
     },
     SUBMIT_CHAT_QUERY: async (req, sender) => {
       let tabId = sender?.tab?.id;
-      if (!tabId) {
-        const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
-        tabId = tabs?.[0]?.id;
+      if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
+        const { tabId: activeId } = await getActiveTabState();
+        tabId = activeId;
       }
 
       const stored = await chrome.storage?.local?.get(['settings']);
@@ -480,8 +489,16 @@ export function initBackground() {
           detectedAt: Date.now(),
         };
       } else {
-        const tabState = tabId ? await getTabState(tabId) : undefined;
-        const ctx = tabState?.context;
+        let tabState = tabId ? await getTabState(tabId) : undefined;
+        let ctx = tabState?.context;
+        if (!ctx || !ctx.statementText || ctx.statementText.trim().length === 0) {
+          const { tabId: fallbackId, state: fallbackState } = await getActiveTabState();
+          if (fallbackState?.context?.statementText && fallbackState.context.statementText.trim().length > 0) {
+            tabId = fallbackId;
+            tabState = fallbackState;
+            ctx = fallbackState.context;
+          }
+        }
         if (!ctx || !ctx.statementText || ctx.statementText.trim().length === 0) {
           throw new LlmError(
             'NO_PAGE_CONTEXT',
@@ -492,12 +509,14 @@ export function initBackground() {
         pageContext = ctx;
       }
 
+      const isLowQuota = settings.lowQuotaMode ?? true;
       const result = await runAgentGraph(pageContext, req.level ?? 1, {
         model,
         tabId,
         userQuery: req.query,
         requestId: req.requestId,
-        lowQuotaMode: settings.lowQuotaMode ?? true,
+        lowQuotaMode: isLowQuota,
+        isChatQuery: true,
       });
 
       recentTraces.unshift(result.trace);
@@ -506,19 +525,31 @@ export function initBackground() {
       }
 
       const isCriticApproved = Boolean(
-        result.hint.checks?.leak === false &&
-        result.hint.checks?.grounded === true &&
+        result.hint?.checks?.leak === false &&
+        result.hint?.checks?.grounded === true &&
         !result.trace.isFallback
       );
 
+      const hasValidHint = Boolean(result.hint?.text);
+
       return {
         type: 'CHAT_QUERY_RESULT',
-        reply: result.hint.text,
-        groundedQuote: result.hint.groundedQuote,
-        confidence: result.hint.confidence,
-        codeBlock: result.hint.codeBlock,
+        success: hasValidHint,
+        reply: result.hint?.text,
+        unverifiedDraft: result.unverifiedDraft,
+        errorReason: result.errorReason,
+        errorCode: result.errorCode,
+        groundedQuote: result.hint?.groundedQuote,
+        confidence: result.hint?.confidence,
+        codeBlock: result.hint?.codeBlock,
         criticChecked: isCriticApproved,
+        badgeStatus: result.trace.badgeStatus,
         answerable_from_page: result.candidateHint?.answerable_from_page ?? true,
+        retrievalMode: result.trace.retrievalMode,
+        sectionsUsed: result.trace.retrievedSections,
+        coverageStats: result.trace.coverageStats,
+        llmCallCount: result.trace.llmCallCount,
+        model,
       };
     },
     GET_NUDGE_DIAGNOSTICS: async (req, sender) => {

@@ -115,6 +115,18 @@ Every edge case defined in Section 5 of `ANTIGRAVITY.md` is tracked here. Each i
 
 ---
 
+### H. Universal Mode Chat & Honest Failures (v1.0.6)
+| ID | Case | Required behaviour | Test File & Name | Status |
+|---|---|---|---|---|
+| EC-130 | Broad summary queries on long marketing/curriculum pages | Document-order coverage builder extracts all sections with quotas; 1 LLM call; sets coverageStats | `tests/unit/summary-intent.test.ts` › detectSummaryIntent & `tests/unit/fellowship-fixture.test.ts` | passed |
+| EC-131 | Collapsed FAQ accordions & `<details>` elements | Extractor includes `<details>`, `<summary>`, `<dt>`, `<dd>`, `.accordion-*`, and `.faq-answer` | `tests/unit/extractor-readability.test.ts` › Readability Extractor › extracts accordion and details/summary | passed |
+| EC-132 | English phrases with "public" (e.g. "public health", "public infrastructure") | Regex requires `(` or `=>` so ordinary adjectives never trigger code leak rejection | `tests/unit/critic.test.ts` › Deterministic Leak Check › does not flag English phrases starting with public | passed |
+| EC-133 | Hyphenated English adjectives (e.g. "hands-on", "tax-exempt") | Intra-word hyphen check permits `\w-\w` while strictly prohibiting code operators | `tests/unit/critic.test.ts` › Deterministic Grounding Check › accepts fuzzy matches with intra-word hyphens | passed |
+| EC-134 | Minor quote paraphrasing / whitespace divergence | Quote normalization + partly-verified path drops quote and accepts answer at 0.60 confidence | `tests/unit/critic.test.ts` › Grounded Quote Normalization & Fuzzy Grounding Check | passed |
+| EC-135 | Generation or Critic verification failure in chat | Never show algorithmic problem scaffold; display honest error card with unverified draft toggle | `tests/unit/chat-honest-errors.test.ts` › Chat Honest Errors & No Fallback Scaffold Invariant | passed |
+
+---
+
 ## Manual Verification Checklists
 
 ### 1. EC-025: Cross-Origin Iframe & Embedded Problem Pages

@@ -10,6 +10,7 @@ export interface ExtractedPageContent {
   isSparse: boolean;
   language?: string;
   rawWordCount: number;
+  isTruncated?: boolean;
 }
 
 const NOISE_SELECTORS = [
@@ -110,7 +111,7 @@ export function findMainContainer(doc: Document): Element {
 
 /**
  * Extracts readable main content from the document with section chunking,
- * noise removal, form sanitization, and selection prioritization.
+ * noise removal, form sanitization, accordion/FAQ ingestion, and selection prioritization.
  */
 export function extractReadabilityContent(doc: Document): ExtractedPageContent {
   const title = extractTitle(doc);
@@ -127,6 +128,7 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
       isSparse: true,
       language: lang,
       rawWordCount: 0,
+      isTruncated: false,
     };
   }
 
@@ -158,7 +160,7 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
     }
   });
 
-  // 4. Section Chunking by Headings (h1 - h4)
+  // 4. Section Chunking by Headings (h1 - h4, summary, dt, accordion triggers)
   const sections: PageSection[] = [];
   let currentSectionTitle = title || 'Overview';
   let currentSectionParagraphs: string[] = [];
@@ -175,20 +177,42 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
     currentSectionParagraphs = [];
   };
 
+  const isHeadingOrTrigger = (el: Element): boolean => {
+    const tag = el.tagName.toLowerCase();
+    if (['h1', 'h2', 'h3', 'h4', 'summary', 'dt'].includes(tag)) {
+      return true;
+    }
+    const cls = el.className && typeof el.className === 'string' ? el.className.toLowerCase() : '';
+    if (cls.includes('accordion-header') || cls.includes('accordion-trigger') || cls.includes('faq-question')) {
+      return true;
+    }
+    if (el.hasAttribute('aria-expanded') && (tag === 'button' || tag === 'a')) {
+      return true;
+    }
+    return false;
+  };
+
   const blockElements = clone.querySelectorAll(
-    'h1, h2, h3, h4, p, pre, code, ul, ol, table, blockquote'
+    'h1, h2, h3, h4, summary, dt, dd, p, pre, code, ul, ol, table, blockquote, details .faq-body, .accordion-trigger, .accordion-header, .accordion-content, .faq-answer, [data-accordion-content]'
   );
+
+  const seenNodes = new Set<Element>();
 
   if (blockElements.length > 0) {
     blockElements.forEach((el) => {
+      if (seenNodes.has(el)) return;
+      seenNodes.add(el);
+
       const tag = el.tagName.toLowerCase();
-      if (['h1', 'h2', 'h3', 'h4'].includes(tag)) {
+      if (isHeadingOrTrigger(el)) {
         flushSection();
-        currentSectionTitle = el.textContent?.trim() || currentSectionTitle;
+        const headerText = el.textContent?.trim();
+        if (headerText && headerText.length > 0) {
+          currentSectionTitle = headerText;
+        }
       } else {
         const text = el.textContent?.trim();
         if (text && text.length > 10) {
-          // Format code blocks with markers
           if (tag === 'pre' || tag === 'code') {
             currentSectionParagraphs.push(`\`\`\`\n${text}\n\`\`\``);
           } else {
@@ -239,7 +263,9 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
 
   // Cap statement text length
   const maxChars = LIMITS.MAX_STATEMENT_CHARS || 16000;
+  let isTruncated = false;
   if (statementText.length > maxChars) {
+    isTruncated = true;
     statementText = statementText.slice(0, maxChars) + '\n\n[...Text truncated for token budget...]';
   }
 
@@ -251,5 +277,6 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
     isSparse,
     language: lang,
     rawWordCount,
+    isTruncated,
   };
 }

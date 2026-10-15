@@ -697,6 +697,31 @@ $$P(\text{stuck}) = P_0 + (1 - P_0) \cdot \tanh\left(\frac{t - N_{\text{eff}}}{\
 - **Session Response Cache (`response-cache.ts`):** 15-minute TTL in-memory cache keyed by model, mode, target level, and user query. Identical requests return cached hints with zero additional LLM consumption.
 - **Low-Quota Mode:** Kept ON by default in Settings, capping the multi-agent graph to max 2 LLM calls per hint and skipping redundant LLM critic judges when deterministic leak and substring grounding checks pass.
 
+---
+
+## 17. Universal Mode Chat & Honest Failure Architecture (v1.0.6)
+
+### 1. Broad Summary Intent & Document Coverage Engine (`coverage.ts`, `intent.ts`)
+- **Summary Intent Detection:** `detectSummaryIntent()` uses tokenized regex patterns across English and Hinglish (e.g. `summarize`, `in short points`, `overview`, `structure`, `layout`, `outline`) to differentiate broad synopsis queries from targeted factual questions.
+- **Single-Pass Coverage Retrieval:** Standard Top-K BM25 retrieval starves peripheral sections on long articles and marketing pages. The coverage mode extracts all document sections (including collapsed `<details>`, `<summary>`, and accordion FAQs), builds a global document outline, and allocates a proportional quota (up to 6,000 characters total) guaranteeing every section is represented in document order without truncation bias.
+- **Budget Fidelity:** Coverage mode executes in strictly 1 generation LLM call with 0 extra retrieval overhead.
+
+### 2. Grounding Normalization & Partly-Verified Critic Path (`critic.ts`)
+- **Robust Substring Normalization:** Normalizes smart quotes (`“”` $\to$ `""`), typographic dashes (`—–` $\to$ `-`), non-breaking whitespace (`\u00A0` $\to$ `' '`), and collapses whitespace before matching against the exact text sent to the model.
+- **Intra-Word Hyphen Safety:** Replaces overly broad regex operators with strict boundaries (`/[=+*\/<>{}\[\];]|\s+-\s+|--|->/`) so hyphenated English adjectives (e.g., `hands-on`, `tax-exempt`) are never flagged as code syntax.
+- **Function Signature Precision:** Fixes Java/C++ method regex to strictly require parameter parentheses `(` or arrow syntax `=>`, preventing ordinary English phrases like `"public health"` or `"public infrastructure"` from being rejected as code leaks.
+- **Partly-Verified Fallback:** When answer text is safe and grounded in page context but the extracted `groundedQuote` suffers from minor LLM paraphrasing, chat mode drops the quote, accepts the answer, sets confidence to 0.60, and labels it `Critic: Partly verified` without triggering costly and error-prone regeneration retries.
+
+### 3. Strict No-Fallback Invariant for Chat Queries (`graph.ts`)
+- **Zero Algorithmic Scaffolds in Chat:** Enforces the invariant that `generateSafeFallback` (*"Start by restating the problem..."*) is strictly forbidden for conversational chat queries (`isChatQuery: true`) and non-problem pages.
+- **Honest Error Transmission:** If generation fails (e.g. malformed JSON, exhausted retries, Critic rejection), the background service worker returns `{ success: false, reply: undefined, unverifiedDraft, errorCode, errorReason }`.
+
+### 4. Non-Problem Pedagogical Taxonomy & Honest Error Card UI (`ChatTab.tsx`, `SidePanelApp.tsx`)
+- **Context-Aware Level Labels:** On articles, documentation, and marketing pages, algorithmic level chips (`Auto (L1 Direction)`) are replaced with readable pedagogical labels: `Auto (Pointer)`, `Explain simply`, `Worked example`, and `Full explanation`.
+- **Dynamic Input Placeholder:** Automatically changes from `"Ask a question about this problem..."` to `"Ask a question about this page..."` when viewing non-problem content.
+- **Honest Error Card:** Renders a dedicated error view with a clear explanation of verification failure, accompanied by an optional **"Show unverified draft"** toggle with explicit disclaimers.
+
+
 
 
 

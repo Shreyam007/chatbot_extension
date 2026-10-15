@@ -194,13 +194,24 @@ export const SubmitChatQueryRequestSchema = z.object({
 
 export const SubmitChatQueryResponseSchema = z.object({
   type: z.literal('CHAT_QUERY_RESULT'),
-  reply: z.string(),
+  success: z.boolean().default(true),
+  reply: z.string().optional(),
+  unverifiedDraft: z.string().optional(),
+  errorReason: z.string().optional(),
+  errorCode: z.string().optional(),
   groundedQuote: z.string().optional(),
-  confidence: z.number().min(0).max(1),
+  confidence: z.number().min(0).max(1).optional(),
   codeBlock: z.string().optional(),
   criticChecked: z.boolean().optional(),
+  badgeStatus: z.enum(['checked', 'checked_basic', 'partly_verified', 'unverified', 'low_confidence']).optional(),
   answerable_from_page: z.boolean().optional(),
+  retrievalMode: z.enum(['bm25', 'coverage', 'selection', 'full']).optional(),
+  sectionsUsed: z.array(z.string()).optional(),
+  coverageStats: z.object({ covered: z.number(), total: z.number() }).optional(),
+  llmCallCount: z.number().optional(),
+  model: z.string().optional(),
 });
+export type SubmitChatQueryResponse = z.infer<typeof SubmitChatQueryResponseSchema>;
 
 export const GetRunTracesRequestSchema = z.object({
   type: z.literal('GET_RUN_TRACES'),

@@ -67,6 +67,7 @@ export const genericAdapter: PageAdapter = {
         language: extracted.language,
         statementLength: extracted.statementText.length,
         adapterName: 'generic',
+        isTruncated: Boolean(extracted.isTruncated),
       };
     } catch {
       // Defensive: never throw on unexpected DOM

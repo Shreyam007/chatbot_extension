@@ -51,6 +51,21 @@ async function assertNoHorizontalOverflow(page: Page, screenName: string, width:
           if (el.tagName.toLowerCase() === 'pre' || el.tagName.toLowerCase() === 'code') {
             continue;
           }
+
+          // Exclude elements inside scrollable/clipped containers (e.g. overflow-x-auto table wrappers)
+          let parent = el.parentElement;
+          let isContained = false;
+          while (parent && parent !== document.body && parent !== document.documentElement) {
+            const pStyle = window.getComputedStyle(parent);
+            if (pStyle.overflowX === 'auto' || pStyle.overflowX === 'scroll' || pStyle.overflowX === 'hidden') {
+              isContained = true;
+              break;
+            }
+            parent = parent.parentElement;
+          }
+          if (isContained) {
+            continue;
+          }
           overflowingElements.push({
             tag: el.tagName,
             id: el.id,

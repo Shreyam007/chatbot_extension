@@ -592,7 +592,7 @@ export const OptionsApp: React.FC = () => {
       {/* Main Content Pane */}
       <main className="flex-1 p-6 md:p-8 max-w-4xl space-y-6 overflow-y-auto">
         {/* Top Header / Auto-Save Banner */}
-        <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-outline-variant/30">
           <div className="flex items-center gap-2 text-xs font-mono text-on-surface-variant">
             <span>Settings</span>
             <span>/</span>

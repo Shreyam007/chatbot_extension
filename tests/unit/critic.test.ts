@@ -799,8 +799,8 @@ describe('Agent Graph & Dual Critic (Step 9)', () => {
       maxRetries: 2,
     });
 
-    expect(hint.level).toBe(1);
-    expect(hint.text).toContain('Consider using a hash map');
+    expect(hint!.level).toBe(1);
+    expect(hint!.text).toContain('Consider using a hash map');
     expect(trace.retries).toBe(0);
     expect(trace.isFallback).toBe(false);
     expect(trace.nodeTimings.length).toBeGreaterThanOrEqual(4);
@@ -840,8 +840,8 @@ describe('Agent Graph & Dual Critic (Step 9)', () => {
 
     expect(trace.retries).toBe(3); // Attempt 0, 1, 2, then fallback
     expect(trace.isFallback).toBe(true);
-    expect(hint.confidence).toBeLessThanOrEqual(0.35);
-    expect(hint.text).toContain('restating the problem in your own words');
+    expect(hint!.confidence).toBeLessThanOrEqual(0.35);
+    expect(hint!.text).toContain('restating the problem in your own words');
   });
 
   it('evaluateHint verifies candidate hint and rejects code leaks', async () => {

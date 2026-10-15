@@ -135,12 +135,17 @@ export async function getActiveTabState(): Promise<{ tabId?: number; state?: Tab
   try {
     if (typeof chrome !== 'undefined' && chrome.tabs?.query) {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const activeTabId = tabs[0]?.id;
-      if (activeTabId !== undefined) {
-        return {
-          tabId: activeTabId,
-          state: memoryTabs.get(activeTabId),
-        };
+      const activeTab = tabs[0];
+      const isExtensionTab = activeTab?.url?.startsWith('chrome-extension://') || activeTab?.url?.startsWith('chrome://');
+      const activeTabId = activeTab?.id;
+      if (activeTabId !== undefined && !isExtensionTab) {
+        const state = memoryTabs.get(activeTabId);
+        if (state) {
+          return {
+            tabId: activeTabId,
+            state,
+          };
+        }
       }
     }
   } catch (err) {

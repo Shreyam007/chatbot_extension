@@ -6,7 +6,7 @@ const logger = createLogger('Critic');
 
 // Patterns that identify executable code or function signatures
 const CODE_FENCE_REGEX = /```[\s\S]*?```/;
-const FUNCTION_SIGNATURE_REGEX = /\b(def\s+\w+|function\s+\w+|public\s+(?:static\s+)?\w+\s+\w+|void\s+\w+|int\s+\w+\s*\(|vector\s*<|const\s+\w+\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9_]+)\s*=>)/i;
+const FUNCTION_SIGNATURE_REGEX = /\b(def\s+\w+\s*\(|function\s+\w+\s*\(|public\s+(?:static\s+)?(?:[\w<>\[\]]+\s+)+\w+\s*\(|void\s+\w+\s*\(|int\s+\w+\s*\(|vector\s*<|const\s+\w+\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9_]+)\s*=>)/i;
 const SYNTAX_STATEMENT_REGEX = /(?:\b(return\s+[^;.\n]+;|for\s*\([^)]+\)\s*\{|(?:if|while)\s*\([^;{}]+\)\s*\{|import\s+[\w{}*,\s]+\s+from)|#include\s*<)/i;
 
 /**
@@ -45,14 +45,135 @@ export function checkHeuristicLeak(candidate: GeneratedHintCandidate, level: num
 }
 
 /**
- * Normalizes text for robust substring matching
+ * Normalizes text for resilient substring and token matching.
+ * Handles markdown formatting, bullets, ellipses, non-breaking spaces, curly quotes, and dashes.
  */
-export function normalizeTextForMatching(text: string): string {
+export function normalizeTextForGrounding(text: string): string {
+  if (!text) return '';
   return text
     .toLowerCase()
+    .replace(/\u00a0/g, ' ')
+    .replace(/(^|[\s\n])(\d+\.|[•\-\*\+])\s+/gm, ' ')
+    .replace(/[:;,₹$€£]/g, '')
+    .replace(/[*_]{1,3}/g, '')
+    .replace(/^#+\s+/gm, '')
+    .replace(/["'“”‘’«»`]/g, '')
+    .replace(/[—–]/g, '-')
+    .replace(/\.{3,}|…/g, ' ')
     .replace(/\s+/g, ' ')
-    .replace(/["'“”‘’]/g, '')
     .trim();
+}
+
+/**
+ * Legacy normalize alias for existing imports.
+ */
+export function normalizeTextForMatching(text: string): string {
+  return normalizeTextForGrounding(text);
+}
+
+/**
+ * Calculates token overlap between quote and target corpus.
+ */
+export function computeTokenOverlap(quote: string, targetText: string): number {
+  const quoteTokens = quote.toLowerCase().split(/\W+/).filter((t) => t.length > 2);
+  if (quoteTokens.length === 0) return 0;
+
+  const targetTokens = new Set(targetText.toLowerCase().split(/\W+/).filter((t) => t.length > 2));
+  let matchCount = 0;
+  for (const token of quoteTokens) {
+    if (targetTokens.has(token)) {
+      matchCount++;
+    }
+  }
+
+  return matchCount / quoteTokens.length;
+}
+
+export interface QuoteGroundingResult {
+  isGrounded: boolean;
+  isFuzzy: boolean;
+  partlyVerified: boolean;
+}
+
+/**
+ * Comprehensive Grounding Check:
+ * Tests candidate quote against sent page text, raw statement, sections, and selection.
+ */
+export function verifyQuoteGrounding(
+  quote: string,
+  sources: {
+    sentPageText?: string;
+    statementText?: string;
+    sections?: Array<{ text: string }>;
+    selectedText?: string;
+  }
+): QuoteGroundingResult {
+  if (!quote || quote.trim().length < 5) {
+    return { isGrounded: false, isFuzzy: false, partlyVerified: false };
+  }
+
+  const normQuote = normalizeTextForGrounding(quote);
+  if (normQuote.length < 4) {
+    return { isGrounded: false, isFuzzy: false, partlyVerified: false };
+  }
+
+  // 1. Check against exact sent page text (what was in prompt)
+  if (sources.sentPageText) {
+    const normSent = normalizeTextForGrounding(sources.sentPageText);
+    if (normSent.includes(normQuote)) {
+      return { isGrounded: true, isFuzzy: false, partlyVerified: false };
+    }
+  }
+
+  // 2. Check against statement text
+  if (sources.statementText) {
+    const normStatement = normalizeTextForGrounding(sources.statementText);
+    if (normStatement.includes(normQuote)) {
+      return { isGrounded: true, isFuzzy: false, partlyVerified: false };
+    }
+  }
+
+  // 3. Check against selected text
+  if (sources.selectedText) {
+    const normSelected = normalizeTextForGrounding(sources.selectedText);
+    if (normSelected.includes(normQuote)) {
+      return { isGrounded: true, isFuzzy: false, partlyVerified: false };
+    }
+  }
+
+  // 4. Check against individual sections
+  if (sources.sections) {
+    for (const sec of sources.sections) {
+      const normSec = normalizeTextForGrounding(sec.text);
+      if (normSec.includes(normQuote)) {
+        return { isGrounded: true, isFuzzy: false, partlyVerified: false };
+      }
+    }
+  }
+
+  // 5. Cheap local fuzzy match (token overlap >= 0.85)
+  // Strictly prohibit fuzzy matching for code fragments (containing brackets, operators, assignments)
+  const isCodeLike = /[=+*\/<>{}\[\];]|\s+-\s+|--|->/.test(quote);
+  if (!isCodeLike) {
+    const fullCorpus = [
+      sources.sentPageText,
+      sources.statementText,
+      sources.selectedText,
+      ...(sources.sections?.map((s) => s.text) || []),
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    const quoteTokens = quote.toLowerCase().split(/\W+/).filter((t) => t.length > 2);
+    if (quoteTokens.length >= 4) {
+      const overlap = computeTokenOverlap(normQuote, fullCorpus);
+      if (overlap >= 0.85) {
+        return { isGrounded: true, isFuzzy: true, partlyVerified: false };
+      }
+    }
+  }
+
+  return { isGrounded: false, isFuzzy: false, partlyVerified: true };
 }
 
 /**
@@ -60,14 +181,7 @@ export function normalizeTextForMatching(text: string): string {
  * Verifies that candidate.groundedQuote is an exact or normalized substring of the statement text.
  */
 export function checkGrounding(quote: string, statementText: string): boolean {
-  if (!quote || quote.trim().length < 5) {
-    return false;
-  }
-
-  const normalizedStatement = normalizeTextForMatching(statementText);
-  const normalizedQuote = normalizeTextForMatching(quote);
-
-  return normalizedStatement.includes(normalizedQuote);
+  return verifyQuoteGrounding(quote, { statementText }).isGrounded;
 }
 
 export const CRITIC_SCHEMA = {
@@ -100,22 +214,34 @@ export async function evaluateHint(
     lowQuotaMode?: boolean;
   }
 ): Promise<CriticEvaluation> {
-  const statementText = state.context.statementText || '';
-
   // 1. Deterministic Heuristic Leak Check
   const hasLeak = checkHeuristicLeak(candidate, state.level);
 
-  // 2. Grounding Substring Check
-  let isGrounded = false;
+  // 2. Resilient Grounding Check against sent context & page sections
+  const grounding = verifyQuoteGrounding(candidate.groundedQuote || '', {
+    sentPageText: state.sentPageText,
+    statementText: state.context.statementText,
+    sections: state.context.sections,
+    selectedText: state.context.selectedText,
+  });
+
+  let isGrounded = grounding.isGrounded;
+  let partlyVerified = false;
+
   if (state.userQuery && candidate.answerable_from_page === false) {
     // Off-topic or unanswerable query: if quote provided, verify; if empty, accepted as honest off-page reply
     if (candidate.groundedQuote && candidate.groundedQuote.trim().length >= 5) {
-      isGrounded = checkGrounding(candidate.groundedQuote, statementText);
+      isGrounded = grounding.isGrounded;
     } else {
       isGrounded = true;
     }
-  } else {
-    isGrounded = checkGrounding(candidate.groundedQuote || '', statementText);
+  } else if (!isGrounded && state.userQuery) {
+    // Grounding repair for user chat: if quote is missing or imperfect, do NOT trigger costly regeneration!
+    // Drop the quote, mark as partly verified, discount confidence, and approve the answer.
+    logger.info('Quote failed grounding in chat; dropping quote and accepting as partly verified without regeneration');
+    candidate.groundedQuote = undefined;
+    isGrounded = true;
+    partlyVerified = true;
   }
 
   // If deterministic checks already failed, reject immediately with clear reason (no wasted LLM judge call)
@@ -150,8 +276,12 @@ export async function evaluateHint(
       leak: false,
       grounded: true,
       relevant: true,
-      confidence: 0.85,
-      reason: 'Passed deterministic safety & grounding checks (low quota mode).',
+      confidence: partlyVerified ? 0.60 : 0.85,
+      reason: partlyVerified
+        ? 'Accepted as partly verified without quote (low quota mode).'
+        : 'Passed deterministic safety & grounding checks (low quota mode).',
+      partlyVerified,
+      fuzzyMatch: grounding.isFuzzy,
     };
   }
 
@@ -162,8 +292,10 @@ export async function evaluateHint(
       leak: hasLeak,
       grounded: isGrounded,
       relevant: true,
-      confidence: isGrounded ? 0.9 : 0.4,
+      confidence: isGrounded ? (partlyVerified ? 0.60 : 0.9) : 0.4,
       reason: isGrounded ? 'Deterministic checks passed.' : 'Quote not found in problem statement.',
+      partlyVerified,
+      fuzzyMatch: grounding.isFuzzy,
     };
   }
 

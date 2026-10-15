@@ -17,6 +17,8 @@ export interface CriticEvaluation {
   relevant: boolean;
   confidence: number;
   reason: string;
+  partlyVerified?: boolean;
+  fuzzyMatch?: boolean;
 }
 
 export interface TraceNodeTiming {
@@ -42,6 +44,10 @@ export interface AgentRunTrace {
   promptTokens?: number;
   candidateTokens?: number;
   retrievedSections?: string[];
+  retrievalMode?: 'bm25' | 'coverage' | 'selection' | 'full';
+  coverageStats?: { covered: number; total: number };
+  badgeStatus?: 'checked' | 'checked_basic' | 'partly_verified' | 'unverified' | 'low_confidence';
+  unverifiedReason?: string;
 }
 
 export interface AgentGraphState {
@@ -58,6 +64,12 @@ export interface AgentGraphState {
   finalHint?: Hint;
   trace: AgentRunTrace;
   error?: string;
+  sentPageText?: string;
+  sentSections?: string[];
+  isChatQuery?: boolean;
+  retrievalMode?: 'bm25' | 'coverage' | 'selection' | 'full';
+  coverageStats?: { covered: number; total: number };
+  unverifiedDraft?: string;
 }
 
 export interface AgentGraphOptions {
@@ -75,4 +87,15 @@ export interface AgentGraphOptions {
   timeoutMs?: number;
   lowQuotaMode?: boolean;
   noPage?: boolean;
+  isChatQuery?: boolean;
 }
+
+export interface AgentGraphResult {
+  hint: Hint | null;
+  trace: AgentRunTrace;
+  candidateHint?: GeneratedHintCandidate;
+  unverifiedDraft?: string;
+  errorReason?: string;
+  errorCode?: string;
+}
+

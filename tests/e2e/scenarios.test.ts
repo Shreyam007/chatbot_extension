@@ -59,6 +59,8 @@ async function setupDomainRoutes(page: Page) {
       file = 'leetcode-contest.html';
     } else if (url.pathname.includes('spa') || url.pathname.includes('add-two-numbers')) {
       file = 'spa-problem-container.html';
+    } else if (url.pathname.includes('changed-dom') || url.pathname.includes('legacy-matrix')) {
+      file = 'changed-dom-problem.html';
     }
     const html = fs.readFileSync(path.resolve(__dirname, '../fixtures', file), 'utf-8');
     await route.fulfill({ status: 200, contentType: 'text/html', body: html });
@@ -651,7 +653,7 @@ test.describe.serial('Step 16: Playwright E2E Scenarios (Scenarios 1-9)', () => 
       await sidepanel.waitForTimeout(3500);
 
       // Verify countdown reached 0s and retry button appeared
-      await expect(sidepanel.locator('body')).toContainText(/Cooldown: 0s remaining/i);
+      await expect(sidepanel.locator('body')).toContainText(/Cooldown: 0s remaining|Cooldown complete/i);
       await expect(retryBtn).toBeVisible();
     } finally {
       await context.close();

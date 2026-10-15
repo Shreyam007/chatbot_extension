@@ -124,6 +124,11 @@ async function main() {
           maxRetries: 2,
         });
 
+        if (!hint) {
+          console.log(`FAILED (no hint delivered)`);
+          continue;
+        }
+
         const duration = Date.now() - callStart;
         const candidateForCheck = {
           hint: hint.text,

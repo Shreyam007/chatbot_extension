@@ -11,7 +11,7 @@ import type {
   AgentGraphOptions,
   AgentRunTrace,
   TraceNodeTiming,
-  GeneratedHintCandidate,
+  AgentGraphResult,
 } from './types';
 import type { PageContext } from '../../shared/schemas/context';
 import type { Hint, HintLevel } from '../../shared/schemas/hints';
@@ -26,7 +26,7 @@ export async function runAgentGraph(
   context: PageContext,
   level: HintLevel,
   options: AgentGraphOptions = {}
-): Promise<{ hint: Hint; trace: AgentRunTrace; candidateHint?: GeneratedHintCandidate }> {
+): Promise<AgentGraphResult> {
   const startTime = Date.now();
   // Chat queries cap retries to 1 for interactive responsiveness; hints allow configured retries (default 2)
   const maxRetries = options.maxRetries ?? (options.userQuery ? 1 : LIMITS.MAX_CRITIC_RETRIES);
@@ -52,6 +52,8 @@ export async function runAgentGraph(
     model: options.model || 'gemini-2.5-flash',
   };
 
+  const isChatQuery = Boolean(options.userQuery || options.isChatQuery);
+
   const state: AgentGraphState = {
     context,
     level,
@@ -59,6 +61,7 @@ export async function runAgentGraph(
     history: options.history,
     userCode: options.userCode,
     userQuery: options.userQuery,
+    isChatQuery,
     retryCount: 0,
     trace,
   };
@@ -126,6 +129,9 @@ export async function runAgentGraph(
       ) {
         throw genErr;
       }
+      if (isChatQuery) {
+        state.error = (genErr as { message?: string })?.message || String(genErr);
+      }
       break;
     }
 
@@ -183,47 +189,77 @@ export async function runAgentGraph(
     state.assembledPrompt = buildContext(state);
   }
 
-  // --- NODE 4: safe_fallback (if all generation/critic attempts failed) ---
+  // --- NODE 4: safe_fallback (only for proactive hints on problem pages; NEVER for chat queries) ---
   if (!deliveredHint) {
-    const fallbackStart = Date.now();
-    logger.warn('Maximum retries exceeded or generator failed; executing safe_fallback node');
-    trace.isFallback = true;
-    deliveredHint = generateSafeFallback(state);
-    deliveredHint.latencyMs = Date.now() - startTime;
-    recordNodeTiming('safe_fallback', fallbackStart, { reason: 'critic_retry_limit_exceeded' });
+    if (isChatQuery) {
+      // In chat: NEVER disguise failures as answers!
+      trace.isFallback = false;
+      trace.badgeStatus = 'unverified';
+      const unverifiedReason = state.error || state.criticResult?.reason || 'Could not verify answer against page content.';
+      trace.unverifiedReason = unverifiedReason;
+      state.unverifiedDraft = state.candidateHint?.hint;
+    } else {
+      // Proactive hints on problem pages only:
+      const fallbackStart = Date.now();
+      logger.warn('Maximum retries exceeded or generator failed; executing safe_fallback node');
+      trace.isFallback = true;
+      deliveredHint = generateSafeFallback(state);
+      deliveredHint.latencyMs = Date.now() - startTime;
+      recordNodeTiming('safe_fallback', fallbackStart, { reason: 'critic_retry_limit_exceeded' });
+    }
   }
 
-  // --- NODE 5: deliver ---
+  // --- NODE 5: deliver & badge resolution ---
   const deliverStart = Date.now();
   trace.totalDurationMs = Date.now() - startTime;
   state.finalHint = deliveredHint;
 
-  // Persist hint and telemetry record to local storage
-  try {
-    const hintId = `hint-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    await saveHintRecord({
-      id: hintId,
-      problemHash,
-      timestamp: Date.now(),
-      hint: deliveredHint,
-    });
+  let badgeStatus: 'checked' | 'checked_basic' | 'partly_verified' | 'unverified' | 'low_confidence';
+  if (!deliveredHint) {
+    badgeStatus = 'unverified';
+  } else if (trace.isFallback) {
+    badgeStatus = 'low_confidence';
+  } else if (state.criticResult?.partlyVerified) {
+    badgeStatus = 'partly_verified';
+  } else if (deliveredHint.confidence < 0.45) {
+    badgeStatus = 'low_confidence';
+  } else if (isLowQuota) {
+    badgeStatus = 'checked_basic';
+  } else if (state.criticResult?.pass) {
+    badgeStatus = 'checked';
+  } else {
+    badgeStatus = 'unverified';
+  }
+  trace.badgeStatus = badgeStatus;
 
-    await addEventLog({
-      id: `evt-${Date.now()}`,
-      timestamp: Date.now(),
-      type: 'hint_delivered',
-      contextHash: problemHash,
-      title: context.title || problemHash,
-      details: {
-        hintLevel: deliveredHint.level,
-        confidence: deliveredHint.confidence,
-        retries: trace.retries,
-        isFallback: trace.isFallback,
-        latencyMs: trace.totalDurationMs,
-      },
-    });
-  } catch (storageErr) {
-    logger.warn('Failed to persist hint record or event log', storageErr);
+  // Persist hint and telemetry record to local storage
+  if (deliveredHint) {
+    try {
+      const hintId = `hint-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      await saveHintRecord({
+        id: hintId,
+        problemHash,
+        timestamp: Date.now(),
+        hint: deliveredHint,
+      });
+
+      await addEventLog({
+        id: `evt-${Date.now()}`,
+        timestamp: Date.now(),
+        type: 'hint_delivered',
+        contextHash: problemHash,
+        title: context.title || problemHash,
+        details: {
+          hintLevel: deliveredHint.level,
+          confidence: deliveredHint.confidence,
+          retries: trace.retries,
+          isFallback: trace.isFallback,
+          latencyMs: trace.totalDurationMs,
+        },
+      });
+    } catch (storageErr) {
+      logger.warn('Failed to persist hint record or event log', storageErr);
+    }
   }
 
   recordNodeTiming('deliver', deliverStart);
@@ -233,8 +269,11 @@ export async function runAgentGraph(
   trace.lowQuotaMode = isLowQuota;
 
   return {
-    hint: deliveredHint,
+    hint: deliveredHint || null,
     trace,
     candidateHint: state.candidateHint,
+    unverifiedDraft: state.unverifiedDraft || (deliveredHint ? undefined : state.candidateHint?.hint),
+    errorReason: trace.unverifiedReason,
+    errorCode: state.error ? 'GENERATION_ERROR' : (deliveredHint ? undefined : 'UNVERIFIED_ANSWER'),
   };
 }

@@ -8,9 +8,13 @@ import {
   AlertTriangle,
   ExternalLink,
   ShieldCheck,
+  ShieldAlert,
   ChevronRight,
   ChevronDown,
   Compass,
+  RefreshCw,
+  Eye,
+  FileText,
 } from 'lucide-react';
 import type { HintLevel } from '../../shared/schemas/hints';
 
@@ -23,6 +27,16 @@ export interface ChatMessage {
   codeBlock?: string;
   confidence?: number;
   criticChecked?: boolean;
+  badgeStatus?: 'checked' | 'checked_basic' | 'partly_verified' | 'unverified' | 'low_confidence';
+  retrievalMode?: 'bm25' | 'coverage' | 'selection' | 'full';
+  coverageStats?: { covered: number; total: number };
+  llmCallCount?: number;
+  model?: string;
+  isError?: boolean;
+  errorReason?: string;
+  errorCode?: string;
+  unverifiedDraft?: string;
+  sectionsUsed?: string[];
 }
 
 export interface ChatTabProps {
@@ -31,7 +45,36 @@ export interface ChatTabProps {
   onSendMessage: (query: string, level?: HintLevel) => void;
   onHighlightQuote: (quote: string) => void;
   siteName?: string;
+  contentType?: string;
+  isTruncatedPage?: boolean;
 }
+
+const DraftToggle: React.FC<{ draft: string }> = ({ draft }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="w-full">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="text-[11px] font-mono text-on-surface-variant hover:text-on-surface underline underline-offset-2 flex items-center gap-1 transition-colors"
+      >
+        <Eye className="w-3 h-3" />
+        <span>{isOpen ? 'Hide unverified draft' : 'Show unverified draft'}</span>
+      </button>
+      {isOpen && (
+        <div className="mt-2 p-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs font-sans text-on-surface space-y-1.5">
+          <div className="text-[10px] font-mono text-amber-500 font-semibold uppercase tracking-wider flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            <span>Unverified draft (not verified against page context)</span>
+          </div>
+          <div className="text-xs font-sans text-on-surface leading-relaxed whitespace-pre-wrap select-text">
+            {draft}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const ChatTab: React.FC<ChatTabProps> = ({
   messages,
@@ -39,6 +82,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   onSendMessage,
   onHighlightQuote,
   siteName = 'LeetCode',
+  contentType,
+  isTruncatedPage = false,
 }) => {
   const [inputText, setInputText] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<HintLevel>(1);
@@ -63,11 +108,96 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const levelLabels: Record<HintLevel, string> = {
-    1: 'Auto (L1 Direction)',
-    2: 'L2 Approach',
-    3: 'L3 Pseudocode',
-    4: 'L4 Full Solution',
+  const isGeneric = Boolean(contentType && contentType !== 'problem');
+
+  const levelLabels: Record<HintLevel, string> = isGeneric
+    ? {
+        1: 'Auto (Pointer)',
+        2: 'Explain simply',
+        3: 'Worked example',
+        4: 'Full explanation',
+      }
+    : {
+        1: 'Auto (L1 Direction)',
+        2: 'L2 Approach',
+        3: 'L3 Pseudocode',
+        4: 'L4 Full Solution',
+      };
+
+  const inputPlaceholder = isGeneric
+    ? 'Ask a question about this page...'
+    : 'Ask a question about this problem...';
+
+  const getBadgeDetails = (msg: ChatMessage) => {
+    const status =
+      msg.badgeStatus ||
+      (msg.criticChecked && (msg.confidence ?? 1) > 0.48
+        ? 'checked'
+        : msg.confidence !== undefined && msg.confidence <= 0.48
+        ? 'low_confidence'
+        : 'unverified');
+
+    const tooltipParts: string[] = [];
+    if (msg.model) tooltipParts.push(`Model: ${msg.model}`);
+    if (msg.retrievalMode) tooltipParts.push(`Retrieval: ${msg.retrievalMode.toUpperCase()}`);
+    if (msg.llmCallCount) tooltipParts.push(`LLM Calls: ${msg.llmCallCount}`);
+    if (msg.groundedQuote) tooltipParts.push('Quote: Grounded');
+    else if (status === 'partly_verified') tooltipParts.push('Quote: Unverified (dropped)');
+    const tooltip = tooltipParts.join(' | ') || undefined;
+
+    switch (status) {
+      case 'checked':
+        return (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-mono font-semibold shrink-0"
+            title={tooltip}
+          >
+            <ShieldCheck className="w-3 h-3" />
+            Critic: Checked
+          </span>
+        );
+      case 'checked_basic':
+        return (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-mono font-semibold shrink-0"
+            title={tooltip}
+          >
+            <ShieldCheck className="w-3 h-3" />
+            Critic: Checked (basic)
+          </span>
+        );
+      case 'partly_verified':
+        return (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[10px] font-mono font-semibold shrink-0"
+            title={tooltip}
+          >
+            <AlertTriangle className="w-3 h-3" />
+            Partly verified
+          </span>
+        );
+      case 'low_confidence':
+        return (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/30 text-[10px] font-mono font-semibold shrink-0"
+            title={tooltip}
+          >
+            <AlertTriangle className="w-3 h-3" />
+            Low confidence
+          </span>
+        );
+      case 'unverified':
+      default:
+        return (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/40 text-[10px] font-mono font-semibold shrink-0"
+            title={tooltip}
+          >
+            <ShieldAlert className="w-3 h-3 text-outline" />
+            Critic: Unverified
+          </span>
+        );
+    }
   };
 
   return (
@@ -77,7 +207,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         {messages.length === 0 ? (
           /* Empty State per S03 */
           <div className="flex flex-col items-center justify-center text-center py-6 px-2 my-auto select-none">
-            {/* Knot motif watermark */}
+            {/* Watermark */}
             <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center border border-outline-variant/40 mb-3 text-primary/80">
               <svg
                 className="w-6 h-6"
@@ -98,49 +228,96 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               Ask me anything about this page.
             </h2>
             <p className="text-on-surface-variant font-sans text-xs max-w-[280px] mb-4 leading-relaxed">
-              I'll give progressive hints, not code dumps. Current solution code and constraints are already indexed.
+              {isGeneric
+                ? 'I can explain sections, summarise details, clarify requirements, or locate specific information on this page.'
+                : "I'll give progressive hints, not code dumps. Current solution code and constraints are already indexed."}
             </p>
 
             {/* Suggested Question Chips */}
             <div className="w-full max-w-sm flex flex-col gap-2">
-              <button
-                onClick={() => onSendMessage('Explain this problem and what it is asking for', 1)}
-                className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-tertiary" />
-                  <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
-                    Explain this problem
-                  </span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-              </button>
+              {isGeneric ? (
+                <>
+                  <button
+                    onClick={() => onSendMessage('Explain this page and what it offers', 1)}
+                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-tertiary" />
+                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
+                        Explain this page
+                      </span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                  </button>
 
-              <button
-                onClick={() => onSendMessage('Give me a high-level conceptual direction without spoiling code', 1)}
-                className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-2">
-                  <Compass className="w-4 h-4 text-secondary" />
-                  <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
-                    Give me a direction
-                  </span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-              </button>
+                  <button
+                    onClick={() => onSendMessage('Summarise all details on this page in short points', 1)}
+                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-secondary" />
+                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
+                        Summarise all details in short points
+                      </span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                  </button>
 
-              <button
-                onClick={() => onSendMessage('Check my approach: is there an O(n) space/time tradeoff?', 2)}
-                className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-primary" />
-                  <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
-                    Check my approach
-                  </span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-              </button>
+                  <button
+                    onClick={() => onSendMessage('What are the key tracks, eligibility, or requirements here?', 1)}
+                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-4 h-4 text-primary" />
+                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
+                        Key tracks & requirements
+                      </span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => onSendMessage('Explain this problem and what it is asking for', 1)}
+                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-tertiary" />
+                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
+                        Explain this problem
+                      </span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+
+                  <button
+                    onClick={() => onSendMessage('Give me a high-level conceptual direction without spoiling code', 1)}
+                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Compass className="w-4 h-4 text-secondary" />
+                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
+                        Give me a direction
+                      </span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+
+                  <button
+                    onClick={() => onSendMessage('Check my approach: is there an O(n) space/time tradeoff?', 2)}
+                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-4 h-4 text-primary" />
+                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
+                        Check my approach
+                      </span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -173,7 +350,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 /* Assistant Bubble */
                 <article className="w-full min-w-0 bg-surface-container border border-outline-variant/40 rounded-xl p-3 flex flex-col gap-2.5 transition-all shadow-sm">
                   {/* Low Confidence Warning Banner (S14.4) */}
-                  {msg.confidence !== undefined && msg.confidence <= 0.48 && (
+                  {!msg.isError && msg.confidence !== undefined && msg.confidence <= 0.48 && (
                     <div className="flex items-center justify-between gap-1.5 bg-tertiary/10 border border-tertiary/30 rounded-lg p-2 text-tertiary min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <AlertTriangle className="w-4 h-4 shrink-0 text-tertiary" />
@@ -198,28 +375,74 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       </span>
                     </div>
 
-                    {msg.criticChecked && (msg.confidence ?? 1) > 0.48 ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-mono font-semibold shrink-0">
-                        <ShieldCheck className="w-3 h-3" />
-                        Critic: Checked
-                      </span>
-                    ) : msg.confidence !== undefined && msg.confidence <= 0.48 ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/30 text-[10px] font-mono font-semibold shrink-0">
-                        <AlertTriangle className="w-3 h-3" />
-                        Low confidence
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/40 text-[10px] font-mono font-semibold shrink-0">
-                        <ShieldCheck className="w-3 h-3 text-outline" />
-                        Critic: Unverified
-                      </span>
-                    )}
+                    {getBadgeDetails(msg)}
                   </div>
 
-                  {/* Message body */}
-                  <div className="text-xs font-sans text-on-surface space-y-2 leading-relaxed break-words [overflow-wrap:anywhere] select-text">
-                    <p>{msg.text}</p>
-                  </div>
+                  {/* Coverage Stats Pill */}
+                  {msg.coverageStats && (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant border border-outline-variant/30 text-[10px] font-mono">
+                        <span>
+                          Based on {msg.coverageStats.covered} of {msg.coverageStats.total} sections
+                        </span>
+                        {isTruncatedPage && (
+                          <span className="text-secondary font-medium" title="Page content was truncated for token budget">
+                            • Excerpt limited
+                          </span>
+                        )}
+                      </span>
+                      {msg.retrievalMode === 'coverage' && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-mono font-medium">
+                          Coverage Mode
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Message body or Honest Failure Card */}
+                  {msg.isError ? (
+                    <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 space-y-2.5">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <p className="text-xs font-sans font-medium text-on-surface leading-snug">
+                            I couldn't produce a verified answer based on this page.
+                          </p>
+                          <p className="text-[11px] font-mono text-on-surface-variant leading-relaxed break-words">
+                            Reason: {msg.errorReason || 'Grounding checks could not verify the draft against page context.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-1 border-t border-outline-variant/20 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const prev = messages
+                              .slice(0, messages.findIndex((m) => m.id === msg.id))
+                              .reverse()
+                              .find((m) => m.sender === 'user');
+                            if (prev) {
+                              onSendMessage(prev.text, selectedLevel);
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-md bg-surface-container-high hover:bg-surface-container-highest text-primary border border-primary/30 text-[11px] font-mono font-medium flex items-center gap-1 transition-colors"
+                          title="Retry generation"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Retry</span>
+                        </button>
+
+                        {msg.unverifiedDraft && (
+                          <DraftToggle draft={msg.unverifiedDraft} />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs font-sans text-on-surface space-y-2 leading-relaxed break-words [overflow-wrap:anywhere] select-text">
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                    </div>
+                  )}
 
                   {/* Code block if present */}
                   {msg.codeBlock && (
@@ -260,8 +483,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       <button
                         onClick={() => handleCopy(msg.id, msg.text)}
                         className="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors flex items-center gap-1"
-                        title="Copy hint text"
-                        aria-label="Copy hint text"
+                        title="Copy message text"
+                        aria-label="Copy message text"
                       >
                         {copiedId === msg.id ? (
                           <Check className="w-3 h-3 text-primary" />
@@ -354,7 +577,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 handleSubmit(e);
               }
             }}
-            placeholder="Ask a question about this problem..."
+            placeholder={inputPlaceholder}
             rows={2}
             className="w-full bg-transparent border-0 p-1 text-on-surface placeholder:text-on-surface-variant font-sans text-xs resize-none outline-none leading-relaxed"
           />

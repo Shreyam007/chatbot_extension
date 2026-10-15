@@ -30,6 +30,7 @@ export const PageContextSchema = z.object({
   language: z.string().optional(),
   statementLength: z.number().optional(),
   adapterName: z.string().optional(),
+  isTruncated: z.boolean().optional(),
 });
 
 export type SiteType = z.infer<typeof SiteTypeSchema>;

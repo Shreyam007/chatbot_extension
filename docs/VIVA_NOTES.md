@@ -375,6 +375,41 @@ In v1.0.5:
 
 ---
 
+### Category H: Universal Mode Chat Fidelity, Coverage Retrieval & Honest Error States (v1.0.6)
+
+#### Q45: Why were algorithmic safe fallbacks prohibited from chat and non-problem pages in v1.0.6?
+**Answer:** In earlier releases, when the Critic rejected a candidate or an error occurred during hint generation, `runAgentGraph` invoked `generateSafeFallback`. This returned an algorithmic scaffold designed specifically for LeetCode problems (*"Start by restating the problem in your own words. Identify what inputs are given, what output is expected..."*).
+On non-problem pages (marketing pages like fellowship announcements, articles, documentation) and for conversational user queries (e.g., *"explain me about this fellowship in short points"*), returning a problem-solving scaffold was deceptive, nonsensical, and broken: it masqueraded an LLM/Critic failure as an answer.
+In v1.0.6, we instituted the invariant that chat queries (`isChatQuery: true`) and non-problem pages MUST NEVER invoke `generateSafeFallback`. If generation or verification fails, the system returns an honest failure state (`success: false`, `errorCode`, `errorReason`) and offers the user an optional toggle to inspect the unverified draft.
+
+#### Q46: How does broad summary coverage retrieval work, and why is it essential for long marketing/article pages?
+**Answer:** Top-K BM25 retrieval excels at finding specific answers to narrow questions (e.g., *"What is the stipend?"*). However, for broad summary queries (e.g., *"explain this page"*, *"give me all details in short points"*, *"summarize this fellowship"*), standard BM25 clusters around a few high-frequency keyword sections and starves other essential sections (such as eligibility, timeline, FAQs).
+In v1.0.6, `detectSummaryIntent` recognizes broad summary intent across English and Hinglish patterns. When active, `buildCoverageContext` executes a single-pass document-order coverage builder:
+1. It parses all structural sections, including collapsed FAQ accordions (`<details>`, `<summary>`, `<dt>`, `<dd>`, `.accordion-*`).
+2. It generates a top-level document outline so the LLM understands the global structure.
+3. It allocates a proportional character quota per section (up to a 6,000-character budget), guaranteeing every section is represented without truncation bias.
+4. It sets retrieval mode to `'coverage'`, displays a sections-used pill in the UI, and completes in exactly 1 generation call.
+
+#### Q47: How does v1.0.6 handle grounded quote repair (partly verified), and why does it drop the quote rather than re-prompting?
+**Answer:** LLMs frequently produce excellent, factually grounded answers but make minor alterations to their `groundedQuote` (e.g., slight punctuation changes, whitespace variations, or adding ellipsis). Previously, if verbatim substring matching failed, the Critic rejected the entire candidate and spent a costly second LLM call on regeneration, often running out of retry budget and failing.
+In v1.0.6:
+1. We introduced robust quote normalization: stripping smart quotes, normalizing whitespace, case-folding, and checking normalized substring containment.
+2. We added fuzzy n-gram / token overlap matching (requiring $\ge 4$ tokens, $\ge 80\%$ token overlap, and strictly prohibiting code syntax).
+3. If quote grounding still fails but the answer text itself passes all safety and code-leak checks, chat mode activates the **partly-verified path**: it drops the ungrounded quote, accepts the answer, assigns confidence 0.60, and badges it as `Critic: Partly verified`. This preserves useful answers while honestly signaling that the quote could not be strictly anchored, consuming 0 extra LLM calls.
+
+#### Q48: What caused the Critic false positive rejecting normal English sentences containing the word "public"?
+**Answer:** The Critic's deterministic regex guardrail included a check for Java/C++ method signatures: `\bpublic\s+(?:static\s+)?\w+\s+\w+`. Because this regex lacked a requirement for function call syntax (`(` or `=>`), any normal English noun phrase starting with "public" (e.g., *"public health"*, *"public infrastructure development"*, *"public sector projects"*) was misclassified as an executable code leak and rejected by the Critic.
+In v1.0.6, we repaired `FUNCTION_SIGNATURE_REGEX` to strictly require parameter parentheses or arrow syntax: `\bpublic\s+(?:static\s+)?[\w<>[\]]+\s+\w+\s*(?:\(|=>)`. English adjectives like *"public policy"* now pass through cleanly.
+
+#### Q49: How does the Side Panel UI handle honest failure states without frustrating the user?
+**Answer:** Instead of rendering generic fallback advice with a confusing *"Low confidence 30%"* badge, the Side Panel displays an honest failure card with:
+- An amber alert icon and clear message: *"I couldn't verify this answer against the current page."*
+- A concise explanation of the failure reason (e.g., *"Answer could not be safely verified against the page context without leaking ungrounded claims."*).
+- An interactive **"Show unverified draft"** toggle button allowing the user to view the raw candidate draft with an explicit disclaimer: *"This draft was not verified by the Critic. It may contain inaccuracies or ungrounded assumptions."*
+- Dynamic pedagogical level chips tailored to the page type: on problem pages, it displays `Auto (L1 Direction)`; on articles and documentation, it displays `Auto (Pointer)`, `Explain simply`, `Worked example`, or `Full explanation`.
+
+---
+
 ## 6. Upfront Weaknesses & Technical Limitations (Honest Self-Critique)
 
 In any academic or technical defense, acknowledging system limitations demonstrates engineering rigor:
