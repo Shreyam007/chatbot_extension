@@ -205,7 +205,7 @@ export const wikipediaAdapter: PageAdapter = {
         if (isHeading) {
           flushSection();
           // Extract heading text, removing any remaining [edit] or numbers
-          let hText = el.textContent?.replace(/\[edit\]/gi, '').replace(/\s+/g, ' ').trim() || '';
+          const hText = el.textContent?.replace(/\[edit\]/gi, '').replace(/\s+/g, ' ').trim() || '';
           const normalizedHTitle = hText.toLowerCase();
 
           if (IGNORED_SECTIONS.has(normalizedHTitle)) {

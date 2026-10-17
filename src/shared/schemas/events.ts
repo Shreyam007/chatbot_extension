@@ -10,6 +10,10 @@ export const EventTypeSchema = z.enum([
   'feedback_submitted',
   'problem_solved',
   'error_encountered',
+  'problem_opened',
+  'hint_viewed',
+  'solution_viewed',
+  'chat_message',
 ]);
 
 export const EventLogEntrySchema = z.object({

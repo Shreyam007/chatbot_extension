@@ -174,7 +174,7 @@ export async function runAgentGraph(
       logger.info('Critic approved candidate hint');
       deliveredHint = {
         level: state.level,
-        text: state.candidateHint.hint,
+        text: state.candidateHint.hint?.trim() || 'Guidance provided based on discussion.',
         codeBlock: state.candidateHint.codeBlock,
         groundedQuote: state.candidateHint.groundedQuote,
         confidence: evaluation.confidence,

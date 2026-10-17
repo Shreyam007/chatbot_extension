@@ -6,11 +6,11 @@
 
 // English patterns matching broad summary requests
 const ENGLISH_SUMMARY_PATTERNS = [
-  /\bexplain\s+(me\s+)?(about\s+)?(this\s+|the\s+)?(page|site|article|fellowship|program|document)\b/i,
+  /\bexplain\s+(me\s+)?(about\s+)?(this\s+|the\s+)?(page|site|article|document)\b/i,
   /\b(tell\s+me\s+)?(all\s+)?details\b/i,
   /\b(in\s+)?short\s+points\b/i,
   /\b(summarise|summarize|summary|overview|breakdown|break\s+down)\b/i,
-  /\bwhat\s+is\s+this\s+(page|site|article|fellowship|program)\s+about\b/i,
+  /\bwhat\s+is\s+this\s+(page|site|article|document)\s+about\b/i,
   /\bkey\s+takeaways\b/i,
   /\bkey\s+points\b/i,
   /\btell\s+me\s+everything\b/i,
@@ -27,7 +27,6 @@ const HINGLISH_SUMMARY_PATTERNS = [
   /\b(kya\s+hai|kya\s+likha\s+hai)\b/i,
   /\bdetails\s+batao\b/i,
   /\bpoints\s+me(n)?\s+samjhao\b/i,
-  /\b(is|iss)\s+fellowship\s+(ke|ka)\s+baare\s+me(n)?\b/i,
   /\bsamjha\s+do\b/i,
 ];
 

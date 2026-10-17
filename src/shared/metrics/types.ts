@@ -28,7 +28,26 @@ export const LocalMetricsSummarySchema = z.object({
   criticRejectionRate: z.number().min(0).max(1),
   fallbackRate: z.number().min(0).max(1),
 
+  // Mastery & Problem Attempt Telemetry
+  problemsAttempted: z.number().int().nonnegative().default(0),
+  hintsViewed: z.number().int().nonnegative().default(0),
+  fullSolutionsViewed: z.number().int().nonnegative().default(0),
+  recentProblemRecords: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string().optional(),
+        attempted: z.boolean().default(true),
+        hintsViewed: z.number().int().nonnegative().default(0),
+        solutionViewed: z.boolean().default(false),
+        solved: z.boolean().default(false),
+        lastActivity: z.number().int().optional(),
+      })
+    )
+    .default([]),
+
   calculatedAt: z.number().int().positive(),
 });
 
 export type LocalMetricsSummary = z.infer<typeof LocalMetricsSummarySchema>;
+export type RecentProblemRecord = z.infer<typeof LocalMetricsSummarySchema>['recentProblemRecords'][number];

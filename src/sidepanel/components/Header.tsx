@@ -33,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   isContest,
   demoMode,
   pageProfile,
-  activeUrl,
+  activeUrl: _activeUrl,
   activeTabTitle,
   isLoadingPage = false,
   onTogglePause,
@@ -207,6 +207,18 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                   <div className="text-[10px] font-sans text-on-surface-variant truncate">
                     Browser security blocks extension on internal pages
+                  </div>
+                </div>
+              </>
+            ) : pageProfile?.kind === 'pdf' ? (
+              <>
+                <AlertCircle className="w-3.5 h-3.5 text-tertiary shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-on-surface font-mono text-xs font-semibold truncate">
+                    {activeTabTitle || 'PDF Document'}
+                  </div>
+                  <div className="text-[10px] font-sans text-on-surface-variant truncate">
+                    PDF - Not readable (paste text below)
                   </div>
                 </div>
               </>

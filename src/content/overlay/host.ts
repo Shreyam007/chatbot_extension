@@ -178,10 +178,10 @@ export class OverlayHost {
           </svg>
         </button>
         <div id="unstuck-fab-popover" class="unstuck-fab-popover unstuck-hidden" role="tooltip"></div>
-        <div id="unstuck-fab-menu" class="unstuck-snooze-menu unstuck-hidden" style="bottom: 48px; right: 0;">
-          <button class="unstuck-snooze-item" data-action="fab-open-panel">Open panel</button>
-          <button class="unstuck-snooze-item" data-action="fab-pause-site">Pause on this site</button>
-          <button class="unstuck-snooze-item" data-action="fab-snooze-30">Snooze 30 min</button>
+        <div id="unstuck-fab-menu" class="unstuck-snooze-menu unstuck-hidden" role="menu" aria-label="Unstuck actions menu" style="bottom: 48px; right: 0;">
+          <button class="unstuck-snooze-item" data-action="fab-open-panel" role="menuitem" tabindex="0">Open panel</button>
+          <button class="unstuck-snooze-item" data-action="fab-pause-site" role="menuitem" tabindex="0">Pause on this site</button>
+          <button class="unstuck-snooze-item" data-action="fab-snooze-30" role="menuitem" tabindex="0">Snooze 30 min</button>
         </div>
       </div>
     `;
@@ -310,6 +310,18 @@ export class OverlayHost {
     const isHidden = this.fabMenuElement.classList.contains('unstuck-hidden');
     if (isHidden) {
       this.fabMenuElement.classList.remove('unstuck-hidden');
+      const rect = this.fabMenuElement.getBoundingClientRect();
+      if (rect.top < 10) {
+        this.fabMenuElement.style.bottom = 'auto';
+        this.fabMenuElement.style.top = '48px';
+      } else {
+        this.fabMenuElement.style.top = 'auto';
+        this.fabMenuElement.style.bottom = '48px';
+      }
+      if (rect.left < 10) {
+        this.fabMenuElement.style.right = 'auto';
+        this.fabMenuElement.style.left = '0px';
+      }
     } else {
       this.fabMenuElement.classList.add('unstuck-hidden');
     }

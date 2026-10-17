@@ -76,6 +76,12 @@ export const SidePanelApp: React.FC = () => {
   const [weeklySolved, setWeeklySolved] = useState<number>(0);
   const [hintsPerSolve, setHintsPerSolve] = useState<number>(0);
   const [nudgeAcceptRate, setNudgeAcceptRate] = useState<number>(0);
+  const [problemsAttempted, setProblemsAttempted] = useState<number>(0);
+  const [hintsViewed, setHintsViewed] = useState<number>(0);
+  const [fullSolutionsViewed, setFullSolutionsViewed] = useState<number>(0);
+  const [recentProblemRecords, setRecentProblemRecords] = useState<
+    Array<{ id: string; title?: string; attempted: boolean; hintsViewed: number; solutionViewed: boolean; solved: boolean }>
+  >([]);
   const [recentProblemHints, setRecentProblemHints] = useState<Array<{ id: string; hints: number }>>([]);
   const [diagnostics, setDiagnostics] = useState<{
     sensitivity?: 'low' | 'medium' | 'high';
@@ -89,8 +95,8 @@ export const SidePanelApp: React.FC = () => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
   const [pendingAction, setPendingAction] = useState<
-    | { type: 'hint'; level: HintLevel }
-    | { type: 'chat'; query: string; level?: HintLevel }
+    | { type: 'hint'; level: HintLevel; resolve?: () => void; reject?: (err: unknown) => void }
+    | { type: 'chat'; query: string; level?: HintLevel; resolve?: () => void; reject?: (err: unknown) => void }
     | null
   >(null);
 
@@ -141,6 +147,10 @@ export const SidePanelApp: React.FC = () => {
       weeklySolved: number;
       hintsPerSolve: number;
       nudgeAcceptRate: number;
+      problemsAttempted?: number;
+      hintsViewed?: number;
+      fullSolutionsViewed?: number;
+      recentProblemRecords?: Array<{ id: string; title?: string; attempted: boolean; hintsViewed: number; solutionViewed: boolean; solved: boolean }>;
       recentProblemHints?: Array<{ id: string; hints: number }>;
     }>({ type: 'GET_MASTERY_PROGRESS' })
       .then((res) => {
@@ -149,6 +159,10 @@ export const SidePanelApp: React.FC = () => {
           setWeeklySolved(res.weeklySolved || 0);
           setHintsPerSolve(res.hintsPerSolve || 0);
           setNudgeAcceptRate(res.nudgeAcceptRate || 0);
+          if (res.problemsAttempted !== undefined) setProblemsAttempted(res.problemsAttempted);
+          if (res.hintsViewed !== undefined) setHintsViewed(res.hintsViewed);
+          if (res.fullSolutionsViewed !== undefined) setFullSolutionsViewed(res.fullSolutionsViewed);
+          if (res.recentProblemRecords) setRecentProblemRecords(res.recentProblemRecords);
           if (res.recentProblemHints) {
             setRecentProblemHints(res.recentProblemHints);
           }
@@ -179,16 +193,68 @@ export const SidePanelApp: React.FC = () => {
       let url: string | undefined;
       let title: string | undefined;
 
+      if (typeof window !== 'undefined' && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        if (!tabId) {
+          const parsed = parseInt(params.get('tabId') || '', 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            tabId = parsed;
+          }
+        }
+        if (!url) {
+          const urlParam = params.get('url');
+          if (urlParam) {
+            url = decodeURIComponent(urlParam);
+          }
+        }
+        if (!title) {
+          const titleParam = params.get('title');
+          if (titleParam) {
+            title = decodeURIComponent(titleParam);
+          }
+        }
+      }
+
       if (typeof chrome !== 'undefined' && chrome.tabs?.query) {
         if (!tabId) {
-          const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
-          tabId = active?.id;
-          url = active?.url;
-          title = active?.title;
+          const activeTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          const nonExt = activeTabs.find((t) => t.url && !t.url.startsWith('chrome-extension://') && !t.url.startsWith('chrome://'));
+          if (nonExt?.id) {
+            tabId = nonExt.id;
+            url = nonExt.url;
+            title = nonExt.title;
+          } else {
+            const fallbackTabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            const nonExtFallback = fallbackTabs.find((t) => t.url && !t.url.startsWith('chrome-extension://') && !t.url.startsWith('chrome://'));
+            if (nonExtFallback?.id) {
+              tabId = nonExtFallback.id;
+              url = nonExtFallback.url;
+              title = nonExtFallback.title;
+            } else {
+              const allTabs = (await chrome.tabs.query({})).reverse();
+              const sidepanelTabId = activeTabs[0]?.id;
+              const candidate = allTabs.find((t) => {
+                if (sidepanelTabId && t.id === sidepanelTabId) return false;
+                if (t.url) {
+                  return !t.url.startsWith('chrome-extension://') && !t.url.startsWith('chrome://');
+                }
+                return true; // External page with URL masked by MV3 permission model
+              });
+              if (candidate?.id) {
+                tabId = candidate.id;
+                url = candidate.url;
+                title = candidate.title;
+              } else if (activeTabs[0]?.id) {
+                tabId = activeTabs[0].id;
+                url = activeTabs[0].url;
+                title = activeTabs[0].title;
+              }
+            }
+          }
         } else {
           const tab = await chrome.tabs.get(tabId).catch(() => null);
-          url = tab?.url;
-          title = tab?.title;
+          if (tab?.url) url = tab.url;
+          if (tab?.title) title = tab.title;
         }
       }
 
@@ -207,6 +273,12 @@ export const SidePanelApp: React.FC = () => {
 
       if (res?.context) {
         setContext(res.context);
+        if (res.context.url && !url) {
+          setActiveUrl(res.context.url);
+        }
+        if (res.context.title && !title) {
+          setActiveTabTitle(res.context.title);
+        }
         setSignals(res.signals);
         setPStuck(res.pStuck);
         setIsContest(res.isContest);
@@ -408,6 +480,7 @@ export const SidePanelApp: React.FC = () => {
         requestId,
         tabId: activeTabId ?? undefined,
         pageKey: currentPageKey || undefined,
+        mode: pageProfile.promptVariant === 'standalone' || !context ? 'standalone' : undefined,
       });
 
       if (res) {
@@ -487,12 +560,13 @@ export const SidePanelApp: React.FC = () => {
         };
         appendChatMessage(errorMsg);
       }
+      throw err;
     } finally {
       setIsChatLoading(false);
     }
   };
 
-  const handleSendMessage = async (query: string, level?: HintLevel) => {
+  const handleSendMessage = async (query: string, level?: HintLevel): Promise<void> => {
     if (pageProfile.kind === 'restricted') {
       const restrictedMsg: ChatMessage = {
         id: `asst-restricted-${Date.now()}`,
@@ -506,9 +580,10 @@ export const SidePanelApp: React.FC = () => {
     }
 
     if (shouldPromptSendPreview()) {
-      setPendingAction({ type: 'chat', query, level });
-      setShowPreviewModal(true);
-      return;
+      return new Promise<void>((resolve, reject) => {
+        setPendingAction({ type: 'chat', query, level, resolve, reject });
+        setShowPreviewModal(true);
+      });
     }
     await executeSendMessage(query, level);
   };
@@ -546,16 +621,27 @@ export const SidePanelApp: React.FC = () => {
       }
     }
 
-    if (pendingAction?.type === 'hint') {
-      executeRequestHint(pendingAction.level);
-    } else if (pendingAction?.type === 'chat') {
-      executeSendMessage(pendingAction.query, pendingAction.level);
-    }
+    const action = pendingAction;
     setPendingAction(null);
+
+    if (action?.type === 'hint') {
+      executeRequestHint(action.level);
+      action.resolve?.();
+    } else if (action?.type === 'chat') {
+      try {
+        await executeSendMessage(action.query, action.level);
+        action.resolve?.();
+      } catch (err) {
+        action.reject?.(err);
+      }
+    }
   };
 
   const handleCancelSendPreview = () => {
     setShowPreviewModal(false);
+    if (pendingAction?.reject) {
+      pendingAction.reject(new Error('PREVIEW_CANCELLED'));
+    }
     setPendingAction(null);
   };
 
@@ -786,6 +872,10 @@ export const SidePanelApp: React.FC = () => {
                 weeklySolved={weeklySolved}
                 hintsPerSolve={hintsPerSolve}
                 nudgeAcceptRate={nudgeAcceptRate}
+                problemsAttempted={problemsAttempted}
+                hintsViewed={hintsViewed}
+                fullSolutionsViewed={fullSolutionsViewed}
+                recentProblemRecords={recentProblemRecords}
                 recentProblemHints={recentProblemHints}
               />
             )}

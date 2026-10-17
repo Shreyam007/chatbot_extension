@@ -442,8 +442,13 @@ In v1.0.7:
 #### Q57: How was user input loss prevented during conversational chat queries (Evidence E3)?
 **Answer:** Previously, user input text in `ChatTab.tsx` was cleared immediately when the send button was clicked. If an asynchronous network error or background schema rejection occurred, the typed question was permanently lost. In v1.0.8, an optimistic UI renders the user message bubble immediately, retains the typed text in an internal buffer, and automatically restores the text into the textarea if the background fails to acknowledge the request within a 3-second watchdog timer.
 
-#### Q58: Why were proactive Detector and Planner timings appearing in the Trace Tab for direct chat queries (Evidence E4)?
-**Answer:** The multi-agent graph architecture previously logged default node timings for all nodes in its pipeline regardless of invocation entrypoint. For direct chat interactions initiated by the user, running detector and planner telemetry was inaccurate because no proactive struggle evaluation occurred. In v1.0.8, `src/background/graph/graph.ts` strictly gates detector and planner telemetry behind `isProactiveNudge: true`. Direct chat requests omit proactive nodes and tag traces with `userInitiated: true`.
+#### Q59: What architectural hardening was introduced in v1.0.9 "PAGE-AWARE"?
+**Answer:** v1.0.9 resolved 5 critical correctness and telemetry anomalies:
+1. **Retrieval Overfitting:** Eradicated single-competition tokens (`fellowship`, `program`) from retrieval intent matching; added automated sentinel AST test ensuring zero overfitted tokens in bundle.
+2. **Active Tab Synchronization & Vanishing Prompt Restoration:** Synced active URL in sidepanel even on unpermissioned external tabs; rejection of `PREVIEW_CANCELLED` restores user query directly into the textarea without data loss.
+3. **Synchronous Gesture Preservation:** `OPEN_SIDE_PANEL` invokes `chrome.sidePanel.open` synchronously within the message turn to preserve Chrome's transient user activation token.
+4. **44-Fixture Real-DOM Verification Matrix:** Added 13 new real-DOM fixtures (Wikipedia, LeetCode, Codeforces, docs, checkout) in `tests/fixtures/`, verifying 0 errors and 0 warnings across all 21 automated Playwright scenarios.
+5. **Single-Instance Content Controller Guard:** Added `window.__UNSTUCK_CONTROLLER__` guard to eliminate duplicate content script controllers across SPA route re-evaluations.
 
 ---
 

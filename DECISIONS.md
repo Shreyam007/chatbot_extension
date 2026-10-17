@@ -546,6 +546,48 @@ Strict release invariant: Zero new features; pure bug fix and correctness harden
 - **Unit Tests (`npm test`):** 57 test files passed (100%), 408 tests passed (100%).
 - **Package Zip:** `.output/unstuck-1.0.8-chrome.zip` verified with zero `.map` files.
 
+---
+
+## ADR 23: v1.0.9 PAGE-AWARE Hardening & Verification Matrix
+
+### Context & Problem Statement
+Following v1.0.8, extensive real-DOM testing across 44 offline fixtures and multi-tab switching identified critical edge cases:
+1. Retrieval intent tokens (`fellowship`, `program`) were overfitted to a single contest prompt.
+2. Active tab switching in Chrome MV3 masked external URLs from `chrome.tabs.query`, causing SidePanelApp to lose page context on unpermissioned tabs.
+3. Preview cancellation in chat cleared user input unexpectedly ("vanishing prompt").
+4. HintsTab level stepper titles lacked responsive wrapping at narrow 320px viewports.
+5. In-page FAB context menu lacked accessibility attributes (`role="menu"`/`role="menuitem"`) and could be doubly injected if SPAs re-ran scripts.
+6. Progress telemetry did not log `problemsAttempted`, `hintsViewed`, and `fullSolutionsViewed` in accordance with BKT specs.
+
+### Decisions & Implementation
+1. **Item 1: Retrieval Token Sanitization & Sentinel Test:**
+   - Removed `fellowship` and `program` from `src/shared/retrieval/intent.ts`. Replaced hardcoded chips across all page profiles with generic contextual queries.
+   - Enforced sentinel bundle test `tests/unit/bundle-sentinel-overfitting.test.ts` verifying compiled chunks contain zero overfitted tokens.
+2. **Item 2 & 5: Active Tab Sync & Prompt Recovery:**
+   - Extended `SidePanelApp.tsx`'s `syncActiveTabContext` to synchronize with `res.context.url` and support query parameters (`?tabId=` and `?url=`).
+   - Hardened `handleSendMessage` in `SidePanelApp.tsx` to return a Promise that rejects on preview cancel (`PREVIEW_CANCELLED`), restoring `inputText = backup` in `ChatTab.tsx`.
+   - Rendered explicit PDF fallback card in `Header.tsx` explaining Chrome PDF viewer restrictions and providing a direct "Ask a general question" action.
+3. **Item 4: Responsive Stepper & Dynamic L4 Title:**
+   - Added `break-words`, `min-w-0`, and flexible flex-wrap layouts to `HintsTab.tsx`'s stepper buttons and descriptions.
+   - Dynamically set Level 4 title to "Full solution" if `codeBlock` is present, or "Full explanation (no code returned)" if conceptual.
+4. **Item 6: User-Gesture Preservation & FAB Accessibility:**
+   - Refactored `OPEN_SIDE_PANEL` message handler to invoke `chrome.sidePanel.open({ tabId })` synchronously within the turn to preserve Chrome's user gesture token.
+   - Annotated FAB context menu with `role="menu"` and `role="menuitem"`, with keyboard arrow navigation and Escape dismissal.
+   - Added single-instance guard `window.__UNSTUCK_CONTROLLER__` in `src/content/index.ts` to prevent double injection.
+5. **Item 7: 44-Fixture Real-DOM Matrix & Wikipedia Script:**
+   - Added 13 new real-DOM fixtures (Wikipedia, LeetCode, Codeforces, docs, checkout) in `tests/fixtures/` bringing the total to 44 fixtures.
+   - Added `tests/unit/fixtures-matrix.test.ts` (100% passing) and `scripts/eval-wikipedia.ts` (`npm run eval:wikipedia`).
+6. **Item 8: Extended 21-Scenario Zero-Error Verification Gate:**
+   - Extended `tests/zero-error/verify-errors.test.ts` to 21 comprehensive scenarios (29 validation checkpoints).
+   - Zero allowlist entries (`allowlist.json` = `[]`).
+   - 100% passing across all 21 scenarios with 0 errors, 0 warnings, and 0 page errors.
+
+### Verification Status
+- **Automated Gate (`npm run verify:errors`):** 21/21 scenarios passed with 0 warnings, 0 errors, 0 page errors.
+- **Unit Suite (`npm test`):** 58 files passed (100%), 417 tests passed (100%).
+- **TypeScript & Lint:** Clean compilation (`tsc --noEmit`) and linting (`eslint .`).
+- **Real-World Boundary Disclaimer:** Automated suite uses deterministic schema mocks; live Gemini calls, Brave manual QA, and classroom studies are explicitly declared NOT VERIFIED in the automated suite.
+
 
 
 

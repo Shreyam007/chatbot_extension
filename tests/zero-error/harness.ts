@@ -23,7 +23,7 @@ export class ZeroErrorHarness {
   constructor(extensionPath?: string) {
     const devPath = path.resolve(__dirname, '../../.output/chrome-mv3-dev');
     const prodPath = path.resolve(__dirname, '../../.output/chrome-mv3');
-    this.pathToExtension = extensionPath || (fs.existsSync(devPath) ? devPath : prodPath);
+    this.pathToExtension = extensionPath || (fs.existsSync(prodPath) ? prodPath : devPath);
   }
 
   public async startServer(): Promise<void> {
@@ -56,6 +56,12 @@ export class ZeroErrorHarness {
           file = 'leetcode-contest.html';
         } else if (url.pathname.includes('two-sum') || url.pathname.includes('leetcode')) {
           file = 'leetcode-two-sum-description.html';
+        } else if (url.pathname.includes('pdf')) {
+          file = 'pdf-viewer-placeholder.html';
+        } else if (url.pathname.includes('mdn') || url.pathname.includes('reference')) {
+          file = 'mdn-reference-page.html';
+        } else if (url.pathname.includes('chrome-internal') || url.pathname.includes('internal')) {
+          file = 'chrome-internal-mock.html';
         }
 
         const filePath = path.resolve(__dirname, '../fixtures', file);
@@ -131,10 +137,11 @@ export class ZeroErrorHarness {
         fetchCount: 0,
       };
 
-      if (!g.__geminiMockInstalled) {
-        g.__geminiMockInstalled = true;
-        const originalFetch = globalThis.fetch;
-        globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      if (!g.__originalFetch) {
+        g.__originalFetch = globalThis.fetch;
+      }
+      const originalFetch = g.__originalFetch;
+      globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
           const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
           if (urlStr.includes('generativelanguage.googleapis.com')) {
             g.__geminiMock.fetchCount++;
@@ -171,22 +178,42 @@ export class ZeroErrorHarness {
               );
             }
 
-            // Normal mock hint response
+            // Normal mock hint response with schema awareness
+            let mockData: Record<string, unknown>;
+            const bodyText = typeof init?.body === 'string' ? init.body : '';
+            if (bodyText.includes('CRITIC') || bodyText.includes('critic') || bodyText.includes('impartial') || bodyText.includes('pedagogy judge')) {
+              mockData = {
+                pass: true,
+                leak: false,
+                grounded: true,
+                relevant: true,
+                confidence: 0.95,
+                reason: 'Verified by critic evaluation.',
+              };
+            } else if (bodyText.includes('LEVEL 4') || bodyText.includes('FULL SOLUTION')) {
+              mockData = {
+                hint: 'Optimal solution using a hash map for two-sum complement lookup.',
+                codeBlock: 'class Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        seen = {}\n        for i, num in enumerate(nums):\n            diff = target - num\n            if diff in seen:\n                return [seen[diff], i]\n            seen[num] = i',
+                topics: ['Array', 'Hash Table'],
+                groundedQuote: 'nums',
+                selfConfidence: 0.95,
+              };
+            } else {
+              mockData = {
+                hint: 'Consider how a hash map can help find numbers in O(1) time by storing seen elements.',
+                topics: ['Array', 'Hash Table'],
+                groundedQuote: 'nums',
+                selfConfidence: 0.95,
+              };
+            }
+
             const mockPayload = {
               candidates: [
                 {
                   content: {
                     parts: [
                       {
-                        text: JSON.stringify({
-                          level: 1,
-                          strategy: 'clarification',
-                          content: 'Consider how a hash map can help find numbers in O(1) time.',
-                          suggestedQuestion: 'How would you track complements?',
-                          codeSnippet: 'seen = {}',
-                          groundedQuote: 'nums',
-                          confidence: 0.95,
-                        }),
+                        text: JSON.stringify(mockData),
                       },
                     ],
                   },
@@ -198,7 +225,6 @@ export class ZeroErrorHarness {
 
           return originalFetch(input, init);
         };
-      }
     }, opts);
   }
 

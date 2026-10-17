@@ -75,13 +75,19 @@ export const HintsTab: React.FC<HintsTabProps> = ({
         1: { title: 'Pointer', subtitle: 'Where in page to look' },
         2: { title: 'Explain Simply', subtitle: 'Jargon-free explanation' },
         3: { title: 'Worked Example', subtitle: 'Analogy or scenario' },
-        4: { title: activeHint?.codeBlock ? 'Full Solution' : 'Full Explanation', subtitle: activeHint?.codeBlock ? 'Working implementation' : 'In-depth guide' },
+        4: {
+          title: activeHint?.codeBlock ? 'Full solution' : 'Full explanation (no code returned)',
+          subtitle: activeHint?.codeBlock ? 'Working implementation' : 'In-depth guide',
+        },
       }
     : {
         1: { title: 'Direction', subtitle: 'Conceptual nudge' },
         2: { title: 'Approach', subtitle: 'Algorithmic pattern' },
         3: { title: 'Pseudocode', subtitle: 'Logic scaffold' },
-        4: { title: activeHint?.codeBlock ? 'Full Solution' : 'Full Explanation', subtitle: activeHint?.codeBlock ? 'Working implementation' : 'In-depth guide' },
+        4: {
+          title: activeHint?.codeBlock ? 'Full solution' : 'Full explanation (no code returned)',
+          subtitle: activeHint?.codeBlock ? 'Working implementation' : 'In-depth guide',
+        },
       };
 
   return (
@@ -109,14 +115,15 @@ export const HintsTab: React.FC<HintsTabProps> = ({
                   key={lvl}
                   onClick={() => onNextLevel(lvl)}
                   className="flex flex-col items-center gap-1 p-1 sm:p-1.5 rounded-lg bg-surface-container/60 border border-primary/30 hover:bg-surface-container transition-colors group text-center min-w-0 w-full"
+                  title={`Level ${lvl}: ${levelTitles[lvl].title}`}
                 >
                   <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/20 text-primary shrink-0">
                     <Check className="w-3.5 h-3.5" />
                   </div>
-                  <span className="font-mono text-[10px] text-on-surface group-hover:text-primary transition-colors truncate w-full block">
+                  <span className="font-mono text-[9px] sm:text-[10px] text-on-surface group-hover:text-primary transition-colors leading-tight break-words px-0.5 w-full block text-center">
                     L{lvl} {levelTitles[lvl].title}
                   </span>
-                  <span className="text-[9px] font-mono text-on-surface-variant/70 leading-none truncate w-full block">
+                  <span className="text-[8px] sm:text-[9px] font-mono text-on-surface-variant/70 leading-none truncate w-full block">
                     Reviewed
                   </span>
                 </button>
@@ -128,6 +135,7 @@ export const HintsTab: React.FC<HintsTabProps> = ({
                 <div
                   key={lvl}
                   className="flex flex-col items-center gap-1 p-1 sm:p-1.5 rounded-lg bg-surface-container-high border-2 border-primary shadow-[0_0_8px_rgba(34,197,94,0.25)] relative text-center min-w-0 w-full"
+                  title={`Level ${lvl}: ${levelTitles[lvl].title} (Active)`}
                 >
                   <span className="absolute -top-1.5 px-1 bg-primary text-on-primary font-mono text-[8px] rounded-full uppercase tracking-tighter">
                     Active
@@ -135,10 +143,10 @@ export const HintsTab: React.FC<HintsTabProps> = ({
                   <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary font-mono text-xs font-bold mt-0.5 shrink-0">
                     {lvl}
                   </div>
-                  <span className="font-mono text-[10px] text-primary font-semibold truncate w-full block">
+                  <span className="font-mono text-[9px] sm:text-[10px] text-primary font-semibold leading-tight break-words px-0.5 w-full block text-center">
                     L{lvl} {levelTitles[lvl].title}
                   </span>
-                  <span className="text-[9px] font-mono text-primary/80 leading-none truncate w-full block">
+                  <span className="text-[8px] sm:text-[9px] font-mono text-primary/80 leading-none truncate w-full block">
                     Active
                   </span>
                 </div>
@@ -151,6 +159,7 @@ export const HintsTab: React.FC<HintsTabProps> = ({
                 className={`flex flex-col items-center gap-1 p-1 sm:p-1.5 rounded-lg bg-surface-container-lowest/50 border min-w-0 w-full ${
                   lvl === 4 ? 'border-tertiary-container/30 opacity-60' : 'border-outline-variant/30 opacity-70'
                 } text-center`}
+                title={`Level ${lvl}: ${levelTitles[lvl].title} (Guarded)`}
               >
                 <div
                   className={`flex items-center justify-center w-5 h-5 rounded-full shrink-0 ${
@@ -159,10 +168,14 @@ export const HintsTab: React.FC<HintsTabProps> = ({
                 >
                   <Lock className="w-3 h-3" />
                 </div>
-                <span className={`font-mono text-[10px] truncate w-full block ${lvl === 4 ? 'text-tertiary' : 'text-on-surface-variant'}`}>
-                  L{lvl} {levelTitles[lvl].title.slice(0, 5)}
+                <span
+                  className={`font-mono text-[9px] sm:text-[10px] leading-tight break-words px-0.5 w-full block text-center ${
+                    lvl === 4 ? 'text-tertiary' : 'text-on-surface-variant'
+                  }`}
+                >
+                  L{lvl} {levelTitles[lvl].title}
                 </span>
-                <span className="text-[9px] font-mono text-on-surface-variant/60 leading-none truncate w-full block">
+                <span className="text-[8px] sm:text-[9px] font-mono text-on-surface-variant/60 leading-none truncate w-full block">
                   {lvl === 4 ? 'Guarded' : 'Next'}
                 </span>
               </div>
@@ -372,11 +385,14 @@ export const HintsTab: React.FC<HintsTabProps> = ({
 
           {/* Solved It Action */}
           <button
+            id="unstuck-mark-solved-btn"
+            data-testid="mark-as-solved-btn"
             onClick={onSolved}
-            className="w-full py-1 text-center font-mono text-xs text-primary hover:text-primary-fixed hover:underline transition-all flex items-center justify-center gap-1.5"
+            className="w-full py-1.5 px-3 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 text-center font-mono text-xs text-primary transition-all flex items-center justify-center gap-1.5 active:scale-95"
+            aria-label="Mark as solved"
           >
-            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-            <span>I solved it!</span>
+            <CheckCircle2 className="w-4 h-4 text-primary" />
+            <span className="font-semibold">Mark as solved</span>
           </button>
         </section>
       )}

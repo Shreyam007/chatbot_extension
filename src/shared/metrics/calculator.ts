@@ -193,6 +193,114 @@ export function calculateMetricsFromRecords(
       ? Math.round((fallbacks / totalGenerations) * 1000) / 1000
       : 0;
 
+  // 5. Problem Attempt, Hint View & Solution Telemetry
+  const problemMap = new Map<
+    string,
+    {
+      id: string;
+      title?: string;
+      attempted: boolean;
+      hintsFromDb: number;
+      hintsFromEvents: number;
+      solutionViewed: boolean;
+      solved: boolean;
+      lastActivity: number;
+    }
+  >();
+
+  // Process hints
+  for (const h of hints) {
+    const pId = h.problemHash || 'unknown-problem';
+    let entry = problemMap.get(pId);
+    if (!entry) {
+      entry = {
+        id: pId,
+        title: pId.replace(/^(leetcode|codeforces|wikipedia):/, '').replace(/-/g, ' '),
+        attempted: true,
+        hintsFromDb: 0,
+        hintsFromEvents: 0,
+        solutionViewed: false,
+        solved: false,
+        lastActivity: h.timestamp || 0,
+      };
+      problemMap.set(pId, entry);
+    }
+    entry.hintsFromDb++;
+    const hLevel = (h as any).level ?? h.hint?.level;
+    if (hLevel === 4) {
+      entry.solutionViewed = true;
+    }
+    if (h.timestamp && h.timestamp > entry.lastActivity) {
+      entry.lastActivity = h.timestamp;
+    }
+  }
+
+  // Process events
+  let hintViewedEventsCount = 0;
+  let solutionViewedEventsCount = 0;
+
+  for (const evt of events) {
+    const pId = evt.contextHash || 'unknown-problem';
+    if (!pId || pId === 'unknown') continue;
+
+    let entry = problemMap.get(pId);
+    if (!entry) {
+      entry = {
+        id: pId,
+        title: evt.title || pId.replace(/^(leetcode|codeforces|wikipedia):/, '').replace(/-/g, ' '),
+        attempted: false,
+        hintsFromDb: 0,
+        hintsFromEvents: 0,
+        solutionViewed: false,
+        solved: false,
+        lastActivity: evt.timestamp,
+      };
+      problemMap.set(pId, entry);
+    }
+
+    if (evt.timestamp > entry.lastActivity) {
+      entry.lastActivity = evt.timestamp;
+    }
+
+    if (evt.type === 'problem_opened') {
+      entry.attempted = true;
+      if (evt.title && !entry.title) entry.title = evt.title;
+    } else if (evt.type === 'hint_viewed') {
+      entry.attempted = true;
+      entry.hintsFromEvents++;
+      hintViewedEventsCount++;
+      const lvl = evt.details?.level;
+      if (lvl === 4) {
+        entry.solutionViewed = true;
+      }
+    } else if (evt.type === 'solution_viewed') {
+      entry.attempted = true;
+      entry.solutionViewed = true;
+      solutionViewedEventsCount++;
+    } else if (evt.type === 'problem_solved') {
+      entry.solved = true;
+      entry.attempted = true;
+    }
+  }
+
+  const problemsAttempted = problemMap.size;
+  const hintsViewed = Math.max(hintViewedEventsCount, totalHintsDelivered);
+  const solutionsViewedByHints = hints.filter((h) => ((h as any).level ?? h.hint?.level) === 4).length;
+  const fullSolutionsViewed = Math.max(solutionViewedEventsCount, solutionsViewedByHints);
+
+  const recentProblemRecords = Array.from(problemMap.values())
+    .map((e) => ({
+      id: e.id,
+      title: e.title,
+      attempted: e.attempted,
+      hintsViewed: Math.max(e.hintsFromDb, e.hintsFromEvents),
+      solutionViewed: e.solutionViewed,
+      solved: e.solved,
+      lastActivity: e.lastActivity,
+    }))
+    .sort((a, b) => b.lastActivity - a.lastActivity)
+    .slice(0, 10);
+
   return {
     nudgesOffered: finalOffered,
     nudgesAccepted: finalAccepted,
@@ -213,6 +321,10 @@ export function calculateMetricsFromRecords(
     latencyP95Ms,
     criticRejectionRate,
     fallbackRate,
+    problemsAttempted,
+    hintsViewed,
+    fullSolutionsViewed,
+    recentProblemRecords,
     calculatedAt: Date.now(),
   };
 }

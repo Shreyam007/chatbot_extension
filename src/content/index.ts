@@ -15,6 +15,7 @@ const logger = createLogger('ContentScript');
 declare global {
   interface Window {
     __UNSTUCK_INITIALIZED__?: boolean;
+    __UNSTUCK_CONTROLLER__?: ContentScriptController;
   }
 }
 
@@ -475,6 +476,7 @@ export class ContentScriptController {
     this.overlay.destroy();
     if (typeof window !== 'undefined') {
       window.__UNSTUCK_INITIALIZED__ = false;
+      delete window.__UNSTUCK_CONTROLLER__;
     }
   }
 }
@@ -485,10 +487,10 @@ let activeController: ContentScriptController | null = null;
 
 export function initContentScript(ctx?: { onInvalidated?: (fn: () => void) => void }): ContentScriptController {
   // Single instance guard (F12)
-  if (typeof window !== 'undefined' && window.__UNSTUCK_INITIALIZED__ && activeController) {
-    return activeController;
-  }
   if (typeof window !== 'undefined') {
+    if (window.__UNSTUCK_INITIALIZED__ && window.__UNSTUCK_CONTROLLER__) {
+      return window.__UNSTUCK_CONTROLLER__;
+    }
     window.__UNSTUCK_INITIALIZED__ = true;
   }
 
@@ -497,6 +499,9 @@ export function initContentScript(ctx?: { onInvalidated?: (fn: () => void) => vo
 
   activeController = new ContentScriptController();
   activeController.init();
+  if (typeof window !== 'undefined') {
+    window.__UNSTUCK_CONTROLLER__ = activeController;
+  }
 
   // Lifecycle bindings (F12)
   if (ctx && typeof ctx.onInvalidated === 'function') {

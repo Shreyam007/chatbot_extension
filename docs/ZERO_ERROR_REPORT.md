@@ -20,4 +20,12 @@
 | Contest Mode | https://leetcode.com/contest/weekly-contest-400/ | 0 | 0 | 0 | None |
 | SPA Navigation Clear | https://leetcode.com/spa/problems | 0 | 0 | 0 | None |
 | Rate Limit 429 Handling | sidepanel.html | 0 | 0 | 0 | None |
-| 10-Min Soak Test | Hindi (Heap: 6788KB -> 6878KB) | 0 | 0 | 0 | None |
+| 10-Min Soak Test | Hindi (Heap: 1120KB -> 1208KB) | 0 | 0 | 0 | None |
+| Tab Switch Synchronization | Multi-Tab Switching | 0 | 0 | 0 | None |
+| Wikipedia Chat & Prompt Recovery | sidepanel.html | 0 | 0 | 0 | None |
+| Highlight Verification | In-Page Highlight | 0 | 0 | 0 | None |
+| Progress Telemetry (L4 Session) | GET_MASTERY_PROGRESS | 0 | 0 | 0 | None |
+| Trace Telemetry | Event Ring Buffer | 0 | 0 | 0 | None |
+| Stepper 320px Responsiveness | sidepanel.html (320px) | 0 | 0 | 0 | None |
+| FAB Menu & SidePanel Trigger | In-Page Overlay | 0 | 0 | 0 | None |
+| Proactive Nudge & Double Injection Immunity | content.js | 0 | 0 | 0 | None |

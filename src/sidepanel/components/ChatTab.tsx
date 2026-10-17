@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Send,
   Lightbulb,
-  Terminal,
   Copy,
   Check,
   AlertTriangle,
@@ -169,7 +168,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const emptyBody = pageProfile
     ? pageProfile.emptyStateBody
     : isGeneric
-    ? 'I can explain sections, summarise details, clarify requirements, or locate specific information on this page.'
+    ? 'I can explain sections, summarize details, or locate specific information on this page.'
     : "I'll give progressive hints, not code dumps. Current solution code and constraints are already indexed.";
 
   const rawChips: string[] =
@@ -178,7 +177,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       ? [
           'Explain this page and what it offers',
           'Summarise all details on this page in short points',
-          'What are the key tracks, eligibility, or requirements here?',
+          'What are the key sections, topics, or requirements here?',
         ]
       : [
           'Explain this problem',
@@ -280,7 +279,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               {chips.map((chip, idx) => (
                 <button
                   key={idx}
-                  onClick={() => onSendMessage(chip.query, 1)}
+                  onClick={() => {
+                    if (chip.query === 'Paste text to ask about') {
+                      setInputText('Here is the text:\n\n');
+                    } else {
+                      onSendMessage(chip.query, 1);
+                    }
+                  }}
                   className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
                 >
                   <div className="flex items-center gap-2">

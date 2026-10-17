@@ -99,6 +99,39 @@ export function initBackground() {
 
   registerAlarmListeners();
 
+  async function getOrFetchTabContext(targetTabId?: number): Promise<{ tabId?: number; context: PageContext | null }> {
+    let tabId = targetTabId;
+    let tabState = tabId ? await getTabState(tabId) : undefined;
+    if (!tabState?.context || !tabState.context.statementText || tabState.context.statementText.trim().length === 0) {
+      const { tabId: activeId, state: activeState } = await getActiveTabState();
+      if (!tabId) tabId = activeId;
+      if (!tabState) tabState = activeState;
+    }
+
+    let context = tabState?.context ?? null;
+    if ((!context || !context.statementText || context.statementText.trim().length === 0) && tabId && typeof chrome !== 'undefined' && chrome.tabs?.sendMessage) {
+      try {
+        const tabRes = await new Promise<{ ok: boolean; context: PageContext | null }>((resolve) => {
+          chrome.tabs.sendMessage(tabId!, { type: 'GET_PAGE_CONTEXT' }, (res) => {
+            if (chrome.runtime?.lastError || !res) {
+              resolve({ ok: false, context: null });
+            } else {
+              resolve(res);
+            }
+          });
+        });
+        if (tabRes?.context?.statementText && tabRes.context.statementText.trim().length > 0) {
+          context = tabRes.context;
+          await setTabState(tabId, { context });
+        }
+      } catch (err) {
+        logger.debug('getOrFetchTabContext lookup error:', err);
+      }
+    }
+
+    return { tabId, context };
+  }
+
   // Register typed message router
   registerBackgroundRouter({
     PING: (_req) => {
@@ -166,69 +199,64 @@ export function initBackground() {
         success: cancelled,
       };
     },
-    OPEN_SIDE_PANEL: async (req, sender) => {
+    OPEN_SIDE_PANEL: (req, sender) => {
       let tabId = req.tabId ?? sender?.tab?.id;
-      if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
-        const { tabId: activeId } = await getActiveTabState();
-        tabId = activeId;
-      }
-
-      if (!tabId) {
-        return { type: 'OPEN_SIDE_PANEL_RESULT', ok: false, error: 'No active tab ID available' };
-      }
-
-      if (req.tab && typeof chrome !== 'undefined' && chrome.storage?.session) {
+      if (tabId && chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
         try {
-          await chrome.storage.session.set({ active_sidepanel_tab: req.tab });
-        } catch {
-          // best-effort
-        }
-      }
-
-      if (chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
-        try {
-          await chrome.sidePanel.open({ tabId });
-          return { type: 'OPEN_SIDE_PANEL_RESULT', ok: true };
+          chrome.sidePanel.open({ tabId });
+          if (req.tab && typeof chrome !== 'undefined' && chrome.storage?.session) {
+            chrome.storage.session.set({ active_sidepanel_tab: req.tab }).catch(() => {});
+          }
+          return Promise.resolve({ type: 'OPEN_SIDE_PANEL_RESULT', ok: true });
         } catch (err: unknown) {
           logger.info('SidePanel not opened directly (in-page popover fallback will be used):', err);
-          return {
+          return Promise.resolve({
             type: 'OPEN_SIDE_PANEL_RESULT',
             ok: false,
             error: err instanceof Error ? err.message : String(err),
-          };
+          });
         }
       }
-      return {
-        type: 'OPEN_SIDE_PANEL_RESULT',
-        ok: false,
-        error: 'chrome.sidePanel is not supported in this browser',
-      };
-    },
-    REQUEST_HINT: async (req, sender) => {
-      let tabId = req.tabId ?? sender?.tab?.id;
-      if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
-        tabId = req.tabId;
+
+      // If no sender.tab.id, query active tab asynchronously as fallback
+      return (async () => {
         if (!tabId) {
           const { tabId: activeId } = await getActiveTabState();
           tabId = activeId;
         }
+        if (!tabId) {
+          return { type: 'OPEN_SIDE_PANEL_RESULT', ok: false, error: 'No active tab ID available' };
+        }
+        if (chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
+          try {
+            await chrome.sidePanel.open({ tabId });
+            return { type: 'OPEN_SIDE_PANEL_RESULT', ok: true };
+          } catch (err: unknown) {
+            return {
+              type: 'OPEN_SIDE_PANEL_RESULT',
+              ok: false,
+              error: err instanceof Error ? err.message : String(err),
+            };
+          }
+        }
+        return {
+          type: 'OPEN_SIDE_PANEL_RESULT',
+          ok: false,
+          error: 'chrome.sidePanel is not supported in this browser',
+        };
+      })();
+    },
+    REQUEST_HINT: async (req, sender) => {
+      let reqTabId = req.tabId ?? sender?.tab?.id;
+      if (!reqTabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
+        reqTabId = req.tabId;
       }
+
+      const { tabId, context: pageContext } = await getOrFetchTabContext(reqTabId);
 
       const stored = await chrome.storage?.local?.get(['settings']);
       const settings = stored?.settings || DEFAULT_SETTINGS;
       const model = settings.model || DEFAULT_AI_MODEL;
-
-      let tabState = tabId ? await getTabState(tabId) : undefined;
-      let pageContext = tabState?.context;
-
-      if (!pageContext || !pageContext.statementText || pageContext.statementText.trim().length === 0) {
-        const { tabId: fallbackId, state: fallbackState } = await getActiveTabState();
-        if (fallbackState?.context?.statementText && fallbackState.context.statementText.trim().length > 0) {
-          tabId = fallbackId;
-          tabState = fallbackState;
-          pageContext = fallbackState.context;
-        }
-      }
 
       if (!pageContext || !pageContext.statementText || pageContext.statementText.trim().length === 0) {
         throw new LlmError(
@@ -257,6 +285,29 @@ export function initBackground() {
       recentTraces.unshift(result.trace);
       if (recentTraces.length > 20) {
         recentTraces.pop();
+      }
+
+      // Progress Telemetry: Log hint_viewed and solution_viewed
+      if (result.hint) {
+        await addEventLog({
+          id: `hint-viewed-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          timestamp: Date.now(),
+          type: 'hint_viewed',
+          contextHash: pageContext.url,
+          title: `Hint Level ${result.hint.level} Viewed`,
+          details: { level: result.hint.level, problemHash: pageContext.url },
+        });
+
+        if (result.hint.level === 4) {
+          await addEventLog({
+            id: `solution-viewed-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            timestamp: Date.now(),
+            type: 'solution_viewed',
+            contextHash: pageContext.url,
+            title: 'Full Solution Viewed',
+            details: { level: 4, problemHash: pageContext.url, hasCodeBlock: Boolean(result.hint.codeBlock) },
+          });
+        }
       }
 
       return {
@@ -549,35 +600,20 @@ export function initBackground() {
       };
     },
     GET_PROBLEM_CONTEXT: async (req) => {
-      let targetTabId = req?.tabId;
-      let tabState = targetTabId ? await getTabState(targetTabId) : undefined;
-      if (!tabState || !tabState.context) {
-        const { tabId: activeId, state: activeTabState } = await getActiveTabState();
-        if (!targetTabId) targetTabId = activeId;
-        if (!tabState) tabState = activeTabState;
-      }
-      let context = tabState?.context ?? null;
+      const { tabId: resolvedTabId, context } = await getOrFetchTabContext(req?.tabId);
+      const tabState = resolvedTabId ? await getTabState(resolvedTabId) : undefined;
       const signals = tabState?.signals ?? null;
       const pStuck = tabState?.pStuck ?? 0;
 
-      if (!context && targetTabId && typeof chrome !== 'undefined' && chrome.tabs?.sendMessage) {
-        try {
-          const tabRes = await new Promise<{ ok: boolean; context: PageContext | null }>((resolve) => {
-            chrome.tabs.sendMessage(targetTabId!, { type: 'GET_PAGE_CONTEXT' }, (res) => {
-              if (chrome.runtime?.lastError || !res) {
-                resolve({ ok: false, context: null });
-              } else {
-                resolve(res);
-              }
-            });
-          });
-          if (tabRes?.context) {
-            context = tabRes.context;
-            await setTabState(targetTabId!, { context });
-          }
-        } catch (err) {
-          logger.debug('Active tab context lookup error:', err);
-        }
+      if (context?.url) {
+        await addEventLog({
+          id: `open-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          timestamp: Date.now(),
+          type: 'problem_opened',
+          contextHash: context.url,
+          title: context.title || 'Page Opened',
+          details: { site: context.site, difficulty: context.difficulty },
+        });
       }
 
       return {
@@ -597,13 +633,9 @@ export function initBackground() {
       };
     },
     SUBMIT_CHAT_QUERY: async (req, sender) => {
-      let tabId = req.tabId ?? sender?.tab?.id;
-      if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
-        tabId = req.tabId;
-        if (!tabId) {
-          const { tabId: activeId } = await getActiveTabState();
-          tabId = activeId;
-        }
+      let reqTabId = req.tabId ?? sender?.tab?.id;
+      if (!reqTabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
+        reqTabId = req.tabId;
       }
 
       const stored = await chrome.storage?.local?.get(['settings']);
@@ -624,30 +656,37 @@ export function initBackground() {
           detectedAt: Date.now(),
         };
       } else {
-        let tabState = tabId ? await getTabState(tabId) : undefined;
-        let ctx = tabState?.context;
-        if (!ctx || !ctx.statementText || ctx.statementText.trim().length === 0) {
-          const { tabId: fallbackId, state: fallbackState } = await getActiveTabState();
-          if (fallbackState?.context?.statementText && fallbackState.context.statementText.trim().length > 0) {
-            tabId = fallbackId;
-            tabState = fallbackState;
-            ctx = fallbackState.context;
-          }
+        const { tabId: resolvedTabId, context: ctx } = await getOrFetchTabContext(reqTabId);
+        if (ctx && ctx.statementText && ctx.statementText.trim().length > 0) {
+          pageContext = ctx;
+          reqTabId = resolvedTabId;
+        } else {
+          pageContext = {
+            url: 'about:blank#standalone',
+            title: 'General Assistant',
+            site: 'generic',
+            statementText: 'No readable page text available. General question.',
+            tags: [],
+            isContest: false,
+            detectedAt: Date.now(),
+          };
         }
-        if (!ctx || !ctx.statementText || ctx.statementText.trim().length === 0) {
-          throw new LlmError(
-            'NO_PAGE_CONTEXT',
-            'No problem statement detected on this page. Please select text or use whole page.',
-            { s13Screen: 'S14.1' }
-          );
-        }
-        pageContext = ctx;
       }
+
+      // Log chat_message event
+      await addEventLog({
+        id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        timestamp: Date.now(),
+        type: 'chat_message',
+        contextHash: pageContext.url,
+        title: 'Chat query submitted',
+        details: { queryLength: req.query.length },
+      });
 
       const isLowQuota = settings.lowQuotaMode ?? true;
       const result = await runAgentGraph(pageContext, req.level ?? 1, {
         model,
-        tabId,
+        tabId: reqTabId,
         userQuery: req.query,
         requestId: req.requestId,
         lowQuotaMode: isLowQuota,
@@ -764,6 +803,10 @@ export function initBackground() {
         weeklySolved: metrics.solvedProblemsCount,
         hintsPerSolve: metrics.hintsPerSolve,
         nudgeAcceptRate: metrics.nudgeAcceptanceRate,
+        problemsAttempted: metrics.problemsAttempted,
+        hintsViewed: metrics.hintsViewed,
+        fullSolutionsViewed: metrics.fullSolutionsViewed,
+        recentProblemRecords: metrics.recentProblemRecords,
         recentProblemHints,
       };
     },

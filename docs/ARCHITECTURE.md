@@ -791,10 +791,13 @@ $$P(\text{stuck}) = P_0 + (1 - P_0) \cdot \tanh\left(\frac{t - N_{\text{eff}}}{\
 - **Per-Page State Isolation:** Indexes conversation histories and pending inputs by `pageKey` (`hashUrl(tab.url)`), preventing cross-tab chat leakage when switching between coding problems and encyclopedic research.
 - **Zero Input Loss Guarantee:** Sends chat messages optimistically to local UI while keeping input buffer until background acknowledgement. Re-populates user text on failure or network rejection.
 
-### 6. Honest Trace & Telemetry (`src/background/graph/graph.ts`, `TraceTab.tsx`)
-- **Proactive Node Isolation:** Detector and Planner agent timings are recorded only during genuine proactive nudge evaluations (`isProactiveNudge: true`). Direct user chat queries omit proactive timing nodes and are explicitly tagged `userInitiated: true`.
-- **Dynamic Stuck Threshold:** Replaces hardcoded values with active sensitivity settings (`0.45` high, `0.60` medium, `0.75` low).
-- **Real Progress Telemetry:** Dynamically aggregates `recentProblemHints` in `GET_MASTERY_PROGRESS` from stored hints index, displaying authentic problem titles and hints used.
+### 7. v1.0.9 "PAGE-AWARE" Hardening & Telemetry
+- **Single-Instance Content Controller:** `window.__UNSTUCK_CONTROLLER__` single-instance guard in `src/content/index.ts` prevents duplicate event subscriptions during dynamic SPA navigations.
+- **Synchronous Gesture Delegation:** `OPEN_SIDE_PANEL` invokes `chrome.sidePanel.open` synchronously within the turn to preserve Chrome's transient user activation token.
+- **Preview Cancel Prompt Restoration:** Rejection of `PREVIEW_CANCELLED` automatically repopulates `inputText = backup` in `ChatTab.tsx`, preventing input loss when preview is aborted.
+- **Responsive 320px Flex Stepper:** Flexible wrap layouts and `break-words` guarantee zero horizontal overflow in narrow sidepanel viewports.
+- **Extensible Real-DOM Matrix:** 44 fixtures in `tests/fixtures/` validate extraction, sanitization, and sectioning across Wikipedia, coding platforms, and technical documentation.
+
 
 
 

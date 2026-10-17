@@ -154,7 +154,7 @@ export function getPageProfile(
       contextLabel: 'No readable page',
       showLevels: false,
       showHintsTab: false,
-      chips: [],
+      chips: ['Ask general question'],
       placeholder: 'Ask a general question or paste text...',
       emptyStateTitle: 'No page context detected',
       emptyStateBody: 'Ask a general question below or paste an excerpt to analyze.',
@@ -173,7 +173,7 @@ export function getPageProfile(
       contextLabel: 'Restricted page',
       showLevels: false,
       showHintsTab: false,
-      chips: [],
+      chips: ['Ask general question'],
       placeholder: 'Ask a general question (not based on this page)...',
       emptyStateTitle: 'Restricted browser page',
       emptyStateBody: 'Unstuck cannot access browser internal or extension pages per security policies.',
@@ -214,7 +214,9 @@ export function getPageProfile(
     // Ignore
   }
 
-  if (context?.site === 'leetcode' || context?.site === 'codeforces') {
+  if (url.includes('/blog/') || url.includes('/discuss/')) {
+    isProblem = false;
+  } else if (context?.site === 'leetcode' || context?.site === 'codeforces') {
     isProblem = true;
   } else if (KNOWN_CODING_DOMAINS.some((d) => parsedHost === d || parsedHost.endsWith(`.${d}`))) {
     // If on a known coding site and not explicitly an article/blog

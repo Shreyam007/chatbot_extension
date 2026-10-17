@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Sparkles,
   Filter,
   ChevronDown,
   ChevronRight,
@@ -20,6 +19,17 @@ export interface ProgressTabProps {
   weeklySolved?: number;
   hintsPerSolve?: number;
   nudgeAcceptRate?: number;
+  problemsAttempted?: number;
+  hintsViewed?: number;
+  fullSolutionsViewed?: number;
+  recentProblemRecords?: Array<{
+    id: string;
+    title?: string;
+    attempted: boolean;
+    hintsViewed: number;
+    solutionViewed: boolean;
+    solved: boolean;
+  }>;
   recentProblemHints?: Array<{ id: string; hints: number }>;
 }
 
@@ -27,7 +37,11 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
   topics = [],
   weeklySolved = 0,
   hintsPerSolve = 0,
-  nudgeAcceptRate = 0,
+  nudgeAcceptRate: _nudgeAcceptRate = 0,
+  problemsAttempted = 0,
+  hintsViewed = 0,
+  fullSolutionsViewed = 0,
+  recentProblemRecords = [],
   recentProblemHints = [],
 }) => {
   const [filterWeakOnly, setFilterWeakOnly] = useState(false);
@@ -43,19 +57,64 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
 
   return (
     <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto custom-scrollbar select-none">
-      {/* 1. Top Summary Metrics (3-column compact bento) */}
+      {/* 1. Top Summary Metrics (4-column compact bento) */}
       <section aria-labelledby="weekly-metrics-heading">
         <h2 className="sr-only" id="weekly-metrics-heading">
-          Weekly Progress Metrics
+          Progress &amp; Mastery Metrics
         </h2>
-        <div className="grid grid-cols-3 gap-2">
-          {/* Solved this week */}
-          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {/* Attempted */}
+          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0" data-testid="metric-attempted">
+            <span className="font-sans text-[11px] text-on-surface-variant leading-tight truncate">
+              Attempted
+            </span>
+            <div className="my-1 flex items-baseline gap-1">
+              <span className="font-mono text-xl text-on-surface font-bold tracking-tight">
+                {problemsAttempted}
+              </span>
+            </div>
+            <div className="font-mono text-[10px] text-on-surface-variant truncate">
+              <span>{problemsAttempted > 0 ? `${problemsAttempted} problems` : '—'}</span>
+            </div>
+          </div>
+
+          {/* Hints Viewed */}
+          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0" data-testid="metric-hints-viewed">
+            <span className="font-sans text-[11px] text-on-surface-variant leading-tight truncate">
+              Hints viewed
+            </span>
+            <div className="my-1 flex items-baseline gap-1">
+              <span className="font-mono text-xl text-on-surface font-bold tracking-tight">
+                {hintsViewed}
+              </span>
+            </div>
+            <div className="font-mono text-[10px] text-on-surface-variant truncate">
+              <span>{hintsPerSolve > 0 ? `${hintsPerSolve.toFixed(1)} / solve` : 'Progressive hints'}</span>
+            </div>
+          </div>
+
+          {/* Full Solutions Viewed */}
+          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0" data-testid="metric-solutions-viewed">
+            <span className="font-sans text-[11px] text-on-surface-variant leading-tight truncate">
+              Solutions viewed
+            </span>
+            <div className="my-1 flex items-baseline gap-1">
+              <span className="font-mono text-xl text-on-surface font-bold tracking-tight">
+                {fullSolutionsViewed}
+              </span>
+            </div>
+            <div className="font-mono text-[10px] text-on-surface-variant truncate">
+              <span>Level 4 unlocked</span>
+            </div>
+          </div>
+
+          {/* Solved */}
+          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0" data-testid="metric-solved">
             <span className="font-sans text-[11px] text-on-surface-variant leading-tight truncate">
               Solved this week
             </span>
             <div className="my-1 flex items-baseline gap-1">
-              <span className="font-mono text-xl text-on-surface font-bold tracking-tight">
+              <span className="font-mono text-xl text-primary font-bold tracking-tight">
                 {weeklySolved}
               </span>
             </div>
@@ -63,48 +122,18 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
               <span>{weeklySolved > 0 ? `${weeklySolved} completed` : '—'}</span>
             </div>
           </div>
-
-          {/* Hints per solve */}
-          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0">
-            <span className="font-sans text-[11px] text-on-surface-variant leading-tight truncate">
-              Hints per solve
-            </span>
-            <div className="my-1 flex items-baseline gap-1">
-              <span className="font-mono text-xl text-on-surface font-bold tracking-tight">
-                {hintsPerSolve > 0 ? hintsPerSolve.toFixed(1) : '—'}
-              </span>
-            </div>
-            <div className="font-mono text-[10px] text-on-surface-variant truncate">
-              <span>{hintsPerSolve > 0 ? 'Current rate' : '—'}</span>
-            </div>
-          </div>
-
-          {/* Nudge accept rate */}
-          <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-2.5 flex flex-col justify-between min-w-0">
-            <span className="font-sans text-[11px] text-on-surface-variant leading-tight truncate">
-              Nudge accept
-            </span>
-            <div className="my-1 flex items-baseline gap-1">
-              <span className="font-mono text-xl text-on-surface font-bold tracking-tight">
-                {nudgeAcceptRate > 0 ? `${Math.round(nudgeAcceptRate * 100)}%` : '—'}
-              </span>
-            </div>
-            <div className="font-mono text-[10px] text-on-surface-variant truncate">
-              <span>{nudgeAcceptRate > 0 ? 'Acceptance rate' : '—'}</span>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* 2. Hints Needed Per Problem (Last 10) Line Chart */}
+      {/* 2. Problem History & Hints Session Records */}
       <section className="bg-surface-container border border-outline-variant/30 rounded-xl p-3 space-y-2.5">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-mono text-xs font-semibold text-on-surface">
-              Hints needed per problem
+              Problem activity
             </h3>
             <p className="font-sans text-[11px] text-on-surface-variant">
-              Trend across completed submissions
+              Attempt, hint, and solve telemetry per problem
             </p>
           </div>
           <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface-container-high text-primary border border-primary/20">
@@ -112,7 +141,43 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
           </span>
         </div>
 
-        {recentProblemHints && recentProblemHints.length > 0 ? (
+        {recentProblemRecords && recentProblemRecords.length > 0 ? (
+          <div className="space-y-1.5 pt-1">
+            {recentProblemRecords.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-2 rounded-lg bg-surface-container-high/60 border border-outline-variant/30 text-xs font-mono gap-2"
+                data-testid={`problem-record-${idx}`}
+              >
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${item.solved ? 'bg-primary' : 'bg-outline'}`} />
+                  <span className="text-on-surface truncate font-medium" title={item.id}>
+                    {item.title || item.id.replace(/^(leetcode|codeforces|wikipedia):/, '').replace(/-/g, ' ')}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant text-[10px]">
+                    {item.hintsViewed} {item.hintsViewed === 1 ? 'hint' : 'hints'}
+                  </span>
+                  {item.solutionViewed && (
+                    <span className="px-1.5 py-0.2 rounded bg-tertiary/10 text-tertiary text-[10px] border border-tertiary/20">
+                      Solution
+                    </span>
+                  )}
+                  {item.solved ? (
+                    <span className="px-1.5 py-0.2 rounded bg-primary/20 text-primary text-[10px] font-bold border border-primary/30">
+                      Solved
+                    </span>
+                  ) : (
+                    <span className="px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant/70 text-[10px]">
+                      Attempted
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : recentProblemHints && recentProblemHints.length > 0 ? (
           <div className="space-y-1.5 pt-1">
             {recentProblemHints.map((item, idx) => (
               <div
@@ -128,17 +193,10 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
               </div>
             ))}
           </div>
-        ) : weeklySolved === 0 ? (
+        ) : (
           <div className="p-4 rounded-lg bg-surface-container-lowest/80 border border-outline-variant/20 text-center">
             <p className="font-sans text-xs text-on-surface-variant">
-              No problem completion history yet. Complete problems with Unstuck to track hint reduction trends.
-            </p>
-          </div>
-        ) : (
-          <div className="p-3 rounded-lg bg-surface-container-high/60 border border-outline-variant/30 flex items-start gap-2">
-            <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-            <p className="font-sans text-[11px] text-on-surface-variant leading-relaxed">
-              Tracking completed problems. As you reinforce algorithmic invariants, your need for higher hint levels decreases.
+              No problem completion history yet. Request hints or ask questions to populate session telemetry.
             </p>
           </div>
         )}

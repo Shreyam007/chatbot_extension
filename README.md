@@ -4,8 +4,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](#)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Unit Tests](https://img.shields.io/badge/Tests-408%20Passing-brightgreen.svg)](#)
-[![Zero-Error Gate](https://img.shields.io/badge/Zero--Error%20Gate-13%2F13%20Passing-brightgreen.svg)](#)
+[![Unit Tests](https://img.shields.io/badge/Tests-415%20Passing-brightgreen.svg)](#)
+[![Zero-Error Gate](https://img.shields.io/badge/Zero--Error%20Gate-21%2F21%20Passing-brightgreen.svg)](#)
 
 > **Unstuck** is an open-source, local-first Chrome extension that acts as a proactive, pedagogical coding tutor for competitive programming, documentation, and technical web reading.
 > Rather than functioning as a code-generating chatbot that spoils solutions, Unstuck passively monitors cognitive struggle, decides when an intervention is justified, and dispenses structured, multi-level hints anchored strictly in problem statements and page context.
@@ -32,11 +32,13 @@
    - Every candidate hint is audited by an independent Critic agent before delivery.
    - Inspects for code leakage at L1/L2, verifies statement grounding, and asserts topic relevance. Falls back to deterministic safe hints if verification fails.
 
-5. **Page-Aware Intelligence & Dedicated Adapters (v1.0.8):**
-   - Canonical `PageProfile` taxonomy deriving context metadata, prompt scaffolds, and dynamic empty states.
+5. **Page-Aware Intelligence & Hardened Adapters (v1.0.9 "PAGE-AWARE"):**
+   - Canonical `PageProfile` taxonomy driving dynamic context metadata, prompt scaffolds, and responsive empty states without overfitting tokens.
    - Dedicated Wikipedia adapter extracting structured lead, infobox facts, and heading-chunked sections while cleanly removing citations (`[1]`), reference lists, and navboxes.
-   - Robust text highlighter utilizing the CSS Custom Highlight API (`::highlight`), auto-scrolling, and automatic `<details>` / accordion expansion.
-   - Multi-tab tracking with per-tab conversation isolation in the side panel.
+   - 44-fixture real-DOM test matrix covering competitive programming, technical articles, and documentation pages.
+   - Text highlighter utilizing the CSS Custom Highlight API (`::highlight`), auto-scrolling, and automatic `<details>` / accordion expansion.
+   - Multi-tab tracking with per-tab conversation isolation, prompt recovery on preview cancellation, and synchronous user-gesture token retention for sidepanel open requests.
+   - Responsive hints stepper with full text wrapping preventing overflow down to 320px viewports.
 
 6. **Explainability & Telemetry Audit (Trace Tab):**
    - Full glassbox audit trail displaying each pipeline step: generator latency, critic approval verdict, confidence scores, retrieved BM25 sections, and token usage.
@@ -170,8 +172,8 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 │   └── ui/                 # Design token system, ErrorBoundary, components
 └── tests/
     ├── e2e/                # Playwright E2E suites (10 full scenarios including Universal Mode)
-    ├── fixtures/           # 12 real-world HTML test fixtures (Wikipedia, MDN, blogs, auth)
-    └── unit/               # Vitest unit test suite (45 test files, 321 tests)
+    ├── fixtures/           # 44 real-world HTML test fixtures (Wikipedia, LeetCode, Codeforces, MDN, blogs, auth)
+    └── unit/               # Vitest unit test suite (58 test files, 417 tests)
 ```
 
 ---
@@ -182,11 +184,12 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 |---|---|
 | `npm run compile` | Runs TypeScript typechecker (`tsc --noEmit`). |
 | `npm run lint` | Runs ESLint across all source and test files. |
-| `npm test` | Runs the complete Vitest unit test suite (57 files, 408 tests). |
-| `npm run verify:errors` | Runs Playwright Zero-Error verification suite across 13 real-world scenarios. |
+| `npm test` | Runs the complete Vitest unit test suite (58 files, 417 tests). |
+| `npm run verify:errors` | Runs Playwright Zero-Error verification suite across 21 real-world scenarios. |
+| `npm run eval:wikipedia` | Evaluates Wikipedia article section extraction, BM25 retrieval, and citation scrubbing. |
 | `npm run test:e2e` | Runs Playwright E2E test scenarios in Chromium. |
 | `npm run build` | Builds the production extension package using WXT + Vite (sourcemaps disabled). |
-| `npm run zip` | Packages `.output/chrome-mv3` into `.output/unstuck-1.0.8-chrome.zip`. |
+| `npm run zip` | Packages `.output/chrome-mv3` into `.output/unstuck-1.0.9-chrome.zip`. |
 | `npm run eval` | Executes the offline Critic verification benchmark across 15 DSA problems. |
 | `npm run eval:live` | Runs live evaluation against the active Google Gemini API. |
 | `npm run security:scan`| Audits repository and git history for accidentally staged credentials. |
@@ -198,6 +201,7 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 1. **Behavioral Proxy for Intent:** Dwell time and code churn are heuristic proxies for cognitive struggle. A user pausing to consult a textbook may look identical to a user daydreaming.
 2. **Provider Constraints:** Generative hint generation depends on Google Gemini availability and is subject to provider rate limits (HTTP 429) and network latency.
 3. **Synthetic Benchmarks vs. Classroom Studies:** Benchmark results demonstrate algorithmic compliance and critic filtering in synthetic environments, not a longitudinal human learning study.
+4. **Verification Boundary Declaration:** Automated verification guarantees that all 21 scenarios pass with 0 warnings, 0 errors, and an empty allowlist under headless Chromium with schema-valid contract mocks. Live external Gemini API calls in production, manual QA in Brave browser, and longitudinal empirical user studies are **NOT VERIFIED** in this automated gate and must be evaluated separately in live human testing environments.
 
 ---
 
