@@ -2,6 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { PopupApp } from './PopupApp';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { installGlobalErrorHandlers } from '../shared/errors/reporter';
+
+installGlobalErrorHandlers('popup');
 
 const rootEl = document.getElementById('root');
 if (rootEl) {

@@ -721,4 +721,204 @@ test.describe('Zero-Error Verification Suite', () => {
     harness.recordScenarioResult('Proactive Nudge & Double Injection Immunity', 'content.js');
     await page.close();
   });
+
+  const openWikipediaWithSidePanel = async () => {
+    const wikiPage = await harness.context!.newPage();
+    await harness.setupPageRoutes(wikiPage);
+    await wikiPage.goto('https://en.wikipedia.org/wiki/Binary_search_algorithm', { waitUntil: 'domcontentloaded' });
+
+    await harness.backgroundWorker?.evaluate(async () => {
+      const stored = await chrome.storage.local.get(['settings']);
+      if (stored?.settings) {
+        const nextSettings = {
+          ...stored.settings,
+          confirmedSendSites: (stored.settings.confirmedSendSites || []).filter((s: string) => !s.includes('wikipedia')),
+          neverSendPageTextSites: (stored.settings.neverSendPageTextSites || []).filter((s: string) => !s.includes('wikipedia')),
+        };
+        await chrome.storage.local.set({ settings: nextSettings });
+      }
+    });
+
+    const targetTabId = await harness.backgroundWorker?.evaluate(async () => {
+      try {
+        const tabs = await chrome.tabs.query({});
+        const tab = tabs.find((t) => t.url && t.url.includes('wikipedia')) || tabs[tabs.length - 1];
+        if (tab?.id) {
+          try {
+            await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              files: ['content-scripts/content.js'],
+            });
+          } catch {}
+          return tab.id;
+        }
+      } catch {}
+      return undefined;
+    });
+    await wikiPage.waitForTimeout(500);
+
+    const sidepanelPage = await harness.context!.newPage();
+    harness.collector.attachToPage(sidepanelPage, 'sidepanel');
+    const wikiUrl = 'https://en.wikipedia.org/wiki/Binary_search_algorithm';
+    const sidepanelUrl = targetTabId
+      ? `chrome-extension://${harness.extensionId}/sidepanel.html?tabId=${targetTabId}&url=${encodeURIComponent(wikiUrl)}#chat`
+      : `chrome-extension://${harness.extensionId}/sidepanel.html?url=${encodeURIComponent(wikiUrl)}#chat`;
+    await sidepanelPage.goto(sidepanelUrl, { waitUntil: 'load' });
+    await sidepanelPage.waitForTimeout(1000);
+
+    return { wikiPage, sidepanelPage };
+  };
+
+  test('Scenario 22: Cancelled Preview Modal Zero-Error (EC-152)', async () => {
+    const { wikiPage, sidepanelPage } = await openWikipediaWithSidePanel();
+
+    // Type query and submit to trigger preview modal
+    const textarea = sidepanelPage.locator('textarea').first();
+    await textarea.fill('Tell me about search algorithms');
+    const sendBtn = sidepanelPage.locator('button[type="submit"], button:has-text("Send")').first();
+    if (await sendBtn.isVisible()) {
+      await sendBtn.click();
+    } else {
+      await textarea.press('Enter');
+    }
+
+    // Cancel preview modal
+    const cancelBtn = sidepanelPage.locator('button:has-text("Cancel")').first();
+    await cancelBtn.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    if (await cancelBtn.isVisible()) {
+      await cancelBtn.click();
+      await sidepanelPage.waitForTimeout(500);
+    }
+
+    // Verify textarea restored
+    const val = await textarea.inputValue();
+    expect(val).toContain('Tell me about search algorithms');
+
+    // Confirm that next message can still be sent
+    const confirmBtn = sidepanelPage.locator('button:has-text("Send to AI")').first();
+    await sendBtn.click();
+    await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    if (await confirmBtn.isVisible()) {
+      await confirmBtn.click();
+      await sidepanelPage.waitForTimeout(1500);
+    }
+
+    if (harness.backgroundWorker) {
+      await harness.collector.drainWorkerLogs(harness.backgroundWorker);
+    }
+    harness.recordScenarioResult('Cancelled Preview Modal Zero-Error', 'sidepanel.html');
+    await wikiPage.close();
+    await sidepanelPage.close();
+  });
+
+  test('Scenario 23: Send Superseded While Preview Open (EC-152)', async () => {
+    const { wikiPage, sidepanelPage } = await openWikipediaWithSidePanel();
+
+    // Trigger first preview
+    const textarea = sidepanelPage.locator('textarea').first();
+    await textarea.fill('First draft query');
+    const sendBtn = sidepanelPage.locator('button[type="submit"], button:has-text("Send")').first();
+    await sendBtn.click();
+    await sidepanelPage.waitForTimeout(500);
+
+    // Cancel and immediately send another to test supersede flow
+    const cancelBtn = sidepanelPage.locator('button:has-text("Cancel")').first();
+    if (await cancelBtn.isVisible()) {
+      await cancelBtn.click();
+    }
+    await textarea.fill('Superseding query');
+    await sendBtn.click();
+    await sidepanelPage.waitForTimeout(500);
+
+    const cancelBtn2 = sidepanelPage.locator('button:has-text("Cancel")').first();
+    if (await cancelBtn2.isVisible()) {
+      await cancelBtn2.click();
+    }
+
+    if (harness.backgroundWorker) {
+      await harness.collector.drainWorkerLogs(harness.backgroundWorker);
+    }
+    harness.recordScenarioResult('Send Superseded While Preview Open', 'sidepanel.html');
+    await wikiPage.close();
+    await sidepanelPage.close();
+  });
+
+  test('Scenario 24: Preview Cancelled on Tab Switch (EC-152)', async () => {
+    const { wikiPage, sidepanelPage } = await openWikipediaWithSidePanel();
+
+    const textarea = sidepanelPage.locator('textarea').first();
+    await textarea.fill('Site A query');
+    const sendBtn = sidepanelPage.locator('button[type="submit"], button:has-text("Send")').first();
+    await sendBtn.click();
+    await sidepanelPage.waitForTimeout(500);
+
+    // Switch to page B
+    const pageB = await harness.context!.newPage();
+    await harness.setupPageRoutes(pageB);
+    await pageB.goto('https://leetcode.com/problems/two-sum/description/', { waitUntil: 'domcontentloaded' });
+    await pageB.bringToFront();
+    await sidepanelPage.waitForTimeout(1000);
+
+    if (harness.backgroundWorker) {
+      await harness.collector.drainWorkerLogs(harness.backgroundWorker);
+    }
+    harness.recordScenarioResult('Preview Cancelled on Tab Switch', 'sidepanel.html');
+    await wikiPage.close();
+    await pageB.close();
+    await sidepanelPage.close();
+  });
+
+  test('Scenario 25: Sidepanel Unmount While Preview Pending (EC-152)', async () => {
+    const { wikiPage, sidepanelPage } = await openWikipediaWithSidePanel();
+
+    const textarea = sidepanelPage.locator('textarea').first();
+    await textarea.fill('Pending unmount query');
+    const sendBtn = sidepanelPage.locator('button[type="submit"], button:has-text("Send")').first();
+    await sendBtn.click();
+    await sidepanelPage.waitForTimeout(500);
+
+    // Close sidepanel while preview is pending (unmount cleanup)
+    await sidepanelPage.close();
+    await wikiPage.waitForTimeout(500);
+
+    if (harness.backgroundWorker) {
+      await harness.collector.drainWorkerLogs(harness.backgroundWorker);
+    }
+    harness.recordScenarioResult('Sidepanel Unmount While Preview Pending', 'sidepanel.html');
+    await wikiPage.close();
+  });
+
+  test('Scenario 26: Rapid Tab Switching Across Diverse Sites (EC-152)', async () => {
+    const pageLeetCode = await harness.context!.newPage();
+    await harness.setupPageRoutes(pageLeetCode);
+    await pageLeetCode.goto('https://leetcode.com/problems/two-sum/description/', { waitUntil: 'domcontentloaded' });
+
+    const pageWiki = await harness.context!.newPage();
+    await harness.setupPageRoutes(pageWiki);
+    await pageWiki.goto('https://en.wikipedia.org/wiki/Binary_search_algorithm', { waitUntil: 'domcontentloaded' });
+
+    const sidepanelPage = await harness.context!.newPage();
+    harness.collector.attachToPage(sidepanelPage, 'sidepanel');
+    await sidepanelPage.goto(
+      `chrome-extension://${harness.extensionId}/sidepanel.html#chat`,
+      { waitUntil: 'load' }
+    );
+    await sidepanelPage.waitForTimeout(500);
+
+    // Rapidly alternate active pages
+    for (let i = 0; i < 3; i++) {
+      await pageLeetCode.bringToFront();
+      await sidepanelPage.waitForTimeout(200);
+      await pageWiki.bringToFront();
+      await sidepanelPage.waitForTimeout(200);
+    }
+
+    if (harness.backgroundWorker) {
+      await harness.collector.drainWorkerLogs(harness.backgroundWorker);
+    }
+    harness.recordScenarioResult('Rapid Tab Switching Across Diverse Sites', 'Multi-Tab Switching');
+    await pageLeetCode.close();
+    await pageWiki.close();
+    await sidepanelPage.close();
+  });
 });

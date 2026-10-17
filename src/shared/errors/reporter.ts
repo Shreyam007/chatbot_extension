@@ -1,5 +1,9 @@
 import { APP_VERSION } from '../config';
 import type { ErrorRecord } from '../messaging/protocol';
+import { createLogger } from '../logger';
+import { isCancellation } from './cancellation';
+
+const logger = createLogger('ErrorReporter');
 
 const MAX_ERROR_RECORDS = 50;
 const STORAGE_KEY = 'recent_errors';
@@ -136,6 +140,16 @@ export function installGlobalErrorHandlers(
     try {
       const rejEvt = event as PromiseRejectionEvent;
       const reason = rejEvt.reason;
+
+      // Global safety net: If rejection is an intentional cancellation, prevent browser error reporting
+      if (isCancellation(reason)) {
+        if (typeof rejEvt.preventDefault === 'function') {
+          rejEvt.preventDefault();
+        }
+        logger.debug('Swallowed expected cancellation in unhandledrejection listener:', reason);
+        return;
+      }
+
       const message = reason instanceof Error ? reason.message : String(reason || 'Unhandled Promise Rejection');
       const fileLine = reason instanceof Error && reason.stack ? reason.stack.split('\n')[1]?.trim() : undefined;
 

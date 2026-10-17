@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { OnboardingWizard } from '../ui/OnboardingWizard';
 import { sendToBackground, listenToBroadcastEvents } from '../shared/messaging';
 import type { PageContext } from '../shared/schemas/context';
@@ -7,6 +7,7 @@ import type { SignalWindow } from '../shared/schemas/signals';
 import type { AgentRunTrace } from '../background/graph/types';
 import type { SubmitChatQueryResponse } from '../shared/messaging/protocol';
 import { getPageProfile, hashUrl } from '../shared/page-profile';
+import { CancelledError, type CancellationReason } from '../shared/errors/cancellation';
 
 import { Header } from './components/Header';
 import { Navigation, type SidePanelTab } from './components/Navigation';
@@ -99,6 +100,21 @@ export const SidePanelApp: React.FC = () => {
     | { type: 'chat'; query: string; level?: HintLevel; resolve?: () => void; reject?: (err: unknown) => void }
     | null
   >(null);
+  const pendingActionRef = useRef(pendingAction);
+  pendingActionRef.current = pendingAction;
+
+  const cancelPendingAction = useCallback((reason: CancellationReason = 'USER_CANCELLED') => {
+    setShowPreviewModal(false);
+    const action = pendingActionRef.current;
+    if (action?.reject) {
+      try {
+        action.reject(new CancelledError(reason));
+      } catch {
+        // Safe guard
+      }
+    }
+    setPendingAction(null);
+  }, []);
 
   const currentPageKey = useMemo(() => {
     return hashUrl(activeUrl);
@@ -187,6 +203,9 @@ export const SidePanelApp: React.FC = () => {
   }, []);
 
   const syncActiveTabContext = useCallback(async (targetTabId?: number) => {
+    if (pendingActionRef.current) {
+      cancelPendingAction('TAB_SWITCHED');
+    }
     setIsLoadingPage(true);
     try {
       let tabId = targetTabId;
@@ -294,7 +313,7 @@ export const SidePanelApp: React.FC = () => {
     } finally {
       setIsLoadingPage(false);
     }
-  }, [loadHintsHistory]);
+  }, [loadHintsHistory, cancelPendingAction]);
 
   // Initial Data Fetch & Tab Listeners
   useEffect(() => {
@@ -369,6 +388,9 @@ export const SidePanelApp: React.FC = () => {
         chrome.tabs.onActivated?.removeListener(handleActivated);
         chrome.tabs.onUpdated?.removeListener(handleUpdated);
         chrome.windows?.onFocusChanged?.removeListener(handleWindowFocus);
+        if (pendingActionRef.current) {
+          cancelPendingAction('PANEL_CLOSED');
+        }
       };
     }
 
@@ -376,12 +398,18 @@ export const SidePanelApp: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       unsubscribe();
+      if (pendingActionRef.current) {
+        cancelPendingAction('PANEL_CLOSED');
+      }
     };
-  }, [syncActiveTabContext, loadTelemetryAndMastery]);
+  }, [syncActiveTabContext, loadTelemetryAndMastery, cancelPendingAction]);
 
   const handleNextLevel = async (targetLevel: HintLevel) => {
     if (!context) return;
     if (shouldPromptSendPreview()) {
+      if (pendingActionRef.current) {
+        cancelPendingAction('SUPERSEDED');
+      }
       setPendingAction({ type: 'hint', level: targetLevel });
       setShowPreviewModal(true);
       return;
@@ -582,6 +610,9 @@ export const SidePanelApp: React.FC = () => {
     }
 
     if (shouldPromptSendPreview()) {
+      if (pendingActionRef.current) {
+        cancelPendingAction('SUPERSEDED');
+      }
       return new Promise<void>((resolve, reject) => {
         setPendingAction({ type: 'chat', query, level, resolve, reject });
         setShowPreviewModal(true);
@@ -640,11 +671,7 @@ export const SidePanelApp: React.FC = () => {
   };
 
   const handleCancelSendPreview = () => {
-    setShowPreviewModal(false);
-    if (pendingAction?.reject) {
-      pendingAction.reject(new Error('PREVIEW_CANCELLED'));
-    }
-    setPendingAction(null);
+    cancelPendingAction('PREVIEW_CANCELLED');
   };
 
   const handleHighlightQuote = async (quote: string): Promise<boolean> => {

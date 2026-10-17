@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { HintLevel } from '../../shared/schemas/hints';
 import type { PageProfile } from '../../shared/page-profile';
+import { isCancellation } from '../../shared/errors/cancellation';
 
 export interface ChatMessage {
   id: string;
@@ -104,8 +105,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     try {
       await onSendMessage(query, selectedLevel);
       setInputText('');
-    } catch {
+    } catch (err: unknown) {
       setInputText(backup);
+      if (isCancellation(err)) {
+        return;
+      }
     }
   };
 
@@ -293,7 +297,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     if (chip.query === 'Paste text to ask about') {
                       setInputText('Here is the text:\n\n');
                     } else {
-                      onSendMessage(chip.query, 1);
+                      void Promise.resolve(onSendMessage(chip.query, 1)).catch((err: unknown) => {
+                        if (!isCancellation(err)) {
+                          // Non-cancellation errors are handled by SidePanelApp error reporting
+                        }
+                      });
                     }
                   }}
                   className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
@@ -365,7 +373,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onSendMessage('Summarize this page', selectedLevel)}
+                      onClick={() => {
+                        void Promise.resolve(onSendMessage('Summarize this page', selectedLevel)).catch((err: unknown) => {
+                          if (!isCancellation(err)) {
+                            // Non-cancellation errors are handled by SidePanelApp error reporting
+                          }
+                        });
+                      }}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface text-[11px] font-mono transition-colors active:scale-95"
                     >
                       <RefreshCw className="w-3 h-3 text-primary" />
@@ -450,7 +464,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
                       <div className="flex items-center justify-between pt-1">
                         <button
-                          onClick={() => onSendMessage(messages[messages.length - 2]?.text || 'Retry', 1)}
+                          onClick={() => {
+                            const prevQuery = messages[messages.length - 2]?.text || 'Retry';
+                            void Promise.resolve(onSendMessage(prevQuery, 1)).catch((err: unknown) => {
+                              if (!isCancellation(err)) {
+                                // Non-cancellation errors are handled by SidePanelApp error reporting
+                              }
+                            });
+                          }}
                           className="px-2 py-1 rounded bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/40 font-mono text-[10px] text-on-surface flex items-center gap-1 transition-colors"
                           title="Retry generation"
                         >

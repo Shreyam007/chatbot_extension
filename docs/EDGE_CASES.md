@@ -147,6 +147,11 @@ Every edge case defined in Section 5 of `ANTIGRAVITY.md` is tracked here. Each i
 | EC-150 | Unreadable/empty page text chat submission | Background returns immediate `NO_READABLE_TEXT` typed error with 0 LLM calls; SidePanel displays structured alert with action buttons without assistant bubble or misleading verification badge | `tests/unit/large-page-budget.test.ts` | passed |
 | EC-151 | Non-coding page chat events in progress telemetry | Non-coding keys (`about:`, `wikipedia:`, `page:`, domain hashes) are excluded from `problemsAttempted`, `recentProblemRecords`, and solve counts in metrics calculator | `tests/unit/large-page-budget.test.ts` | passed |
 
+### K. Cancelled Preview & Promise Rejection Safety (v1.0.11)
+| ID | Case | Required behaviour | Test File & Name | Status |
+|---|---|---|---|---|
+| EC-152 | Preview modal cancellation, tab switch, superseded send, or panel close | Cancellation is classified as normal control flow; global error listener prevents unhandled rejection escalation via `preventDefault()`, while UI call sites catch cancellations and restore draft input text | `tests/unit/cancellation.test.ts`, `tests/unit/promise-safety.test.ts`, `tests/zero-error/verify-errors.test.ts` (Scenarios 22-26) | passed |
+
 ---
 
 ## Manual Verification Checklists
