@@ -73,6 +73,12 @@ const KNOWN_SITE_NAMES: Record<string, string> = {
  */
 export function getSourceName(url?: string): string {
   if (!url) return 'Unknown';
+  if (url.includes('wikipedia.org')) {
+    return 'Wikipedia';
+  }
+  if (url.includes('developer.mozilla.org') || url.includes('.mozilla.org')) {
+    return 'MDN';
+  }
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
@@ -275,6 +281,7 @@ export function getPageProfile(
   const isArticle =
     context?.contentType === 'article' ||
     sourceName === 'Wikipedia' ||
+    url.includes('wikipedia.org') ||
     url.includes('/wiki/') ||
     url.includes('/article/') ||
     url.includes('/blog/');

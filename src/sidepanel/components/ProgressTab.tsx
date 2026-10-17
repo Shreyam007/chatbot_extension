@@ -104,7 +104,7 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
               </span>
             </div>
             <div className="font-mono text-[10px] text-on-surface-variant truncate">
-              <span>Level 4 unlocked</span>
+              <span>{fullSolutionsViewed > 0 ? 'Level 4 unlocked' : 'No solutions viewed'}</span>
             </div>
           </div>
 

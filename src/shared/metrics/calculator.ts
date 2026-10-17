@@ -28,6 +28,22 @@ export function calculatePercentile(numbers: number[], p: number): number {
   return Math.round((lowerVal * (1 - weight) + upperVal * weight) * 100) / 100;
 }
 
+export function isNonCodingKey(key?: string): boolean {
+  if (!key) return true;
+  const lower = key.toLowerCase();
+  return (
+    lower.startsWith('about:') ||
+    lower.startsWith('page:') ||
+    lower.startsWith('wikipedia:') ||
+    lower.includes('wikipedia.org') ||
+    lower.includes('mozilla.org') ||
+    lower.startsWith('pdf:') ||
+    lower.startsWith('chrome-extension:') ||
+    lower.startsWith('chrome:') ||
+    lower.startsWith('unknown')
+  );
+}
+
 /**
  * Pure calculator that computes all 8 Step 15 metrics from local records.
  */
@@ -90,7 +106,9 @@ export function calculateMetricsFromRecords(
       : 0;
 
   // 2. Solve Metrics & Time-to-Solve
-  const solveEvents = events.filter((e) => e.type === 'problem_solved');
+  const solveEvents = events.filter(
+    (e) => e.type === 'problem_solved' && !isNonCodingKey(e.contextHash)
+  );
   const solvedProblemsCount = solveEvents.length;
 
   const timesToSolve: number[] = [];
@@ -138,8 +156,11 @@ export function calculateMetricsFromRecords(
       ? Math.round((helpfulRatingsCount / totalHintRatings) * 1000) / 1000
       : 0;
 
-  const deliveredHintEvents = events.filter((e) => e.type === 'hint_delivered');
-  const totalHintsDelivered = Math.max(hints.length, deliveredHintEvents.length);
+  const codingDeliveredHintEvents = events.filter(
+    (e) => e.type === 'hint_delivered' && !isNonCodingKey(e.contextHash)
+  );
+  const codingHints = hints.filter((h) => !isNonCodingKey(h.problemHash));
+  const totalHintsDelivered = Math.max(codingHints.length, codingDeliveredHintEvents.length);
 
   // 4. Performance, Latency & Critic Rejections
   const latencies: number[] = [];
@@ -162,7 +183,7 @@ export function calculateMetricsFromRecords(
   }
 
   // Also process delivered hint event details if traces are fewer
-  for (const evt of deliveredHintEvents) {
+  for (const evt of codingDeliveredHintEvents) {
     if (traces.length === 0) {
       telemetryItemsCount++;
       const lat = evt.details?.latencyMs;
@@ -209,8 +230,9 @@ export function calculateMetricsFromRecords(
   >();
 
   // Process hints
-  for (const h of hints) {
+  for (const h of codingHints) {
     const pId = h.problemHash || 'unknown-problem';
+    if (isNonCodingKey(pId)) continue;
     let entry = problemMap.get(pId);
     if (!entry) {
       entry = {
@@ -241,7 +263,7 @@ export function calculateMetricsFromRecords(
 
   for (const evt of events) {
     const pId = evt.contextHash || 'unknown-problem';
-    if (!pId || pId === 'unknown') continue;
+    if (!pId || pId === 'unknown' || isNonCodingKey(pId)) continue;
 
     let entry = problemMap.get(pId);
     if (!entry) {
@@ -285,7 +307,7 @@ export function calculateMetricsFromRecords(
 
   const problemsAttempted = problemMap.size;
   const hintsViewed = Math.max(hintViewedEventsCount, totalHintsDelivered);
-  const solutionsViewedByHints = hints.filter((h) => ((h as any).level ?? h.hint?.level) === 4).length;
+  const solutionsViewedByHints = codingHints.filter((h) => ((h as any).level ?? h.hint?.level) === 4).length;
   const fullSolutionsViewed = Math.max(solutionViewedEventsCount, solutionsViewedByHints);
 
   const recentProblemRecords = Array.from(problemMap.values())

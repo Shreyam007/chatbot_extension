@@ -495,6 +495,7 @@ export const SidePanelApp: React.FC = () => {
             codeBlock: res.codeBlock,
             criticChecked: Boolean(res.criticChecked),
             badgeStatus: res.badgeStatus,
+            answerable_from_page: res.answerable_from_page,
             retrievalMode: res.retrievalMode,
             coverageStats: res.coverageStats,
             llmCallCount: res.llmCallCount,
@@ -513,6 +514,7 @@ export const SidePanelApp: React.FC = () => {
             errorCode: res.errorCode,
             unverifiedDraft: res.unverifiedDraft,
             badgeStatus: res.badgeStatus || 'unverified',
+            answerable_from_page: res.answerable_from_page ?? false,
             retrievalMode: res.retrievalMode,
             coverageStats: res.coverageStats,
             llmCallCount: res.llmCallCount,
@@ -857,6 +859,7 @@ export const SidePanelApp: React.FC = () => {
                 activePStuck={pStuck}
                 activeThreshold={effectiveThreshold}
                 sensitivity={diagnostics?.sensitivity}
+                isProblem={pageProfile.kind === 'coding_problem'}
                 contributions={signals ? {
                   dwell: Math.min(1, (signals.dwellMs / 1000) / 300),
                   scrollReversals: Math.min(1, signals.scrollReversals / 10),

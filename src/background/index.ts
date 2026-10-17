@@ -657,20 +657,23 @@ export function initBackground() {
         };
       } else {
         const { tabId: resolvedTabId, context: ctx } = await getOrFetchTabContext(reqTabId);
-        if (ctx && ctx.statementText && ctx.statementText.trim().length > 0) {
-          pageContext = ctx;
-          reqTabId = resolvedTabId;
-        } else {
-          pageContext = {
-            url: 'about:blank#standalone',
-            title: 'General Assistant',
-            site: 'generic',
-            statementText: 'No readable page text available. General question.',
-            tags: [],
-            isContest: false,
-            detectedAt: Date.now(),
+        if (!ctx || !ctx.statementText || ctx.statementText.trim().length === 0) {
+          logger.warn(`No readable page text available for tab ${reqTabId}; returning NO_READABLE_TEXT error without LLM call.`);
+          return {
+            type: 'CHAT_QUERY_RESULT',
+            success: false,
+            errorCode: 'NO_READABLE_TEXT',
+            errorReason: "I couldn't read the text of this page.",
+            reply: "I couldn't read the text of this page.",
+            criticChecked: false,
+            badgeStatus: 'unverified',
+            answerable_from_page: false,
+            llmCallCount: 0,
+            model,
           };
         }
+        pageContext = ctx;
+        reqTabId = resolvedTabId;
       }
 
       // Log chat_message event

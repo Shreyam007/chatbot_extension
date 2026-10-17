@@ -256,6 +256,21 @@ export async function evaluateHint(
     };
   }
 
+  const isFailureText =
+    /cannot read|no readable page text|could not read|no algorithmic problem statement/i.test(
+      candidate.hint || ''
+    );
+  if (isFailureText) {
+    return {
+      pass: false,
+      leak: false,
+      grounded: false,
+      relevant: false,
+      confidence: 0.1,
+      reason: 'Output indicates lack of readable page context or generic model failure apology.',
+    };
+  }
+
   if (!isGrounded) {
     logger.info('Hint rejected by Grounding Check: groundedQuote not found in statement text');
     return {

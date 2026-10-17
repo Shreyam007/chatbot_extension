@@ -140,6 +140,13 @@ Every edge case defined in Section 5 of `ANTIGRAVITY.md` is tracked here. Each i
 | EC-147 | Multi-node quote highlighting across inline elements (`<strong>`, `<em>`) | Walks text nodes computing range offsets; applies CSS Custom Highlight API | `tests/unit/zero-error-fixes.test.ts` › F14 Multi-Node Highlighter | passed |
 | EC-148 | 10-Minute accelerated soak test | Long-running interaction generates zero warnings, zero errors, and maintains stable heap | `tests/zero-error/verify-errors.test.ts` (Scenario 13) | passed |
 
+### J. Large Page Budget, Wikipedia Vector 2022 Skin & Telemetry Isolation (v1.0.10)
+| ID | Case | Required behaviour | Test File & Name | Status |
+|---|---|---|---|---|
+| EC-149 | Massive Wikipedia articles on Vector 2022 skin (e.g. en.wikipedia.org/wiki/India, 2.7MB) | Prioritizes `#mw-content-text .mw-parser-output` container to avoid matching tiny coordinates header; deduplicates `.mw-heading` wrappers to preserve full 16,000 char statement text and section hierarchy within budget | `tests/unit/large-page-budget.test.ts` | passed |
+| EC-150 | Unreadable/empty page text chat submission | Background returns immediate `NO_READABLE_TEXT` typed error with 0 LLM calls; SidePanel displays structured alert with action buttons without assistant bubble or misleading verification badge | `tests/unit/large-page-budget.test.ts` | passed |
+| EC-151 | Non-coding page chat events in progress telemetry | Non-coding keys (`about:`, `wikipedia:`, `page:`, domain hashes) are excluded from `problemsAttempted`, `recentProblemRecords`, and solve counts in metrics calculator | `tests/unit/large-page-budget.test.ts` | passed |
+
 ---
 
 ## Manual Verification Checklists

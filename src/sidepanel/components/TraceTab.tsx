@@ -17,6 +17,7 @@ export interface TraceTabProps {
   activePStuck?: number;
   activeThreshold?: number;
   sensitivity?: 'low' | 'medium' | 'high';
+  isProblem?: boolean;
   contributions?: {
     dwell?: number;
     scrollReversals?: number;
@@ -30,6 +31,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
   activePStuck = 0,
   activeThreshold,
   sensitivity = 'medium',
+  isProblem,
   contributions,
 }) => {
   const [showAllDetails, setShowAllDetails] = useState(true);
@@ -63,6 +65,18 @@ export const TraceTab: React.FC<TraceTabProps> = ({
   const hasDetector = latestTrace.nodeTimings.some((n) => n.node === 'detector');
   const hasPlanner = latestTrace.nodeTimings.some((n) => n.node === 'planner');
   const isUserInitiated = Boolean(latestTrace.userInitiated) || (!hasDetector && !hasPlanner);
+  const isCodingProblem =
+    isProblem !== undefined
+      ? isProblem
+      : !(
+          latestTrace.problemHash.startsWith('about:') ||
+          latestTrace.problemHash.startsWith('page:') ||
+          latestTrace.problemHash.startsWith('wikipedia:') ||
+          latestTrace.problemHash.includes('wikipedia.org') ||
+          latestTrace.problemHash.includes('mozilla.org')
+        );
+  const generatorIndex = isUserInitiated ? 1 : 3;
+  const criticIndex = isUserInitiated ? 2 : 4;
 
   const effectiveThreshold =
     activeThreshold ??
@@ -110,7 +124,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
               </span>
             </div>
             <p className="font-sans text-xs text-on-surface-variant mt-0.5">
-              Telemetry pipeline for latest hint generated{' '}
+              Telemetry pipeline for {isCodingProblem ? 'latest hint' : 'latest answer'} generated{' '}
               <span className="text-on-surface font-mono font-medium">just now</span>
             </p>
           </div>
@@ -173,7 +187,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
             </span>
             <div className="mt-0.5">
               <span className="font-mono text-[10px] font-semibold text-tertiary px-1.5 py-0.2 rounded bg-tertiary/10 border border-tertiary/30">
-                L{requestedLevel} Hint
+                {isCodingProblem ? `L${requestedLevel} Hint` : 'Direct question'}
               </span>
             </div>
           </div>
@@ -405,7 +419,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
               <div className="flex items-center justify-between mb-1 gap-1 min-w-0">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="font-mono text-xs font-semibold text-on-surface truncate">
-                    3. Generator Agent
+                    {generatorIndex}. Generator Agent
                   </span>
                   <span className="px-1.5 py-0.2 rounded-full font-mono text-[9px] bg-primary/10 text-primary border border-primary/30 shrink-0">
                     Done
@@ -462,7 +476,7 @@ export const TraceTab: React.FC<TraceTabProps> = ({
               <div className="flex items-center justify-between mb-1 gap-1 min-w-0">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="font-mono text-xs font-semibold text-on-surface truncate">
-                    4. Critic Agent
+                    {criticIndex}. Critic Agent
                   </span>
                   <span className="px-1.5 py-0.2 rounded-full font-mono text-[9px] bg-primary/10 text-primary border border-primary/30 shrink-0">
                     Evaluated

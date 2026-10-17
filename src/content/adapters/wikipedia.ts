@@ -117,10 +117,13 @@ export const wikipediaAdapter: PageAdapter = {
       }
 
       // 3. Locate content container
+      // In Vector 2022 skin, coordinates/metadata can match .mw-parser-output with ~46 chars.
+      // Priority goes to #mw-content-text .mw-parser-output or #mw-content-text for the main body.
       const container =
-        doc.querySelector('.mw-parser-output') ||
+        doc.querySelector('#mw-content-text .mw-parser-output') ||
         doc.querySelector('#mw-content-text') ||
         doc.querySelector('#bodyContent') ||
+        doc.querySelector('.mw-parser-output') ||
         doc.querySelector('#content') ||
         doc.body;
 
@@ -201,6 +204,10 @@ export const wikipediaAdapter: PageAdapter = {
           tag === 'h3' ||
           tag === 'h4' ||
           el.classList.contains('mw-heading');
+
+        if (el.classList.contains('mw-heading')) {
+          el.querySelectorAll('h2, h3, h4').forEach((child) => seen.add(child));
+        }
 
         if (isHeading) {
           flushSection();
@@ -303,7 +310,7 @@ export const wikipediaAdapter: PageAdapter = {
         tags,
         isContest: false,
         detectedAt: Date.now(),
-        contentType: 'general',
+        contentType: 'article',
         sections: boundedSections,
         selectedText,
         isSensitive: false,

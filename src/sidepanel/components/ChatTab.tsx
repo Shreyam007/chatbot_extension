@@ -38,6 +38,7 @@ export interface ChatMessage {
   errorCode?: string;
   unverifiedDraft?: string;
   sectionsUsed?: string[];
+  answerable_from_page?: boolean;
 }
 
 export interface ChatTabProps {
@@ -187,6 +188,15 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const chips = rawChips.map((c) => ({ label: c, query: c }));
 
   const getBadgeDetails = (msg: ChatMessage) => {
+    if (msg.answerable_from_page === false) {
+      return {
+        label: 'Not based on the page',
+        classes: 'bg-outline/10 text-on-surface-variant border-outline/30',
+        icon: <ShieldAlert className="w-3 h-3 text-outline" />,
+        tooltip: 'The model replied from general knowledge, not from the page text.',
+      };
+    }
+
     const status =
       msg.badgeStatus ||
       (msg.criticChecked && (msg.confidence ?? 1) > 0.48
@@ -316,6 +326,51 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     <span className="block text-right text-[10px] font-mono text-on-surface-variant/70 mt-1">
                       {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
+                  </div>
+                </div>
+              ) : msg.errorCode === 'NO_READABLE_TEXT' ? (
+                /* Dedicated typed alert state for unreadable page text - no assistant bubble, no badge */
+                <div
+                  className="bg-surface-container border border-outline-variant/40 rounded-xl p-3 space-y-2.5 max-w-[95%] shadow-sm"
+                  data-testid="no-readable-text-alert"
+                  role="alert"
+                >
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-tertiary shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-sans text-xs text-on-surface font-medium">
+                        I couldn't read the text of this page.
+                      </p>
+                      <p className="font-sans text-[11px] text-on-surface-variant leading-relaxed">
+                        The page may still be loading, protected, or structured without standard readable article content.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-1 border-t border-outline-variant/20">
+                    <button
+                      type="button"
+                      onClick={() => setInputText('Regarding this selected text: ')}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface text-[11px] font-mono transition-colors active:scale-95"
+                    >
+                      <Eye className="w-3 h-3 text-secondary" />
+                      Ask about selected text
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputText('Here is the text:\n\n')}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface text-[11px] font-mono transition-colors active:scale-95"
+                    >
+                      <FileText className="w-3 h-3 text-primary" />
+                      Paste text
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onSendMessage('Summarize this page', selectedLevel)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface text-[11px] font-mono transition-colors active:scale-95"
+                    >
+                      <RefreshCw className="w-3 h-3 text-primary" />
+                      Retry reading page
+                    </button>
                   </div>
                 </div>
               ) : (
