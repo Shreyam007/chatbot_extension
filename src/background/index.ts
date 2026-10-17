@@ -64,6 +64,11 @@ import {
 } from './planner/diagnostics';
 import { LlmError } from './llm/errors';
 import { clearResponseCache } from './llm/response-cache';
+import {
+  getRecentErrors,
+  clearRecentErrors,
+  installGlobalErrorHandlers,
+} from '../shared/errors/reporter';
 
 const logger = createLogger('ServiceWorker');
 
@@ -73,6 +78,9 @@ const singleUseTabs = new Set<number>();
 
 export function initBackground() {
   logger.info(`Background orchestrator initialized (v${APP_VERSION})`);
+
+  // Install global error recorder in service worker
+  installGlobalErrorHandlers('sw');
 
   // Rehydrate per-tab context, signals, and planner state (EC-004 / Task D.2)
   rehydrateSessionState().catch((err) => logger.debug('Error rehydrating session state:', err));
@@ -158,8 +166,8 @@ export function initBackground() {
         success: cancelled,
       };
     },
-    OPEN_SIDE_PANEL: async (_req, sender) => {
-      let tabId = sender?.tab?.id;
+    OPEN_SIDE_PANEL: async (req, sender) => {
+      let tabId = req.tabId ?? sender?.tab?.id;
       if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
         const { tabId: activeId } = await getActiveTabState();
         tabId = activeId;
@@ -169,12 +177,20 @@ export function initBackground() {
         return { type: 'OPEN_SIDE_PANEL_RESULT', ok: false, error: 'No active tab ID available' };
       }
 
+      if (req.tab && typeof chrome !== 'undefined' && chrome.storage?.session) {
+        try {
+          await chrome.storage.session.set({ active_sidepanel_tab: req.tab });
+        } catch {
+          // best-effort
+        }
+      }
+
       if (chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
         try {
           await chrome.sidePanel.open({ tabId });
           return { type: 'OPEN_SIDE_PANEL_RESULT', ok: true };
         } catch (err: unknown) {
-          logger.warn('Failed to open sidePanel:', err);
+          logger.info('SidePanel not opened directly (in-page popover fallback will be used):', err);
           return {
             type: 'OPEN_SIDE_PANEL_RESULT',
             ok: false,
@@ -394,6 +410,113 @@ export function initBackground() {
         type: 'SIGNALS_ACK',
         received: true,
         pStuck: estimate.p,
+      };
+    },
+    SIGNALS_HEARTBEAT: async (req, sender) => {
+      let tabId = sender?.tab?.id;
+      if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
+        const { tabId: activeId } = await getActiveTabState();
+        tabId = activeId;
+      }
+
+      if (!tabId) {
+        return { type: 'HEARTBEAT_ACK', received: false };
+      }
+
+      const tabState = await getTabState(tabId);
+      const context = tabState?.context;
+
+      if (!context) {
+        // Tab context not in worker cache -> tell content script to re-send full REPORT_SIGNALS
+        return { type: 'HEARTBEAT_ACK', received: false };
+      }
+
+      const stored = await chrome.storage?.local?.get(['settings']);
+      const settings = stored?.settings || DEFAULT_SETTINGS;
+
+      // Infer stuck state
+      const estimate = estimateStuckState(req.signals, {
+        sensitivity: settings.nudgeSensitivity || 'medium',
+      });
+
+      await setTabState(tabId, {
+        signals: req.signals,
+        pStuck: estimate.p,
+      });
+
+      // Planner decision
+      const bucketKey = createContextBucket(context.site, estimate.p);
+      const banditStatsRecord = await getAllBanditStats();
+      const bucketStats = banditStatsRecord[bucketKey];
+      const plannerState = await getPlannerState();
+      const decision = decideNudge(
+        context,
+        estimate,
+        settings,
+        plannerState,
+        bucketStats,
+        {
+          isTabActive: sender?.tab?.active ?? true,
+          demoMode: Boolean(settings.demoMode),
+        }
+      );
+
+      if (decision.show) {
+        logger.info(`Nudge decision approved on heartbeat for ${context.url}: ${decision.reason}`);
+        const now = Date.now();
+        plannerState.lastNudgeTime = now;
+        plannerState.recentNudges.push(now);
+
+        let history = plannerState.sessionHistories[context.url];
+        if (!history) {
+          history = {
+            problemHash: context.url,
+            nudgeCount: 0,
+            lastNudgeTime: now,
+            solved: false,
+          };
+          plannerState.sessionHistories[context.url] = history;
+        }
+        history.nudgeCount++;
+        history.lastNudgeTime = now;
+
+        await savePlannerState(plannerState);
+        scheduleCooldownAlarm(settings.cooldownMin || 15);
+        broadcastEvent({
+          event: 'NUDGE_OFFERED',
+          decision,
+          context,
+        });
+
+        await addEventLog({
+          id: `nudge-offer-${now}-${Math.random().toString(36).slice(2, 6)}`,
+          timestamp: now,
+          type: 'nudge_offered',
+          contextHash: context.url,
+          title: 'Stuck Nudge Offered',
+          details: { decision, pStuck: estimate.p },
+        });
+      }
+
+      return {
+        type: 'HEARTBEAT_ACK',
+        received: true,
+        pStuck: estimate.p,
+      };
+    },
+    CLEAR_PAGE_CONTEXT: async (req, sender) => {
+      let tabId = req.tabId ?? sender?.tab?.id;
+      if (!tabId) {
+        const { tabId: activeId } = await getActiveTabState();
+        tabId = activeId;
+      }
+      if (tabId) {
+        await setTabState(tabId, { context: null, signals: null, pStuck: 0 });
+        logger.info(`Cleared tab context for tab ${tabId}`);
+      }
+      return {
+        type: 'PAGE_CONTEXT_CLEARED',
+        success: true,
       };
     },
     RECORD_FEEDBACK: async (req) => {
@@ -1031,6 +1154,20 @@ export function initBackground() {
         isSingleUseActive,
         contentType: pageContext?.contentType || 'article',
         whyNoNudgeReason,
+      };
+    },
+    GET_RECENT_ERRORS: async () => {
+      const errors = await getRecentErrors();
+      return {
+        type: 'RECENT_ERRORS',
+        errors,
+      };
+    },
+    CLEAR_RECENT_ERRORS: async () => {
+      await clearRecentErrors();
+      return {
+        type: 'RECENT_ERRORS_CLEARED',
+        success: true,
       };
     },
     DELETE_ALL_DATA: async (_req) => {

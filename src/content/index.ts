@@ -7,8 +7,16 @@ import { resolveAdapter, type PageAdapter } from './adapters';
 import { SignalCollector } from './signals/collector';
 import { SPANavigationWatcher } from './signals/navigation';
 import { OverlayHost } from './overlay/host';
+import { highlightTextInPage } from './highlighter';
+import { installGlobalErrorHandlers } from '../shared/errors/reporter';
 
 const logger = createLogger('ContentScript');
+
+declare global {
+  interface Window {
+    __UNSTUCK_INITIALIZED__?: boolean;
+  }
+}
 
 export interface ContentScriptState {
   trackingActive: boolean;
@@ -45,16 +53,33 @@ export function evaluateTrackingGating(
   };
 }
 
+function computeContextHash(ctx: PageContext): string {
+  const str = `${ctx.url}|${ctx.title}|${ctx.statementLength || ctx.statementText.length}|${ctx.isContest}|${ctx.tags.join(',')}`;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return `h_${hash}`;
+}
+
 export class ContentScriptController {
   private overlay: OverlayHost;
   private collector: SignalCollector | null = null;
   private navWatcher: SPANavigationWatcher | null = null;
   private currentAdapter: PageAdapter;
   private currentContext: PageContext | null = null;
+  private lastSentContextHash: string | null = null;
   private reportIntervalId: number | null = null;
   private mutationObserver: MutationObserver | null = null;
+  private mutationDebounceTimer: number | null = null;
   private unsubscribeEvents: (() => void) | null = null;
   private isDestroyed: boolean = false;
+
+  // Verdict state transition tracking (F4, F5)
+  private lastVerdictState: 'accepted' | 'wrong' | 'pending' | null = null;
+  private lastWrongVerdictText: string | null = null;
+  private hasRecordedSolved: boolean = false;
 
   constructor() {
     this.overlay = new OverlayHost();
@@ -67,6 +92,13 @@ export class ContentScriptController {
     try {
       const res = await sendToBackground<{ type: string; settings: Settings }>({ type: 'GET_SETTINGS' });
       const gating = evaluateTrackingGating(res.settings);
+
+      // Start SPA navigation watcher unconditionally (F7)
+      this.navWatcher = new SPANavigationWatcher();
+      this.navWatcher.start();
+      this.navWatcher.onNavigate((newUrl) => {
+        this.handleNavigation(newUrl);
+      });
 
       // Context extraction is essential for Hints & Chat, regardless of signal tracking
       this.extractAndCacheContext();
@@ -122,25 +154,15 @@ export class ContentScriptController {
     this.collector = new SignalCollector();
     this.collector.start();
 
-    // 2. Context extraction
-    this.extractAndCacheContext();
-
-    // 3. Start SPA navigation watcher (EC-022)
-    this.navWatcher = new SPANavigationWatcher();
-    this.navWatcher.start();
-    this.navWatcher.onNavigate((newUrl) => {
-      this.handleNavigation(newUrl);
-    });
-
-    // 4. Setup DOM & verdict observer (EC-045, EC-046)
+    // 2. Setup DOM & verdict observer (EC-045, EC-046)
     this.setupDOMObserver();
 
-    // 5. Setup periodic signal reporting (every 15s)
+    // 3. Setup periodic rate-limited signal reporting (every 15s)
     this.reportIntervalId = window.setInterval(() => {
       this.reportSignals();
     }, 15000) as unknown as number;
 
-    // 6. Listen for incoming broadcast events (e.g. NUDGE_OFFERED)
+    // 4. Listen for incoming broadcast events (e.g. NUDGE_OFFERED)
     this.unsubscribeEvents = listenToBroadcastEvents((event) => {
       if (event.event === 'NUDGE_OFFERED') {
         this.handleNudgeOffered(event.decision);
@@ -156,14 +178,20 @@ export class ContentScriptController {
       this.reportSignals();
     } else {
       logger.debug('No coding problem context extracted from current DOM');
+      // If navigating to non-problem path, clear stale context in worker (F6)
+      sendToBackground({ type: 'CLEAR_PAGE_CONTEXT' }).catch((err) => logger.debug('Clear context notice:', err));
     }
   }
 
   private handleNavigation(newUrl: URL): void {
     logger.info(`Handling navigation to ${newUrl.pathname} (EC-022)`);
 
-    // Reset signal window for new problem session
+    // Reset problem session states (F4, F5, F6)
     this.collector?.reset();
+    this.hasRecordedSolved = false;
+    this.lastVerdictState = null;
+    this.lastWrongVerdictText = null;
+    this.lastSentContextHash = null;
 
     // Update adapter and contest mode
     this.currentAdapter = resolveAdapter(newUrl);
@@ -176,7 +204,9 @@ export class ContentScriptController {
 
     // Allow DOM to settle before extracting new problem context
     setTimeout(() => {
-      this.extractAndCacheContext();
+      if (!this.isDestroyed) {
+        this.extractAndCacheContext();
+      }
     }, 500);
   }
 
@@ -188,32 +218,13 @@ export class ContentScriptController {
     if (typeof MutationObserver === 'undefined') return;
 
     this.mutationObserver = new MutationObserver(() => {
-      // 1. Verdict detection (EC-045, EC-046)
-      if (this.currentAdapter.detectVerdict) {
-        const verdict = this.currentAdapter.detectVerdict(document);
-        if (verdict) {
-          if (verdict.verdict === 'wrong') {
-            this.collector?.addVerdictResult(verdict);
-          } else if (verdict.verdict === 'accepted') {
-            logger.info('Accepted verdict detected! Marking problem solved (EC-046)');
-            this.overlay.hideAll();
-          }
-        }
+      // Debounce mutations by 500ms (F13)
+      if (this.mutationDebounceTimer !== null) {
+        window.clearTimeout(this.mutationDebounceTimer);
       }
-
-      // 2. React hydration observer: if statement was empty or placeholder, re-extract when DOM settles
-      if (
-        !this.currentContext ||
-        this.currentContext.statementText.includes('loading...') ||
-        this.currentContext.title === 'Two Sum'
-      ) {
-        const hasContent = document.querySelector(
-          'div[data-track-load="description_content"], .elfjS, div.question-content, .text-title-large, div[data-cy="question-title"]'
-        );
-        if (hasContent) {
-          this.extractAndCacheContext();
-        }
-      }
+      this.mutationDebounceTimer = window.setTimeout(() => {
+        this.processDOMMutations();
+      }, 500) as unknown as number;
     });
 
     this.mutationObserver.observe(document.body, {
@@ -222,8 +233,61 @@ export class ContentScriptController {
     });
   }
 
+  private processDOMMutations(): void {
+    if (this.isDestroyed) return;
+
+    // 1. Transition-based verdict detection (F4, F5)
+    if (this.currentAdapter.detectVerdict) {
+      const verdict = this.currentAdapter.detectVerdict(document);
+      if (verdict) {
+        if (verdict.verdict === 'wrong') {
+          const raw = verdict.rawText || 'wrong';
+          // Only increment if state transitioned or text changed
+          if (this.lastVerdictState !== 'wrong' || raw !== this.lastWrongVerdictText) {
+            this.lastVerdictState = 'wrong';
+            this.lastWrongVerdictText = raw;
+            this.collector?.addVerdictResult(verdict);
+          }
+        } else if (verdict.verdict === 'accepted') {
+          if (!this.hasRecordedSolved && this.currentContext) {
+            this.hasRecordedSolved = true;
+            this.lastVerdictState = 'accepted';
+            logger.info(`Accepted verdict detected! Recording solve for ${this.currentContext.url}`);
+            sendToBackground({
+              type: 'RECORD_SOLVED',
+              problemHash: this.currentContext.url,
+              timeTakenMs: this.collector ? this.collector.getSnapshot().dwellMs : undefined,
+            }).catch((err) => logger.debug('Record solved error:', err));
+          }
+          // Collapse card but retain FAB for S12 summary entry point (F4)
+          this.overlay.collapseToFab();
+        } else if (verdict.verdict === 'pending') {
+          this.lastVerdictState = 'pending';
+        }
+      }
+    }
+
+    // 2. React hydration observer: if statement was empty or placeholder, re-extract when DOM settles
+    if (
+      !this.currentContext ||
+      this.currentContext.statementText.includes('loading...')
+    ) {
+      const hasContent = document.querySelector(
+        'div[data-track-load="description_content"], .elfjS, div.question-content, .text-title-large, div[data-cy="question-title"]'
+      );
+      if (hasContent) {
+        this.extractAndCacheContext();
+      }
+    }
+  }
+
   private async reportSignals(): Promise<void> {
     if (this.isDestroyed || !this.currentContext) return;
+    // Suppress heartbeats while tab is hidden (F8)
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+
+    const currentHash = computeContextHash(this.currentContext);
+    const isFirstOrChanged = this.lastSentContextHash !== currentHash;
 
     const signals = this.collector
       ? this.collector.getSnapshot()
@@ -234,16 +298,28 @@ export class ContentScriptController {
           wrongSubmissions: 0,
           tabSwitches: 0,
           activeMs: 0,
+          readingMs: 0,
           windowStart: Date.now() - 1000,
           windowEnd: Date.now(),
         };
 
     try {
-      await sendToBackground({
-        type: 'REPORT_SIGNALS',
-        signals,
-        context: this.currentContext,
-      });
+      if (isFirstOrChanged) {
+        await sendToBackground({
+          type: 'REPORT_SIGNALS',
+          signals,
+          context: this.currentContext,
+        });
+        this.lastSentContextHash = currentHash;
+      } else {
+        // Send lightweight signals heartbeat (F8)
+        await sendToBackground({
+          type: 'SIGNALS_HEARTBEAT',
+          signals,
+          contextHash: currentHash,
+          readingMs: signals.readingMs,
+        });
+      }
     } catch (err) {
       if (err instanceof MessagingError && err.code === 'CONTEXT_INVALIDATED') {
         this.showReloadPrompt();
@@ -252,7 +328,7 @@ export class ContentScriptController {
     }
   }
 
-  private handleNudgeOffered(decision: { reason: string; utility: number; contextBucket?: string }): void {
+  private handleNudgeOffered(decision: { reason: string; utility: number; contextBucket?: string; nudgeText?: string }): void {
     const isContest = this.currentAdapter.detectContest(new URL(window.location.href), document);
     if (isContest) return;
 
@@ -260,26 +336,47 @@ export class ContentScriptController {
     const normSite = hostname.toLowerCase().includes('codeforces') ? 'codeforces' : 'leetcode';
     const bucket = decision.contextBucket || `${normSite}:high:intermediate`;
 
+    // Adaptive copy depending on problem vs generic/article page (F3)
+    const isProblemPage =
+      this.currentContext?.contentType === 'problem' ||
+      this.currentContext?.site === 'leetcode' ||
+      this.currentContext?.site === 'codeforces';
+
+    const previewText = isProblemPage
+      ? 'Hint 1 of 4: Socratic direction'
+      : 'Guidance available: Key takeaways & explanation';
+
+    const userFacingReason = decision.nudgeText || 'Would you like some direction?';
+
     this.overlay.showNudge({
       title: 'Stuck on this part?',
-      reason: decision.reason,
-      previewText: 'Hint 1 of 4: Socratic direction available',
+      reason: userFacingReason,
+      previewText,
       contextBucket: bucket,
       onShowHint: () => {
-        logger.info('User accepted nudge: Requesting hint & recording accept reward');
+        logger.info('User accepted nudge: Opening side panel & requesting hint');
+        // Open side panel targeting hints tab (F2)
         sendToBackground({
-          type: 'RECORD_FEEDBACK',
-          contextBucket: bucket,
-          action: 'accept',
-          site: hostname,
-        }).catch((err) => logger.debug('Record feedback error:', err));
+          type: 'OPEN_SIDE_PANEL',
+          tab: 'hints',
+        }).catch((err) => logger.debug('Side panel open notice:', err));
 
         if (this.currentContext) {
           sendToBackground({
             type: 'REQUEST_HINT',
             level: 1,
             problemHash: this.currentContext.url,
-          }).catch((err) => logger.debug('Hint request error:', err));
+          })
+            .then(() => {
+              // Record accept feedback ONLY after hint request starts successfully (F2)
+              sendToBackground({
+                type: 'RECORD_FEEDBACK',
+                contextBucket: bucket,
+                action: 'accept',
+                site: hostname,
+              }).catch((err) => logger.debug('Record feedback error:', err));
+            })
+            .catch((err) => logger.debug('Hint request error:', err));
         }
       },
       onDismiss: () => {
@@ -359,6 +456,10 @@ export class ContentScriptController {
       clearInterval(this.reportIntervalId);
       this.reportIntervalId = null;
     }
+    if (this.mutationDebounceTimer !== null) {
+      clearTimeout(this.mutationDebounceTimer);
+      this.mutationDebounceTimer = null;
+    }
     if (this.mutationObserver) {
       this.mutationObserver.disconnect();
       this.mutationObserver = null;
@@ -372,47 +473,44 @@ export class ContentScriptController {
     this.navWatcher?.destroy();
     this.navWatcher = null;
     this.overlay.destroy();
-  }
-}
-
-export function highlightTextInPage(searchText: string): boolean {
-  if (!searchText || searchText.trim().length === 0) return false;
-  const cleanSearch = searchText.trim().toLowerCase();
-
-  try {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    let node: Node | null;
-    while ((node = walker.nextNode())) {
-      if (node.textContent && node.textContent.toLowerCase().includes(cleanSearch)) {
-        const parent = node.parentElement;
-        if (parent) {
-          parent.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          const origOutline = parent.style.outline;
-          const origTransition = parent.style.transition;
-          parent.style.transition = 'outline 0.3s ease-in-out';
-          parent.style.outline = '3px solid #4be277';
-          setTimeout(() => {
-            parent.style.outline = origOutline;
-            parent.style.transition = origTransition;
-          }, 3000);
-          return true;
-        }
-      }
+    if (typeof window !== 'undefined') {
+      window.__UNSTUCK_INITIALIZED__ = false;
     }
-  } catch (err) {
-    logger.debug('Highlight walker encountered error:', err);
   }
-  return false;
 }
+
+export { highlightTextInPage };
 
 let activeController: ContentScriptController | null = null;
 
-export function initContentScript(): ContentScriptController {
-  if (activeController) {
+export function initContentScript(ctx?: { onInvalidated?: (fn: () => void) => void }): ContentScriptController {
+  // Single instance guard (F12)
+  if (typeof window !== 'undefined' && window.__UNSTUCK_INITIALIZED__ && activeController) {
     return activeController;
   }
+  if (typeof window !== 'undefined') {
+    window.__UNSTUCK_INITIALIZED__ = true;
+  }
+
+  // Install global error recorder
+  installGlobalErrorHandlers('content');
+
   activeController = new ContentScriptController();
   activeController.init();
+
+  // Lifecycle bindings (F12)
+  if (ctx && typeof ctx.onInvalidated === 'function') {
+    ctx.onInvalidated(() => {
+      activeController?.destroy();
+      activeController = null;
+    });
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => {
+      activeController?.destroy();
+    });
+  }
 
   if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -420,13 +518,11 @@ export function initContentScript(): ContentScriptController {
         const found = highlightTextInPage(message.text);
         sendResponse({ ok: true, found });
       } else if (message?.type === 'GET_PAGE_CONTEXT') {
-        const ctx = activeController?.getCurrentContext() || null;
-        sendResponse({ ok: true, context: ctx });
+        const pageCtx = activeController?.getCurrentContext() || null;
+        sendResponse({ ok: true, context: pageCtx });
       }
     });
   }
 
   return activeController;
 }
-
-

@@ -721,6 +721,39 @@ $$P(\text{stuck}) = P_0 + (1 - P_0) \cdot \tanh\left(\frac{t - N_{\text{eff}}}{\
 - **Dynamic Input Placeholder:** Automatically changes from `"Ask a question about this problem..."` to `"Ask a question about this page..."` when viewing non-problem content.
 - **Honest Error Card:** Renders a dedicated error view with a clear explanation of verification failure, accompanied by an optional **"Show unverified draft"** toggle with explicit disclaimers.
 
+---
+
+## 18. Zero-Error Hardening & Diagnostic Architecture (v1.0.7)
+
+### 1. Deterministic Context Budget & Truncation Tracing (`src/shared/budget.ts`)
+- **UTF-8 Slicing with Tracing:** `truncateToBudget()` slices large scraped problem statements or article excerpts to a fixed character budget while capturing truncation metadata (`wasTruncated`, `originalLength`, `truncatedLength`).
+- **Section Budgeting (`sanitizeSectionsBudget()`):**
+  - Section count cap: 60 sections (formerly 30).
+  - Single section cap: 4,000 characters.
+  - Total section characters cap: 60,000 characters.
+- **Schema Alignment:** `PageContextSchema` reflects these realistic upper limits, eliminating runtime Zod validation rejections when processing large multilingual or encyclopedia pages.
+- **Bus Emergency Fallback (`src/shared/messaging/bus.ts`):** If a content script sends an over-budget context payload, the message bus automatically performs an emergency trim before Zod parsing, preventing unhandled schema rejections.
+
+### 2. Multi-Node Text Highlighter (`src/content/highlighter.ts`)
+- **Multi-Node Traversal:** Handles quotes spanning inline styling elements (`<strong>`, `<em>`, `<code>`, `<span>`) by walking DOM text nodes via `TreeWalker` and computing precise character offsets.
+- **CSS Custom Highlight API:** Leverages `CSS.highlights` when supported for non-destructive, zero-layout-shift text highlighting.
+- **Fallback Range Selection:** Degrades smoothly to standard `window.getSelection()` and `scrollIntoView()` on older browser targets.
+
+### 3. Active Reading Time & Idle Tracking (`src/content/signals/collector.ts`)
+- **5-Minute Problem Dwell Threshold:** Adjusts baseline inactivity threshold to 300,000ms (5 minutes) for coding problems, preventing premature struggle detection while users read complex problem statements.
+- **Active Reading Metrics:** Tracks cumulative active reading duration (`readingMs`) distinct from idle dwelling, providing refined cognitive engagement signals.
+
+### 4. Word-Boundary Sensitive Page Guardrails (`src/shared/sensitive.ts`)
+- **URL Boundary Enforcement:** Replaces loose keyword substring matches with strict boundary expressions `(?:^|\/)(?:checkout|cart|pay|billing)(?:\/|$|\?|#)` and strict domain suffix matching for banking and government portals.
+- **Zero False Positives:** Safe educational URLs (e.g. `/wiki/Payment`, `/wiki/Open_banking`, `/wiki/Passport`, `/wiki/Cartoon`) pass through without false positive censorship.
+- **Visible Form Element Filter:** Restricts password/payment DOM checks strictly to visible elements (`isElementVisible`), ignoring dormant modal overlays.
+
+### 5. Global Error Ring Buffer & Diagnostics UI (`src/shared/errors/reporter.ts`, `OptionsApp.tsx`)
+- **50-Entry Session Ring Buffer:** Captures runtime errors into an in-memory ring buffer with timestamp, context tag, sanitized message, and component name.
+- **Options UI Card:** Added Bento 4 "System Health & Recent Diagnostics" card in Options settings.
+- **One-Click Clipboard Export:** Exports sanitized diagnostics including browser runtime, platform, memory stats, active settings, and recent error records with zero key or user data leakage.
+
+
 
 
 

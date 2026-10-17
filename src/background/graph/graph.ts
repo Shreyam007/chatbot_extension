@@ -97,7 +97,7 @@ export async function runAgentGraph(
 
   while (state.retryCount <= maxRetries) {
     if (Date.now() >= deadlineMs || totalLlmCalls >= MAX_TOTAL_LLM_CALLS) {
-      logger.warn(
+      logger.info(
         `Budget or deadline reached (calls=${totalLlmCalls}/${MAX_TOTAL_LLM_CALLS}, elapsed=${Date.now() - startTime}ms); falling back`
       );
       break;
@@ -183,7 +183,7 @@ export async function runAgentGraph(
     // Rejection: prepare for retry or exit to fallback
     state.retryCount++;
     trace.retries = state.retryCount;
-    logger.warn(`Critic rejected hint (attempt ${state.retryCount}): ${evaluation.reason}`);
+    logger.info(`Critic rejected hint (attempt ${state.retryCount}): ${evaluation.reason}`);
 
     // Rebuild context prompt injecting critic feedback
     state.assembledPrompt = buildContext(state);
@@ -201,7 +201,7 @@ export async function runAgentGraph(
     } else {
       // Proactive hints on problem pages only:
       const fallbackStart = Date.now();
-      logger.warn('Maximum retries exceeded or generator failed; executing safe_fallback node');
+      logger.info('Maximum retries exceeded or generator failed; executing safe_fallback node');
       trace.isFallback = true;
       deliveredHint = generateSafeFallback(state);
       deliveredHint.latencyMs = Date.now() - startTime;

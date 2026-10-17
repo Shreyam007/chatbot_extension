@@ -386,6 +386,7 @@ export const UpdateSitePrivacyResponseSchema = z.object({
 export const OpenSidePanelRequestSchema = z.object({
   type: z.literal('OPEN_SIDE_PANEL'),
   tabId: z.number().optional(),
+  tab: z.enum(['hints', 'chat', 'trace', 'progress']).optional(),
 });
 
 export const OpenSidePanelResponseSchema = z.object({
@@ -393,6 +394,58 @@ export const OpenSidePanelResponseSchema = z.object({
   success: z.boolean(),
   fallback: z.boolean().optional(),
   error: z.string().optional(),
+});
+
+export const ClearPageContextRequestSchema = z.object({
+  type: z.literal('CLEAR_PAGE_CONTEXT'),
+  tabId: z.number().optional(),
+});
+
+export const ClearPageContextResponseSchema = z.object({
+  type: z.literal('PAGE_CONTEXT_CLEARED'),
+  success: z.boolean(),
+});
+
+export const SignalsHeartbeatRequestSchema = z.object({
+  type: z.literal('SIGNALS_HEARTBEAT'),
+  signals: SignalWindowSchema,
+  contextHash: z.string().min(1),
+  readingMs: z.number().optional(),
+});
+
+export const SignalsHeartbeatResponseSchema = z.object({
+  type: z.literal('HEARTBEAT_ACK'),
+  received: z.boolean(),
+  pStuck: z.number().min(0).max(1).optional(),
+});
+
+export const ErrorRecordSchema = z.object({
+  id: z.string(),
+  timestamp: z.number(),
+  source: z.enum(['sw', 'content', 'sidepanel', 'popup', 'options']),
+  message: z.string(),
+  fileLine: z.string().optional(),
+  version: z.string(),
+  tabId: z.number().optional(),
+});
+export type ErrorRecord = z.infer<typeof ErrorRecordSchema>;
+
+export const GetRecentErrorsRequestSchema = z.object({
+  type: z.literal('GET_RECENT_ERRORS'),
+});
+
+export const GetRecentErrorsResponseSchema = z.object({
+  type: z.literal('RECENT_ERRORS'),
+  errors: z.array(ErrorRecordSchema),
+});
+
+export const ClearRecentErrorsRequestSchema = z.object({
+  type: z.literal('CLEAR_RECENT_ERRORS'),
+});
+
+export const ClearRecentErrorsResponseSchema = z.object({
+  type: z.literal('RECENT_ERRORS_CLEARED'),
+  success: z.boolean(),
 });
 
 export const NudgeDecisionRecordSchema = z.object({
@@ -523,6 +576,10 @@ export const BusRequestSchema = z.discriminatedUnion('type', [
   UpdateSitePrivacyRequestSchema,
   OpenSidePanelRequestSchema,
   GetNudgeDiagnosticsRequestSchema,
+  ClearPageContextRequestSchema,
+  SignalsHeartbeatRequestSchema,
+  GetRecentErrorsRequestSchema,
+  ClearRecentErrorsRequestSchema,
 ]);
 
 /**

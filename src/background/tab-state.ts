@@ -75,7 +75,7 @@ async function persistTabStates(): Promise<void> {
       await chrome.storage.session.set({ tab_states: record });
     }
   } catch (err) {
-    logger.warn('Failed to persist tab states to session storage', err);
+    logger.info('Notice: Failed to persist tab states to session storage: ' + (err instanceof Error ? err.message : String(err)));
   }
 }
 

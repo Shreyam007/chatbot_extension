@@ -257,7 +257,7 @@ export async function evaluateHint(
   }
 
   if (!isGrounded) {
-    logger.warn('Hint rejected by Grounding Check: groundedQuote not found in statement text');
+    logger.info('Hint rejected by Grounding Check: groundedQuote not found in statement text');
     return {
       pass: false,
       leak: false,
@@ -353,7 +353,7 @@ export async function evaluateHint(
     };
   } catch (err) {
     // EC-090: Critic call itself failed -> fallback safely to deterministic check
-    logger.warn('LLM Critic call failed; falling back to deterministic heuristic results (EC-090)', err);
+    logger.info('LLM Critic call failed; falling back to deterministic heuristic results (EC-090)', err);
 
     const fallbackPass = !hasLeak && isGrounded;
     return {

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>API Authentication Reference - Developer Docs</title>
+</head>
+<body>
+  <header>
+    <h1>API Authentication & Token Management</h1>
+  </header>
+  <main>
+    <article>
+      <h2>Overview</h2>
+      <p>All REST API requests require a Bearer token in the Authorization header. You can generate API tokens through the developer console.</p>
+      
+      <h2>Authentication Headers</h2>
+      <p>Include the token in your HTTP requests like this:</p>
+      <pre><code>Authorization: Bearer YOUR_API_TOKEN</code></pre>
+
+      <h2>Rate Limits</h2>
+      <p>Standard tier keys allow up to 60 requests per minute with burst capacity up to 100 requests.</p>
+    </article>
+  </main>
+
+  <!-- Hidden login modal that is closed by default and must NOT trigger sensitive page detection -->
+  <div id="auth-modal" style="display: none;" aria-hidden="true">
+    <div class="modal-backdrop">
+      <form action="/login" method="POST">
+        <h3>Sign In to Developer Console</h3>
+        <input type="text" name="username" placeholder="Username" />
+        <input type="password" name="password" placeholder="Password" />
+        <button type="submit">Sign In</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

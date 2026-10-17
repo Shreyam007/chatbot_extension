@@ -1,6 +1,6 @@
 {
   "name": "unstuck",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "verify:errors": "playwright test --config=playwright.zero-error.config.ts",
     "eval": "vite-node scripts/evaluate.ts",
     "eval:live": "vite-node scripts/evaluate-live.ts",
     "lint": "eslint .",

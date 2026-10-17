@@ -20,6 +20,7 @@ import {
   Table as TableIcon,
   RefreshCw,
   BarChart2,
+  AlertTriangle,
 } from 'lucide-react';
 import { APP_NAME, APP_VERSION, DEFAULT_AI_MODEL, SUPPORTED_AI_MODELS } from '../shared/config';
 import { OnboardingWizard } from '../ui/OnboardingWizard';
@@ -27,6 +28,7 @@ import { sendToBackground } from '../shared/messaging';
 import { getStoredApiKey, setStoredApiKey, getStoredSettings } from '../shared/storage';
 import type { Settings, AllowedOrigin } from '../shared/schemas/settings';
 import type { LocalMetricsSummary } from '../shared/metrics/types';
+import type { ErrorRecord } from '../shared/messaging/protocol';
 import { BUILTIN_SENSITIVE_PATTERNS } from '../shared/sensitive';
 import { requestSitePermission } from '../shared/permissions';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
@@ -94,6 +96,46 @@ export const OptionsApp: React.FC = () => {
   });
 
   const [localMetrics, setLocalMetrics] = useState<LocalMetricsSummary | null>(null);
+  const [recentErrors, setRecentErrors] = useState<ErrorRecord[]>([]);
+  const [copiedDiagnostics, setCopiedDiagnostics] = useState(false);
+
+  const loadRecentErrors = useCallback(async () => {
+    try {
+      const res = await sendToBackground<{ type: string; errors: ErrorRecord[] }>({
+        type: 'GET_RECENT_ERRORS',
+      });
+      if (res?.errors) {
+        setRecentErrors(res.errors);
+      }
+    } catch {
+      // Best-effort
+    }
+  }, []);
+
+  const handleClearErrors = async () => {
+    try {
+      await sendToBackground({ type: 'CLEAR_RECENT_ERRORS' });
+      setRecentErrors([]);
+    } catch {
+      // Best-effort
+    }
+  };
+
+  const handleCopyDiagnostics = () => {
+    const report = {
+      version: APP_VERSION,
+      timestamp: new Date().toISOString(),
+      platform: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+      model: selectedModel,
+      trackingEnabled,
+      errorsCount: recentErrors.length,
+      recentErrors,
+    };
+    navigator.clipboard.writeText(JSON.stringify(report, null, 2)).then(() => {
+      setCopiedDiagnostics(true);
+      setTimeout(() => setCopiedDiagnostics(false), 2000);
+    });
+  };
 
   const loadLocalMetrics = useCallback(async () => {
     try {
@@ -183,13 +225,14 @@ export const OptionsApp: React.FC = () => {
           blockedSitesCount: s?.blockedSites?.length || 0,
         });
         await loadLocalMetrics();
+        await loadRecentErrors();
       } catch {
         // Fallback
       }
     } catch (err) {
       console.error('Failed to load initial settings:', err);
     }
-  }, [loadLocalMetrics]);
+  }, [loadLocalMetrics, loadRecentErrors]);
 
   useEffect(() => {
     loadInitialSettings();
@@ -1447,6 +1490,86 @@ export const OptionsApp: React.FC = () => {
                   />
                 </button>
               </div>
+            </div>
+
+            {/* Bento 4: System Health & Diagnostics (F18) */}
+            <div
+              data-testid="recent-errors-container"
+              className="p-5 rounded-xl bg-surface-container border border-outline-variant/30 space-y-4 shadow-sm"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-3 border-b border-outline-variant/20">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-surface-container-high border border-outline-variant/40 flex items-center justify-center shrink-0 text-primary">
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-mono font-semibold text-on-surface">
+                      SYSTEM HEALTH & RECENT DIAGNOSTICS
+                    </h3>
+                    <p className="text-xs font-sans text-on-surface-variant">
+                      In-memory ring buffer of recent extension warnings or runtime issues (v{APP_VERSION}). Zero personal data retained.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    data-testid="copy-diagnostics-btn"
+                    onClick={handleCopyDiagnostics}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface border border-outline-variant/40 transition-colors text-xs font-mono active:scale-95"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-primary" />
+                    <span>{copiedDiagnostics ? 'Copied!' : 'Copy Diagnostics'}</span>
+                  </button>
+                  {recentErrors.length > 0 && (
+                    <button
+                      type="button"
+                      data-testid="clear-errors-btn"
+                      onClick={handleClearErrors}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error-container/20 border border-error/50 hover:bg-error-container/40 text-error transition-colors text-xs font-mono active:scale-95"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Clear</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    data-testid="refresh-errors-btn"
+                    onClick={loadRecentErrors}
+                    title="Refresh diagnostics"
+                    className="p-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface border border-outline-variant/40 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {recentErrors.length === 0 ? (
+                <div className="p-4 rounded-lg bg-surface-container-low border border-primary/20 flex items-center gap-3 text-xs font-mono text-primary">
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                  <span>Zero runtime errors recorded. System operating cleanly at zero-error target.</span>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto font-mono text-xs">
+                  {recentErrors.map((err) => (
+                    <div
+                      key={err.id}
+                      className="p-3 rounded-lg bg-surface-container-low border border-outline-variant/30 space-y-1"
+                    >
+                      <div className="flex items-center justify-between text-[11px] text-outline">
+                        <span className="uppercase px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-bold">
+                          {err.source}
+                        </span>
+                        <span>{new Date(err.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                      <div className="text-on-surface text-xs break-all">{err.message}</div>
+                      {err.fileLine && (
+                        <div className="text-[10px] text-on-surface-variant truncate">{err.fileLine}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

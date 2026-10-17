@@ -5,7 +5,7 @@ import { createLogger } from '../../shared/logger';
 const logger = createLogger('SignalCollector');
 
 export interface SignalCollectorOptions {
-  idleThresholdMs?: number; // default: 60,000 ms (EC-042)
+  idleThresholdMs?: number; // default: 300,000 ms (5 min on coding problem pages, F11)
   scrollThresholdPx?: number; // min scroll distance before direction change counts (default: 80px)
   verdictDedupeWindowMs?: number; // default: 5,000 ms (EC-045)
 }
@@ -18,6 +18,7 @@ export class SignalCollector {
   private totalDwellMs: number = 0;
   private totalActiveMs: number = 0;
   private totalIdleMs: number = 0;
+  private totalReadingMs: number = 0;
 
   private scrollReversals: number = 0;
   private lastScrollY: number = 0;
@@ -45,7 +46,7 @@ export class SignalCollector {
   private tickIntervalId: number | null = null;
 
   constructor(options: SignalCollectorOptions = {}) {
-    this.idleThresholdMs = options.idleThresholdMs ?? 60_000;
+    this.idleThresholdMs = options.idleThresholdMs ?? 300_000;
     this.scrollThresholdPx = options.scrollThresholdPx ?? 80;
     this.verdictDedupeWindowMs = options.verdictDedupeWindowMs ?? 5_000;
 
@@ -98,7 +99,7 @@ export class SignalCollector {
 
     // Discard impossible windows (clock changes / system sleep / negative, EC-043)
     if (delta < 0 || delta > 3_600_000) {
-      logger.warn(`Discarding anomalous delta: ${delta}ms (EC-043)`);
+      logger.info(`Discarding anomalous delta: ${delta}ms (EC-043 system sleep/clock shift)`);
       return;
     }
 
@@ -123,6 +124,10 @@ export class SignalCollector {
       this.totalIdleMs += delta;
     } else {
       this.totalActiveMs += delta;
+      // Track reading time when quietly focused without immediate key/mouse action (>3s)
+      if (timeSinceActivity > 3000) {
+        this.totalReadingMs += delta;
+      }
     }
   }
 
@@ -224,6 +229,7 @@ export class SignalCollector {
     this.totalDwellMs = 0;
     this.totalActiveMs = 0;
     this.totalIdleMs = 0;
+    this.totalReadingMs = 0;
     this.scrollReversals = 0;
     this.accumulatedScrollDistance = 0;
     this.lastScrollDirection = null;
@@ -257,6 +263,7 @@ export class SignalCollector {
       wrongSubmissions: Math.max(0, this.wrongSubmissions),
       tabSwitches: Math.max(0, this.tabSwitches),
       activeMs: Math.max(0, Math.round(this.totalActiveMs)),
+      readingMs: Math.max(0, Math.round(this.totalReadingMs)),
       windowStart: this.windowStartTime,
       windowEnd: end,
     };

@@ -1,6 +1,7 @@
 import { sanitizeFormInputs } from './sensitive';
 import type { PageSection } from '../../shared/retrieval/bm25';
 import { LIMITS } from '../../shared/config';
+import { truncateToBudget, sanitizeSectionsBudget } from '../../shared/budget';
 
 export interface ExtractedPageContent {
   title: string;
@@ -193,7 +194,7 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
   };
 
   const blockElements = clone.querySelectorAll(
-    'h1, h2, h3, h4, summary, dt, dd, p, pre, code, ul, ol, table, blockquote, details .faq-body, .accordion-trigger, .accordion-header, .accordion-content, .faq-answer, [data-accordion-content]'
+    'h1, h2, h3, h4, summary, dt, dd, p, pre, li, table, blockquote, details .faq-body, .accordion-trigger, .accordion-header, .accordion-content, .faq-answer, [data-accordion-content]'
   );
 
   const seenNodes = new Set<Element>();
@@ -204,6 +205,15 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
       seenNodes.add(el);
 
       const tag = el.tagName.toLowerCase();
+      // Skip nested code inside pre (pre already formatted with code block)
+      if (tag === 'code' && el.closest('pre')) {
+        return;
+      }
+      // Skip blockquote container if it contains paragraphs
+      if (tag === 'blockquote' && el.querySelector('p')) {
+        return;
+      }
+
       if (isHeadingOrTrigger(el)) {
         flushSection();
         const headerText = el.textContent?.trim();
@@ -213,7 +223,7 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
       } else {
         const text = el.textContent?.trim();
         if (text && text.length > 10) {
-          if (tag === 'pre' || tag === 'code') {
+          if (tag === 'pre') {
             currentSectionParagraphs.push(`\`\`\`\n${text}\n\`\`\``);
           } else {
             currentSectionParagraphs.push(text);
@@ -222,6 +232,30 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
       }
     });
     flushSection();
+  }
+
+  // Coverage fallback: if structured blocks covered <60% of visible container text,
+  // extract uncovered text-bearing leaf blocks (e.g. landing-div-only markup)
+  const totalContainerText = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+  const extractedChars = sections.reduce((acc, s) => acc + s.text.length, 0);
+  if (totalContainerText.length > 60 && (extractedChars / totalContainerText.length) < 0.6) {
+    const candidateLeaves = clone.querySelectorAll('div, section, span, p');
+    let fallbackAdded = false;
+    for (const leaf of Array.from(candidateLeaves)) {
+      if (seenNodes.has(leaf)) continue;
+      const hasBlockChild = leaf.querySelector('div, section, p, table, ul');
+      if (hasBlockChild) continue;
+
+      const txt = leaf.textContent?.trim();
+      if (txt && txt.length >= 3) {
+        seenNodes.add(leaf);
+        currentSectionParagraphs.push(txt);
+        fallbackAdded = true;
+      }
+    }
+    if (fallbackAdded) {
+      flushSection();
+    }
   }
 
   // Append any same-origin iframe content as a distinct section
@@ -261,18 +295,21 @@ export function extractReadabilityContent(doc: Document): ExtractedPageContent {
   const rawWordCount = statementText.split(/\s+/).filter(Boolean).length;
   const isSparse = statementText.trim().length < 60;
 
-  // Cap statement text length
+  // Cap statement text length using guaranteed budget truncation
   const maxChars = LIMITS.MAX_STATEMENT_CHARS || 16000;
-  let isTruncated = false;
-  if (statementText.length > maxChars) {
-    isTruncated = true;
-    statementText = statementText.slice(0, maxChars) + '\n\n[...Text truncated for token budget...]';
-  }
+  const isTruncated = statementText.length > maxChars;
+  statementText = truncateToBudget(
+    statementText,
+    maxChars,
+    '\n\n[...Text truncated for token budget...]'
+  );
+
+  const boundedSections = sanitizeSectionsBudget(sections);
 
   return {
     title,
     statementText,
-    sections,
+    sections: boundedSections,
     selectedText,
     isSparse,
     language: lang,

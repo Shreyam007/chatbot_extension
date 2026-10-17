@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AlgoPortal SPA</title>
+</head>
+<body>
+  <div id="app">
+    <nav>
+      <a href="/problems" id="nav-problems" onclick="navigate('/problems'); return false;">Problem List</a>
+      <a href="/problems/two-sum" id="nav-problem-1" onclick="navigate('/problems/two-sum'); return false;">Problem 1: Two Sum</a>
+      <a href="/problems/reverse-string" id="nav-problem-2" onclick="navigate('/problems/reverse-string'); return false;">Problem 2: Reverse String</a>
+    </nav>
+    <main id="spa-content">
+      <div id="problem-list-view">
+        <h1>Coding Problems</h1>
+        <ul>
+          <li><a href="/problems/two-sum" onclick="navigate('/problems/two-sum'); return false;">Two Sum (Easy)</a></li>
+          <li><a href="/problems/reverse-string" onclick="navigate('/problems/reverse-string'); return false;">Reverse String (Easy)</a></li>
+        </ul>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function navigate(path) {
+      window.history.pushState({}, '', path);
+      render();
+    }
+
+    function render() {
+      const container = document.getElementById('spa-content');
+      const path = window.location.pathname;
+
+      if (path === '/problems/two-sum') {
+        container.innerHTML = `
+          <div data-cy="question-title">1. Two Sum</div>
+          <div data-track-load="description_content">
+            <p>Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.</p>
+          </div>
+          <div class="monaco-editor">
+            <div class="view-lines">
+              <div class="view-line">def twoSum(nums, target):</div>
+            </div>
+          </div>
+        `;
+      } else if (path === '/problems/reverse-string') {
+        container.innerHTML = `
+          <div data-cy="question-title">2. Reverse String</div>
+          <div data-track-load="description_content">
+            <p>Write a function that reverses a string. The input string is given as an array of characters s.</p>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div id="problem-list-view">
+            <h1>Coding Problems</h1>
+            <p>Select a problem to solve.</p>
+          </div>
+        `;
+      }
+    }
+
+    window.addEventListener('popstate', render);
+  </script>
+</body>
+</html>

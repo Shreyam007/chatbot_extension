@@ -4,8 +4,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](#)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Unit Tests](https://img.shields.io/badge/Tests-321%20Passing-brightgreen.svg)](#)
-[![Playwright E2E](https://img.shields.io/badge/Playwright-10%20Passing-brightgreen.svg)](#)
+[![Unit Tests](https://img.shields.io/badge/Tests-380%20Passing-brightgreen.svg)](#)
+[![Zero-Error Gate](https://img.shields.io/badge/Zero--Error%20Gate-13%2F13%20Passing-brightgreen.svg)](#)
 
 > **Unstuck** is an open-source, local-first Chrome extension that acts as a proactive, pedagogical coding tutor for competitive programming, documentation, and technical web reading.
 > Rather than functioning as a code-generating chatbot that spoils solutions, Unstuck passively monitors cognitive struggle, decides when an intervention is justified, and dispenses structured, multi-level hints anchored strictly in problem statements and page context.
@@ -183,10 +183,11 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 |---|---|
 | `npm run compile` | Runs TypeScript typechecker (`tsc --noEmit`). |
 | `npm run lint` | Runs ESLint across all source and test files. |
-| `npm test` | Runs the complete Vitest unit test suite (38 files, 267 tests). |
+| `npm test` | Runs the complete Vitest unit test suite (54 files, 380 tests). |
+| `npm run verify:errors` | Runs Playwright Zero-Error verification suite across 13 real-world scenarios. |
 | `npm run test:e2e` | Runs Playwright E2E test scenarios in Chromium. |
-| `npm run build` | Builds the production extension package using WXT + Vite. |
-| `npm run zip` | Packages `.output/chrome-mv3` into `.output/unstuck-1.0.0-chrome.zip`. |
+| `npm run build` | Builds the production extension package using WXT + Vite (sourcemaps disabled). |
+| `npm run zip` | Packages `.output/chrome-mv3` into `.output/unstuck-1.0.7-chrome.zip`. |
 | `npm run eval` | Executes the offline Critic verification benchmark across 15 DSA problems. |
 | `npm run eval:live` | Runs live evaluation against the active Google Gemini API. |
 | `npm run security:scan`| Audits repository and git history for accidentally staged credentials. |
@@ -201,8 +202,10 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 
 ---
 
-## Troubleshooting
+## Troubleshooting & Diagnostics
 
+- **System Health & Recent Diagnostics (v1.0.7):** Open **Options > Advanced** to inspect the live 50-entry error ring buffer. Click **Copy Diagnostics to Clipboard** to copy sanitized system state and logs directly for bug reports.
+- **Zero-Error Hardening (v1.0.7):** Handled operational states (offline network, Gemini 429 rate limits, invalid keys, non-problem pages, contest mode, and user dismissals) are classified as `info` or `debug` logs, ensuring zero spurious warnings or unhandled rejections.
 - **Invalid API Key (S13.1):** Verify that your API key is active in [Google AI Studio](https://aistudio.google.com/) and that the Gemini API is enabled for your project.
 - **Quota Exceeded (HTTP 429 / S13.3):**
   - **Per-Minute Limit (15 RPM):** The extension automatically queues requests through a token bucket rate-limiter and displays a live holding countdown.
@@ -211,7 +214,7 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 - **Floating Star Button (FAB) Click on LeetCode:** Clicking the FAB opens the Unstuck Side Panel directly or displays an in-page tooltip fallback ("Click the Unstuck toolbar icon to open the panel"). You can also press Enter/Space or right-click the button for snooze and pause shortcuts.
 - **Why No Nudge Yet?:** Open the Unstuck toolbar popup to view the live "Why no nudge yet?" diagnostic box explaining the exact pipeline decision (e.g., active dwell time, cooldown remaining, contest mode, or bandit pacing).
 - **Console / Extension Error Logs:** As of v1.0.5, operational errors are serialized cleanly (`serializeLogData`), eliminating ambiguous `[object Object]` entries in browser extension logs.
-- **Context Invalidation After Reload:** If you reload the extension in `chrome://extensions`, refresh open LeetCode/Codeforces problem tabs to reconnect content script communication channels.
+- **Context Invalidation After Reload:** If you reload the extension in `chrome://extensions`, refresh open LeetCode/Codeforces problem tabs to reconnect content script communication channels. Content scripts now auto-destroy listeners on invalidation.
 
 ---
 

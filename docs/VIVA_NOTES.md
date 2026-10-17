@@ -408,6 +408,26 @@ In v1.0.6, we repaired `FUNCTION_SIGNATURE_REGEX` to strictly require parameter 
 - An interactive **"Show unverified draft"** toggle button allowing the user to view the raw candidate draft with an explicit disclaimer: *"This draft was not verified by the Critic. It may contain inaccuracies or ungrounded assumptions."*
 - Dynamic pedagogical level chips tailored to the page type: on problem pages, it displays `Auto (L1 Direction)`; on articles and documentation, it displays `Auto (Pointer)`, `Explain simply`, `Worked example`, or `Full explanation`.
 
+#### Q50: What is the "Zero-Error" standard achieved in v1.0.7, and how is it verified?
+**Answer:** The v1.0.7 release instituted an absolute zero-tolerance standard for runtime errors, warnings, and unhandled promise rejections across all extension execution contexts (Content Scripts, Service Worker, Side Panel, Popup, and Options UI).
+It is enforced by a Playwright verification suite (`npm run verify:errors`) that monitors all `console.error`, `console.warn`, unhandled page exceptions, and service worker crashes across 13 distinct real-world scenarios. The allowlist (`tests/zero-error/allowlist.json`) is strictly empty (`[]`), meaning zero warnings or errors are exempted or ignored.
+
+#### Q51: How did v1.0.7 resolve the Hindi Wikipedia context budget warning (Evidence E1)?
+**Answer:** Large multilingual encyclopedia articles like Wikipedia Hindi have over 220 sections and hundreds of thousands of characters. Previously, the readability scraper extracted these without budget caps, causing `PageContextSchema` to reject payloads exceeding old section counts (30) or character limits.
+In v1.0.7:
+1. `truncateToBudget()` slices statements with exact truncation tracking.
+2. `sanitizeSectionsBudget()` enforces realistic caps (up to 60 sections, 4,000 characters per section, 60,000 total characters).
+3. The message bus (`bus.ts`) includes an emergency trim fallback before schema validation so that any oversized payload is sanitized in-flight with zero console warnings.
+
+#### Q52: Why are handled operational states (429, offline, invalid keys, contest mode) logged as info instead of warn/error?
+**Answer:** In software engineering best practices, an expected, handled operational condition (such as a user entering an incorrect API key, device momentarily losing Wi-Fi, or API rate limiting with a 429 Retry-After header) is not an anomalous system failure. When an application catches, handles, and displays an informative UI state for these conditions, logging them as `console.warn` or `console.error` creates false alarms and clutters diagnostic pipelines. In v1.0.7, all handled states are logged at `info` or `debug` level.
+
+#### Q53: How does the new System Health & Recent Diagnostics panel protect user privacy?
+**Answer:** Located in Options (Bento 4), the Diagnostics UI reads from an in-memory 50-entry session ring buffer (`src/shared/errors/reporter.ts`). When a user clicks "Copy Diagnostics to Clipboard", it generates a sanitized summary containing browser version, OS platform, memory heap usage, active settings toggles, and recent event tags. Raw URLs, problem statement text, user code buffers, and API keys are strictly excluded.
+
+#### Q54: How does v1.0.7 prevent false positive sensitive page blocking on educational URLs?
+**Answer:** Previously, sensitive keywords like "pay", "cart", or "bank" used broad substring queries, causing educational pages like `https://en.wikipedia.org/wiki/Payment`, `/wiki/Open_banking`, `/wiki/Passport`, or `/wiki/Cartoon` to be blocked as checkout or banking pages. In v1.0.7, `src/shared/sensitive.ts` uses strict URL boundary regexes (`(?:^|\/)(?:checkout|cart|pay|billing)(?:\/|$|\?|#)`) and domain suffix matching, ensuring educational reading remains completely accessible.
+
 ---
 
 ## 6. Upfront Weaknesses & Technical Limitations (Honest Self-Critique)

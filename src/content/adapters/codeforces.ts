@@ -1,6 +1,7 @@
 import type { PageAdapter, VerdictResult } from './types';
 import type { PageContext } from '../../shared/schemas/context';
 import { LIMITS } from '../../shared/config';
+import { truncateToBudget } from '../../shared/budget';
 import { createProblemHash } from './leetcode';
 
 export const codeforcesAdapter: PageAdapter = {
@@ -53,7 +54,7 @@ export const codeforcesAdapter: PageAdapter = {
     }
 
     if (statementText.length > LIMITS.MAX_STATEMENT_CHARS) {
-      statementText = statementText.slice(0, LIMITS.MAX_STATEMENT_CHARS) + '... [truncated]';
+      statementText = truncateToBudget(statementText, LIMITS.MAX_STATEMENT_CHARS);
     }
 
     // 3. Extract tags

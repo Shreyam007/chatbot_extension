@@ -3,7 +3,7 @@
  */
 
 export const APP_NAME = 'Unstuck';
-export const APP_VERSION = '1.0.6';
+export const APP_VERSION = '1.0.7';
 
 /**
  * Gemini AI Model Configuration (Official active IDs from ai.google.dev)
@@ -22,6 +22,10 @@ export const SUPPORTED_AI_MODELS = [
 export const LIMITS = {
   // Max character length for scraped statement text before token budget prioritization
   MAX_STATEMENT_CHARS: 16000,
+  // Section caps for universal / documentation pages
+  MAX_SECTIONS_COUNT: 60,
+  MAX_SECTION_CHARS: 4000,
+  MAX_TOTAL_SECTIONS_CHARS: 60000,
   // Hard cap on user chat message length to prevent unbounded token usage (EC-092)
   MAX_USER_MESSAGE_CHARS: 2000,
   // Ring buffer and local storage caps

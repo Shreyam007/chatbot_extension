@@ -127,6 +127,21 @@ Every edge case defined in Section 5 of `ANTIGRAVITY.md` is tracked here. Each i
 
 ---
 
+### I. Zero-Error Hardening & Runtime Verification (v1.0.7)
+| ID | Case | Required behaviour | Test File & Name | Status |
+|---|---|---|---|---|
+| EC-140 | Massive multilingual article context (e.g. Wikipedia Hindi, 220+ sections) | String slicing with truncation tracing in `truncateToBudget` & `sanitizeSectionsBudget` caps at 60 sections and 60,000 chars without Zod schema error | `tests/unit/budget.test.ts` & `tests/zero-error/verify-errors.test.ts` (Scenario 3) | passed |
+| EC-141 | LeetCode aggregate statistics match (e.g. "Accepted 15.4M") | `detectVerdict` uses strict word boundary regex to ignore platform-level counters | `tests/unit/adapters.test.ts` & `tests/unit/zero-error-fixes.test.ts` | passed |
+| EC-142 | Persistent wrong answer banner re-render during editing | Transition tracking increments wrong submissions only on fresh verdict status transitions | `tests/unit/zero-error-fixes.test.ts` › F5 Submission Transition Tracking | passed |
+| EC-143 | Accordion button with `aria-expanded` and SVG inside | Interactive FAQ trigger preserved in sanitized DOM tree without stripping | `tests/unit/extractor-readability.test.ts` & `tests/zero-error/verify-errors.test.ts` (Scenario 7) | passed |
+| EC-144 | Div-only SPA landing pages with low block tag coverage | Activates fallback when block elements cover <60% body text, extracting non-empty content divs | `tests/unit/extractor-readability.test.ts` & `tests/zero-error/verify-errors.test.ts` (Scenario 8) | passed |
+| EC-145 | Non-sensitive educational keywords (/wiki/Payment, /wiki/Cartoon, /wiki/Passport) | Word boundary rules prevent false positive blocking on educational URLs | `tests/unit/zero-error-fixes.test.ts` & `tests/zero-error/verify-errors.test.ts` (Scenario 9) | passed |
+| EC-146 | Quota exhaustion (HTTP 429) & handled operational states | Logged cleanly as `info`/`debug` without triggering unhandled rejection or `console.error` | `tests/zero-error/verify-errors.test.ts` (Scenario 12) | passed |
+| EC-147 | Multi-node quote highlighting across inline elements (`<strong>`, `<em>`) | Walks text nodes computing range offsets; applies CSS Custom Highlight API | `tests/unit/zero-error-fixes.test.ts` › F14 Multi-Node Highlighter | passed |
+| EC-148 | 10-Minute accelerated soak test | Long-running interaction generates zero warnings, zero errors, and maintains stable heap | `tests/zero-error/verify-errors.test.ts` (Scenario 13) | passed |
+
+---
+
 ## Manual Verification Checklists
 
 ### 1. EC-025: Cross-Origin Iframe & Embedded Problem Pages

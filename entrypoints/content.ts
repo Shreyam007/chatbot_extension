@@ -7,7 +7,7 @@ export default defineContentScript({
     'http://localhost/*',
     'http://127.0.0.1/*'
   ],
-  main() {
-    initContentScript();
+  main(ctx) {
+    initContentScript(ctx);
   }
 });

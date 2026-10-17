@@ -7,6 +7,7 @@ export const SignalWindowSchema = z.object({
   wrongSubmissions: z.number().int().min(0),
   tabSwitches: z.number().int().min(0),
   activeMs: z.number().min(0),
+  readingMs: z.number().min(0).optional(),
   windowStart: z.number().int().positive(),
   windowEnd: z.number().int().positive(),
 }).refine((data) => data.windowEnd >= data.windowStart, {

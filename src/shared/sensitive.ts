@@ -9,37 +9,37 @@ export const BUILTIN_SENSITIVE_PATTERNS: SensitivePattern[] = [
   {
     id: 'banking',
     category: 'Banking & Finance',
-    pattern: '(?:chase|bankofamerica|wellsfargo|citi|capitalone|barclays|hsbc|fidelity|schwab|vanguard)\\.com|banking',
+    pattern: '(?:^|\\.)(?:chase|bankofamerica|wellsfargo|citi|capitalone|barclays|hsbc|fidelity|schwab|vanguard)\\.com|(?:^|\\.)(?:online-?banking|ebanking|netbanking)\\.',
     description: 'Major retail and commercial banking portals',
   },
   {
     id: 'checkout',
     category: 'Payment Checkout',
-    pattern: '(?:\\/checkout|\\/cart|\\/pay|\\/billing|stripe\\.com\\/pay|paypal\\.com)',
+    pattern: '(?:^|\\/)(?:checkout|cart|pay|billing)(?:\\/|$|\\?|#)|(?:^|\\.)(?:stripe\\.com\\/pay|paypal\\.com)',
     description: 'E-commerce cart, checkout, and payment gateways',
   },
   {
     id: 'webmail',
     category: 'Webmail',
-    pattern: '(?:mail\\.google\\.com|outlook\\.live\\.com|mail\\.yahoo\\.com|proton\\.me\\/mail)',
+    pattern: '(?:^|\\.)(?:mail\\.google\\.com|outlook\\.live\\.com|mail\\.yahoo\\.com|proton\\.me\\/mail)',
     description: 'Web-based email providers and inboxes',
   },
   {
     id: 'health',
     category: 'Health & Medical',
-    pattern: '(?:mychart|healthportal|epic\\.com|cerner|kaiserpermanente)',
+    pattern: '(?:^|\\.)(?:mychart|healthportal|epic\\.com|cerner|kaiserpermanente)',
     description: 'Electronic health records and patient portals',
   },
   {
     id: 'government',
     category: 'Government & ID',
-    pattern: '(?:\\.gov|login\\.gov|irs\\.gov|passport|ssa\\.gov)',
+    pattern: '(?:\.gov(?::\\d+)?(?:\\/|$|\\?|#))|(?:^|\\.)(?:login\\.gov|irs\\.gov|ssa\\.gov)|(?:^|\\/)(?:passport-services|apply-passport)(?:\\/|$)',
     description: 'Government agency and citizen identity services',
   },
   {
     id: 'passwords',
     category: 'Password Managers',
-    pattern: '(?:1password\\.com|bitwarden\\.com|lastpass\\.com|dashlane\\.com)',
+    pattern: '(?:^|\\.)(?:1password\\.com|bitwarden\\.com|lastpass\\.com|dashlane\\.com)',
     description: 'Cloud password vaults and credential managers',
   },
 ];

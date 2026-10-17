@@ -1,4 +1,6 @@
 import { createLogger } from '../logger';
+import { LIMITS } from '../config';
+import { truncateToBudget, sanitizeSectionsBudget } from '../budget';
 import {
   type BusRequest,
   BusRequestSchema,
@@ -54,10 +56,39 @@ export async function sendToBackground<T = unknown>(
   request: BusRequest,
   timeoutMs = 10000
 ): Promise<T> {
-  const parseResult = BusRequestSchema.safeParse(request);
+  let outgoingRequest = request;
+  let parseResult = BusRequestSchema.safeParse(outgoingRequest);
   if (!parseResult.success) {
-    logger.warn('Attempted to send invalid message payload:', parseResult.error.flatten());
-    throw new MessagingError('CLIENT_VALIDATION_FAILED', 'Invalid outgoing message payload');
+    // Attempt emergency trim for context-bearing requests (F1)
+    if (outgoingRequest.type === 'REPORT_SIGNALS' && outgoingRequest.context) {
+      const ctx = { ...outgoingRequest.context };
+      let repaired = false;
+      const maxStmt = LIMITS.MAX_STATEMENT_CHARS || 16000;
+      if (ctx.statementText && ctx.statementText.length > maxStmt) {
+        ctx.statementText = truncateToBudget(ctx.statementText, maxStmt);
+        ctx.statementLength = ctx.statementText.length;
+        repaired = true;
+      }
+      if (ctx.sections && Array.isArray(ctx.sections)) {
+        ctx.sections = sanitizeSectionsBudget(ctx.sections);
+        repaired = true;
+      }
+      if (repaired) {
+        outgoingRequest = {
+          ...outgoingRequest,
+          context: ctx,
+        };
+        parseResult = BusRequestSchema.safeParse(outgoingRequest);
+        if (parseResult.success) {
+          logger.info('Outgoing context exceeded budget; trimmed to fit budget successfully.');
+        }
+      }
+    }
+
+    if (!parseResult.success) {
+      logger.error('Attempted to send invalid message payload: ' + JSON.stringify(parseResult.error.flatten()));
+      throw new MessagingError('CLIENT_VALIDATION_FAILED', 'Invalid outgoing message payload');
+    }
   }
 
   // Allow longer deadline for heavy multi-agent generation requests (EC-086)
@@ -240,7 +271,7 @@ export function registerBackgroundRouter(handlers: RequestHandlers): () => void 
 export function broadcastEvent(event: BusBroadcastEvent): void {
   const parsed = BusBroadcastEventSchema.safeParse(event);
   if (!parsed.success) {
-    logger.warn('Invalid broadcast event dropped:', parsed.error.flatten());
+    logger.error('Invalid broadcast event dropped: ' + JSON.stringify(parsed.error.flatten()));
     return;
   }
 

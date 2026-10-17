@@ -481,5 +481,38 @@ In v1.0.0, users reported that all side panel chat queries (including off-topic 
    - All 40 unit test files (276 tests) and 23 Playwright E2E tests pass twice in a row with zero flakes.
    - Bumped version to `1.0.1`. Packaged as `.output/unstuck-1.0.1-chrome.zip`.
 
+---
+
+## 21. v1.0.7 "ZERO-ERROR" Hardening Release (Strict Bug Fixes & Verification)
+
+### Context & Goals
+Prior releases established core functionality across competitive programming and universal mode reading. However, runtime operational states, multilingual long-context ingestion, and edge-case DOM mutations produced occasional console warnings and unhandled state transitions.
+v1.0.7 institutes a strict **Zero-Error Standard**: 0 errors, 0 warnings, 0 unhandled rejections across all extension contexts (content scripts, service worker, side panel, popup, options), verified via automated Playwright test harness with an empty allowlist (`allowlist.json = []`). **Zero new features** were introduced.
+
+### Systematic Fixes (F1 - F18)
+1. **F1 (Context Budget & Truncation Tracing):** `src/shared/budget.ts` slices large statements with exact truncation tracking. Expanded `PageContextSchema` to 60 sections, 4,000 chars/section, 60,000 total chars. Bus includes emergency trim fallback.
+2. **F2 (Nudge Acceptance Flow):** Dispatches `OPEN_SIDE_PANEL` synchronously and initiates hint generation prior to recording contextual bandit accept feedback.
+3. **F3 (Overlay Copy Integrity):** Renders user-facing `decision.nudgeText` instead of internal planner reason IDs; dynamic preview copy adapts between problem and general article context.
+4. **F4 & F5 (Verdicts & Transitions):** Word-boundary regex in `detectVerdict` ignores platform aggregate stats (e.g., "Accepted 15.4M"). Transition-based state tracking counts persistent wrong answer banners as 1 wrong submission. Solved state collapses to persistent FAB without unmounting.
+5. **F6 (Stale Context Cleanup):** Dispatches `CLEAR_PAGE_CONTEXT` when navigating away from problem pages.
+6. **F7 (SPA Navigation in Chat-Only):** `SPANavigationWatcher` runs unconditionally regardless of active tracking toggle, keeping side panel chat context in sync with client-side route changes.
+7. **F8 (Message Economy & Rate Limiting):** Hash-based context diffing (`computeContextHash`) suppresses duplicate payload dispatches, sending lightweight `SIGNALS_HEARTBEAT` when idle or unchanged. Dispatches paused entirely when tab is hidden.
+8. **F9 (Generic Readability Extractor):** Preserves interactive `<details>` and accordion trigger elements; deduplicates nested `<pre> > <code>` tags; activates div-only fallback when block elements cover less than 60% of body text.
+9. **F10 (Sensitive-Page Boundaries):** Added boundary guards `(?:^|\/)(?:checkout|cart|pay|billing)(?:\/|$|\?|#)` preventing false positives on educational URLs (`/wiki/Payment`, `/wiki/Open_banking`). Restricts DOM credential checks to visible elements (`isElementVisible`).
+10. **F11 (Idle & Active Reading Time):** Problem idle threshold set to 300,000ms (5 minutes). Active reading time tracks cumulative visible duration.
+11. **F12 (Single Instance Guard & Lifecycle):** Guarded content script execution with `window.__UNSTUCK_INITIALIZED__`. Bound controller destruction to `ctx.onInvalidated`.
+12. **F13 (MutationObserver Throttling):** Debounced DOM mutation scans (500ms) with disconnected observation cleanup on unmount.
+13. **F14 (Multi-Node Highlighter):** Implemented text highlighter supporting multi-node inline text segments via CSS Custom Highlight API and range selection fallback.
+14. **F15 (Contest Detection Precision):** Removed overly broad container queries that triggered false positive contest blocks on standard problem pages.
+15. **F17 (Logging Policy Alignment):** Operational states (offline, 429, invalid key, sleep deltas) downgraded from warn/error to info/debug.
+16. **F18 (Diagnostics UI & Error Ring Buffer):** Added in-memory 50-entry error ring buffer (`src/shared/errors/reporter.ts`) and Bento 4 "System Health & Recent Diagnostics" card in Options UI with 1-click clipboard export.
+
+### Verification Results
+- **Gate Suite (`npm run verify:errors`):** 13/13 scenarios passed cleanly with 0 warnings, 0 errors, 0 page errors.
+- **Allowlist (`tests/zero-error/allowlist.json`):** Empty array `[]`.
+- **Unit Tests (`npm test`):** 54 test files passed (100%), 380 tests passed (100%).
+- **Package Zip:** `.output/unstuck-1.0.7-chrome.zip` (265.15 kB) verified with zero `.map` files.
+
+
 
 

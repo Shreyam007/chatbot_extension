@@ -40,10 +40,21 @@ export class SPANavigationWatcher {
     window.addEventListener('popstate', this.onPopState);
     window.addEventListener('hashchange', this.onPopState);
 
-    // Fallback polling for frameworks with internal routing (every 1.5s)
+    // Modern Chrome Navigation API support (EC-022)
+    const navObj = (window as unknown as { navigation?: EventTarget }).navigation;
+    if (navObj && typeof navObj.addEventListener === 'function') {
+      try {
+        navObj.addEventListener('navigate', this.onPopState);
+        navObj.addEventListener('navigatesuccess', this.onPopState);
+      } catch {
+        // Fallback
+      }
+    }
+
+    // Resilient polling for frameworks with internal routing (every 800ms)
     this.pollIntervalId = window.setInterval(() => {
       this.checkUrlChange();
-    }, 1500) as unknown as number;
+    }, 800) as unknown as number;
   }
 
   private onPopState = (): void => {

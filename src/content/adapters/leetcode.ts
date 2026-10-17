@@ -1,6 +1,7 @@
 import type { PageAdapter, VerdictResult } from './types';
 import type { PageContext } from '../../shared/schemas/context';
 import { LIMITS } from '../../shared/config';
+import { truncateToBudget } from '../../shared/budget';
 
 export function createProblemHash(site: string, titleOrSlug: string): string {
   const normalized = titleOrSlug.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-');
@@ -38,8 +39,11 @@ export const leetcodeAdapter: PageAdapter = {
     if (pathname.includes('/contest/')) {
       return true;
     }
-    // Check for contest banners or standing links
-    if (doc.querySelector('a[href*="/contest/ranking/"]') || doc.querySelector('[data-track-load*="contest"]')) {
+    // Check for explicit contest countdown timer or live contest banner (not general links in header)
+    if (
+      doc.querySelector('.contest-timer, [data-cy="contest-timer"], #contest-timer') ||
+      doc.querySelector('div[class*="contest-header"] .countdown')
+    ) {
       return true;
     }
     return false;
@@ -167,7 +171,7 @@ export const leetcodeAdapter: PageAdapter = {
 
     // Truncate statement text to token budget cap (EC-024)
     if (statementText.length > LIMITS.MAX_STATEMENT_CHARS) {
-      statementText = statementText.slice(0, LIMITS.MAX_STATEMENT_CHARS) + '... [truncated]';
+      statementText = truncateToBudget(statementText, LIMITS.MAX_STATEMENT_CHARS);
     }
 
     return {
@@ -185,19 +189,41 @@ export const leetcodeAdapter: PageAdapter = {
   },
 
   detectVerdict(doc: Document): VerdictResult | null {
-    // Look for recent submission result overlays or headers
+    // Look for explicit submission result containers
     const verdictElem =
       doc.querySelector('span[data-e2e-locator="submission-result"]') ||
+      doc.querySelector('div[data-e2e-locator="submission-result"]') ||
       doc.querySelector('div[class*="result__"] span') ||
-      doc.querySelector('span[class*="text-green-"]') ||
-      doc.querySelector('span[class*="text-red-"]');
+      doc.querySelector('.submission-result span');
 
-    if (!verdictElem?.textContent) {
+    let text = verdictElem?.textContent?.trim() || '';
+
+    // If not found in primary containers, check status spans, but STRICTLY exclude problem stats
+    if (!text) {
+      const candidates = doc.querySelectorAll('span[class*="text-green-"], span[class*="text-red-"], span[class*="text-sd-"]');
+      for (const el of Array.from(candidates)) {
+        const candidateText = el.textContent?.trim() || '';
+        // Skip problem statistics like "Accepted 15.4M" or "Acceptance Rate 48.5%"
+        if (/accepted\s+[\d.]+[km]?/i.test(candidateText) || /acceptance|submissions|rate/i.test(candidateText)) {
+          continue;
+        }
+        if (/^(accepted|wrong answer|time limit exceeded|runtime error|compile error|memory limit exceeded)$/i.test(candidateText)) {
+          text = candidateText;
+          break;
+        }
+      }
+    }
+
+    if (!text) {
       return null;
     }
 
-    const text = verdictElem.textContent.trim();
-    if (/accepted/i.test(text)) {
+    // Re-verify strictly: do not count problem statistics
+    if (/accepted\s+[\d.]+[km]?/i.test(text) || /acceptance|rate/i.test(text)) {
+      return null;
+    }
+
+    if (/^accepted$/i.test(text) || /accepted/i.test(text)) {
       return { verdict: 'accepted', rawText: text };
     }
     if (/wrong answer|time limit|runtime error|compile error|memory limit/i.test(text)) {

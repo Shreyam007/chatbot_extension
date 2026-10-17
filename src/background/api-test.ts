@@ -52,7 +52,7 @@ export async function testGeminiApiKey(
       const sanitizedModels = filterTextGenerationModels(Array.isArray(data?.models) ? data.models : []);
 
       if (sanitizedModels.length === 0) {
-        logger.warn('Gemini API key verified, but no text generation models found');
+        logger.info('Gemini API key verified, but no text generation models found');
         return {
           success: false,
           error: 'API Error: No compatible text generation models (generateContent) found for this key.',
@@ -81,7 +81,7 @@ export async function testGeminiApiKey(
       // ignore json parse errors
     }
 
-    logger.warn('Gemini API key verification failed', { status: response.status });
+    logger.info('Gemini API key verification completed (unsuccessful)', { status: response.status });
     return {
       success: false,
       error: `API Error: ${errorDetail}`,
@@ -95,7 +95,7 @@ export async function testGeminiApiKey(
       };
     }
     const message = err instanceof Error ? err.message : String(err);
-    logger.warn('Network error testing Gemini API key', { error: message });
+    logger.info('Network state while testing Gemini API key', { error: message });
     return {
       success: false,
       error: `Network Error: ${message}`,

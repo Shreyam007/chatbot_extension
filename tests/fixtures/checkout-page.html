@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Checkout - Complete Your Purchase</title>
+</head>
+<body>
+  <div class="checkout-container">
+    <h1>Complete Your Order</h1>
+    <form action="/checkout/process" method="POST" class="payment-form">
+      <div class="field-row">
+        <label for="cardholder">Cardholder Name</label>
+        <input type="text" id="cardholder" name="cardholder" required />
+      </div>
+      <div class="field-row">
+        <label for="cardNumber">Card Number</label>
+        <input type="text" id="cardNumber" name="cardNumber" autocomplete="cc-number" required />
+      </div>
+      <div class="field-row">
+        <label for="exp">Expiry Date</label>
+        <input type="text" id="exp" name="exp" autocomplete="cc-exp" required />
+      </div>
+      <div class="field-row">
+        <label for="cvv">Security Code (CVV)</label>
+        <input type="password" id="cvv" name="cvv" autocomplete="cc-csc" required />
+      </div>
+      <button type="submit">Pay $49.00</button>
+    </form>
+  </div>
+</body>
+</html>

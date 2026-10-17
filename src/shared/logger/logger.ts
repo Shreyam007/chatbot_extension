@@ -149,7 +149,7 @@ export class Logger {
       (err instanceof Error && (err.name === 'AbortError' || err.message.includes('aborted')));
 
     if (isHandled) {
-      this.warn(message, err);
+      this.info(message, err);
     } else {
       this.error(message, err);
     }

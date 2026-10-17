@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign In - Secure Portal</title>
+</head>
+<body>
+  <div class="login-wrapper">
+    <h1>Sign In to Your Account</h1>
+    <form action="/login" method="POST" class="login-form">
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" required autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password" />
+      </div>
+      <button type="submit">Sign In</button>
+    </form>
+  </div>
+</body>
+</html>

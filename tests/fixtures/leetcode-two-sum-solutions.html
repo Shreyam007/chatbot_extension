@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Two Sum - Solutions - LeetCode</title>
+</head>
+<body>
+  <div id="__next">
+    <div class="layout-content">
+      <div class="flex items-center space-x-4 border-b">
+        <button class="tab-button">Description</button>
+        <button class="tab-button">Editorial</button>
+        <button class="tab-button active">Solutions</button>
+        <button class="tab-button">Submissions</button>
+      </div>
+
+      <div class="solutions-container p-4">
+        <h2>Community Solutions for Two Sum</h2>
+        <div class="solution-card my-4 p-4 border rounded">
+          <h3>One-pass Hash Table (Python / Java / C++)</h3>
+          <p>By using an inverted index (hash map), we can check for complements in O(1) time complexity.</p>
+          <pre><code>def twoSum(nums, target):
+    prevMap = {}
+    for i, n in enumerate(nums):
+        diff = target - n
+        if diff in prevMap:
+            return [prevMap[diff], i]
+        prevMap[n] = i</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

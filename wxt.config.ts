@@ -1,25 +1,25 @@
 import { defineConfig } from 'wxt';
 
 export default defineConfig({
-  manifest: {
+  manifest: (env) => ({
     name: 'Unstuck',
     description: 'Proactive, explainable tutoring assistant for coding problems and technical pages.',
-    version: '1.0.6',
+    version: '1.0.7',
     icons: {
       16: 'icon-16.png',
       32: 'icon-32.png',
       48: 'icon-48.png',
-      128: 'icon-128.png'
+      128: 'icon-128.png',
     },
     permissions: ['storage', 'sidePanel', 'alarms', 'activeTab', 'scripting'],
-    host_permissions: [
-      'https://leetcode.com/*',
-      'https://codeforces.com/*'
-    ],
-    optional_host_permissions: [
-      'https://*/*',
-      'http://*/*'
-    ],
+    host_permissions:
+      env.mode === 'development'
+        ? ['https://leetcode.com/*', 'https://codeforces.com/*', 'https://*/*', 'http://*/*']
+        : ['https://leetcode.com/*', 'https://codeforces.com/*'],
+    optional_host_permissions:
+      env.mode === 'development'
+        ? []
+        : ['https://*/*', 'http://*/*'],
     action: {
       default_title: 'Unstuck',
       default_icon: {
@@ -31,9 +31,9 @@ export default defineConfig({
     },
     options_ui: {
       page: 'options.html',
-      open_in_tab: true
-    }
-  },
+      open_in_tab: true,
+    },
+  }),
   modules: ['@wxt-dev/module-react'],
   vite: (env) => ({
     build: {

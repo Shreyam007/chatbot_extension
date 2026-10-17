@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Two Sum - LeetCode</title>
+</head>
+<body>
+  <div id="__next">
+    <div class="layout-content">
+      <!-- Tabs header -->
+      <div class="flex items-center space-x-4 border-b">
+        <button class="tab-button active">Description</button>
+        <button class="tab-button">Editorial</button>
+        <button class="tab-button">Solutions</button>
+        <button class="tab-button">Submissions</button>
+      </div>
+
+      <!-- Problem Metadata with Statistics that must NOT trigger verdict -->
+      <div class="problem-stats flex gap-4 text-sm text-gray-500">
+        <span class="difficulty text-olive font-medium">Easy</span>
+        <span class="stat-accepted text-green-500">Accepted 15.4M</span>
+        <span class="stat-submissions text-gray-400">Submissions 28.2M</span>
+        <span class="stat-rate text-gray-400">Acceptance Rate 54.3%</span>
+      </div>
+
+      <div class="tags-container flex gap-2 my-2">
+        <a href="/tag/array/" class="tag">Array</a>
+        <a href="/tag/hash-table/" class="tag">Hash Table</a>
+      </div>
+
+      <!-- Main Problem Description -->
+      <div data-track-load="description_content" class="elfjS">
+        <p>Given an array of integers <code>nums</code> and an integer <code>target</code>, return <em>indices of the two numbers such that they add up to <code>target</code></em>.</p>
+        <p>You may assume that each input would have <strong>exactly one solution</strong>, and you may not use the same element twice.</p>
+        <p>You can return the answer in any order.</p>
+
+        <p><strong class="example">Example 1:</strong></p>
+        <pre><code>Input: nums = [2,7,11,15], target = 9
+Output: [0,1]
+Explanation: Because nums[0] + nums[1] == 9, we return [0, 1].</code></pre>
+
+        <p><strong class="example">Example 2:</strong></p>
+        <pre><code>Input: nums = [3,2,4], target = 6
+Output: [1,2]</code></pre>
+
+        <p><strong>Constraints:</strong></p>
+        <ul>
+          <li><code>2 &lt;= nums.length &lt;= 10<sup>4</sup></code></li>
+          <li><code>-10<sup>9</sup> &lt;= nums[i] &lt;= 10<sup>9</sup></code></li>
+          <li><code>-10<sup>9</sup> &lt;= target &lt;= 10<sup>9</sup></code></li>
+          <li><strong>Only one valid answer exists.</strong></li>
+        </ul>
+      </div>
+
+      <!-- Code Editor Mock -->
+      <div class="monaco-editor">
+        <div class="view-lines">
+          <div class="view-line">class Solution:</div>
+          <div class="view-line">    def twoSum(self, nums: List[int], target: int) -&gt; List[int]:</div>
+          <div class="view-line">        hashmap = {}</div>
+          <div class="view-line">        for i, n in enumerate(nums):</div>
+          <div class="view-line">            diff = target - n</div>
+          <div class="view-line">            if diff in hashmap:</div>
+          <div class="view-line">                return [hashmap[diff], i]</div>
+          <div class="view-line">            hashmap[n] = i</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

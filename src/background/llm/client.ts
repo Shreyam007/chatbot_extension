@@ -150,7 +150,7 @@ export class GeminiClient {
         if (err instanceof LlmError) {
           // Task E.2: Handle TRUNCATED_OUTPUT by retrying once with larger maxOutputTokens (4096)
           if (err.code === 'TRUNCATED_OUTPUT' && (currentOptions.maxOutputTokens ?? 2048) < 4096 && attempt <= 1) {
-            logger.warn('Output truncated by MAX_TOKENS; retrying once with 4096 tokens budget (Task E.2)');
+            logger.info('Output truncated by MAX_TOKENS; retrying once with 4096 tokens budget (Task E.2)');
             currentOptions = { ...currentOptions, maxOutputTokens: 4096 };
             continue;
           }
@@ -172,8 +172,8 @@ export class GeminiClient {
               ? err.retryAfterSeconds * 1000
               : Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 10000);
 
-          logger.warn(
-            `LLM call attempt ${attempt} failed with ${err.code}. Retrying in ${Math.round(backoffDelay)}ms...`
+          logger.info(
+            `LLM call attempt ${attempt} encountered ${err.code}. Retrying in ${Math.round(backoffDelay)}ms...`
           );
 
           await new Promise((resolve) => setTimeout(resolve, backoffDelay));
@@ -394,7 +394,7 @@ export class GeminiClient {
     try {
       return this.cleanAndParseJson<T>(rawText);
     } catch (parseError) {
-      logger.warn('Initial JSON parsing failed. Attempting single-shot repair (EC-084)...', parseError);
+      logger.info('Initial JSON parsing failed. Attempting single-shot repair (EC-084)...');
 
       try {
         const repairPrompt =
