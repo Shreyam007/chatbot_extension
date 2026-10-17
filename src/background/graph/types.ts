@@ -48,6 +48,7 @@ export interface AgentRunTrace {
   coverageStats?: { covered: number; total: number };
   badgeStatus?: 'checked' | 'checked_basic' | 'partly_verified' | 'unverified' | 'low_confidence';
   unverifiedReason?: string;
+  userInitiated?: boolean;
 }
 
 export interface AgentGraphState {
@@ -88,6 +89,12 @@ export interface AgentGraphOptions {
   lowQuotaMode?: boolean;
   noPage?: boolean;
   isChatQuery?: boolean;
+  isProactiveNudge?: boolean;
+  nudgeData?: {
+    pStuck: number;
+    threshold: number;
+    contributions?: Record<string, number>;
+  };
 }
 
 export interface AgentGraphResult {

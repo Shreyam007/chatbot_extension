@@ -513,6 +513,39 @@ v1.0.7 institutes a strict **Zero-Error Standard**: 0 errors, 0 warnings, 0 unha
 - **Unit Tests (`npm test`):** 54 test files passed (100%), 380 tests passed (100%).
 - **Package Zip:** `.output/unstuck-1.0.7-chrome.zip` (265.15 kB) verified with zero `.map` files.
 
+---
+
+## 22. v1.0.8 "PAGE-AWARE" Release (Evidence E1 - E6 Correctness Fixes)
+
+### Context & Goals
+Driven by real Brave browser screenshots on `en.wikipedia.org/wiki/India` and LeetCode *Two Sum*, this release eliminates mismatched page labeling, broken text highlighting, swallowed user inputs, and distorted telemetry.
+Strict release invariant: Zero new features; pure bug fix and correctness hardening release.
+
+### Root Cause Analysis & Fixes (E1 - E6)
+1. **E1 (Mismatched Page Labeling & Stepper on Non-Coding Pages):**
+   - **Root Cause:** Side panel defaulted to coding problem scaffolds and hardcoded LeetCode subtitles when non-coding pages were viewed.
+   - **Fix:** Introduced canonical `src/shared/page-profile.ts` with `getPageProfile()`. `coding_problem` is strictly assigned only to LeetCode, Codeforces, and code-editor pages. On Wikipedia articles, docs, and blogs, `showLevels` and `showHintsTab` are `false`, `emptyStateTitle` and `chips` are tailored to reading/summarizing, and Header subtitle displays the genuine source domain (`Wikipedia`, `MDN`, etc.).
+2. **E2 (Broken Highlight on Wikipedia Quotes):**
+   - **Root Cause:** Quotes containing citation markers (e.g. `[1]`, `[20]`), curly quotes, or spanning across nested inline elements failed to match or scroll into view.
+   - **Fix:** Created `src/content/adapters/wikipedia.ts` for structured sectioning and noise removal (`.reflist`, `sup.reference`, `.navbox`). Added `src/shared/normalization.ts` (`normaliseForMatch()`) and rebuilt `src/content/highlighter.ts` with CSS Custom Highlight API, prefix/token matching, auto-expansion of `<details>` parents, and multi-container scrolling.
+3. **E3 (Swallowed User Chat Input on Send):**
+   - **Root Cause:** Input was immediately cleared before background acknowledgment, and uncaught async rejections caused typed questions to vanish.
+   - **Fix:** Input text is retained and optimistic UI displays the user message bubble immediately. On background rejection or timeout watchdog (3s), the user's text is restored into the input field with a typed retry button.
+4. **E4 (Hardcoded Trace Threshold & Spurious Nodes on Chat):**
+   - **Root Cause:** TraceTab hardcoded `0.65` as threshold; direct chat requests executed graph steps that logged synthetic detector and planner timings.
+   - **Fix:** `src/background/graph/graph.ts` only logs `detector` and `planner` node timings when `isProactiveNudge` is true. Chat queries set `userInitiated: true`. TraceTab renders the dynamic threshold based on user sensitivity settings.
+5. **E5 (Empty Recent Hints List in Progress Tab):**
+   - **Root Cause:** `GET_MASTERY_PROGRESS` returned a hardcoded empty array `recentProblemHints: []`.
+   - **Fix:** Stored hints index in background service worker is grouped and aggregated by problem hash, computing authentic problem session records with hint levels viewed.
+6. **E6 (Stepper Truncation & UI Squeeze at 320px Width):**
+   - **Root Cause:** Navigation tab bar, Header pills, and Hint level badges had fixed min-widths and rigid horizontal flex layouts.
+   - **Fix:** Updated responsive styling in `Navigation.tsx`, `Header.tsx`, `HintsTab.tsx`, and `ChatTab.tsx` with truncate utilities, shrinking badges, and flexible wrap boundaries.
+
+### Verification Results
+- **Gate Suite (`npm run verify:errors`):** 13/13 scenarios passed cleanly with 0 warnings, 0 errors, 0 page errors, and empty allowlist `[]`.
+- **Unit Tests (`npm test`):** 57 test files passed (100%), 408 tests passed (100%).
+- **Package Zip:** `.output/unstuck-1.0.8-chrome.zip` verified with zero `.map` files.
+
 
 
 

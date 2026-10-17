@@ -5,9 +5,12 @@ import {
   Settings as SettingsIcon,
   RefreshCw,
   Trophy,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { APP_NAME } from '../../shared/config';
 import type { PageContext } from '../../shared/schemas/context';
+import type { PageProfile } from '../../shared/page-profile';
 
 export interface HeaderProps {
   context: PageContext | null;
@@ -15,6 +18,10 @@ export interface HeaderProps {
   isPaused: boolean;
   isContest: boolean;
   demoMode?: boolean;
+  pageProfile?: PageProfile;
+  activeUrl?: string | null;
+  activeTabTitle?: string | null;
+  isLoadingPage?: boolean;
   onTogglePause: () => void;
   onOpenSettings: () => void;
 }
@@ -25,6 +32,10 @@ export const Header: React.FC<HeaderProps> = ({
   isPaused,
   isContest,
   demoMode,
+  pageProfile,
+  activeUrl,
+  activeTabTitle,
+  isLoadingPage = false,
   onTogglePause,
   onOpenSettings,
 }) => {
@@ -49,69 +60,59 @@ export const Header: React.FC<HeaderProps> = ({
               <circle cx="12" cy="12" r="3.5" strokeDasharray="3 2" />
             </svg>
           </div>
-          <span className="text-sm font-mono font-bold text-on-surface tracking-tight truncate min-w-0">
-            {APP_NAME} TUTOR
-          </span>
 
-          {demoMode && (
-            <div
-              data-testid="demo-mode-badge"
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-secondary/20 border border-secondary/40 shrink-0 text-secondary font-mono text-[9px] font-bold uppercase tracking-wider"
-              title="Demo Mode active: 20s cooldowns"
-            >
-              DEMO (20s)
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 truncate min-w-0">
+            <span className="font-mono text-xs font-bold tracking-tight text-on-surface">
+              {APP_NAME}
+            </span>
 
-          {/* Live Status Badge */}
-          {isContest ? (
-            <div
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-tertiary-container/20 border border-tertiary-container/40 shrink-0"
-              title="Contest detected: AI nudges silenced per fair-play rules"
-            >
-              <Trophy className="w-3 h-3 text-tertiary" />
-              <span className="font-mono text-[10px] text-tertiary font-semibold uppercase tracking-wider">
-                Contest
+            {/* Live Indicator / Contest Pill */}
+            {isContest ? (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full font-mono text-[10px] bg-tertiary/10 text-tertiary border border-tertiary/30 shrink-0">
+                <Trophy className="w-2.5 h-2.5 text-tertiary" />
+                <span>Contest</span>
               </span>
-            </div>
-          ) : isPaused ? (
-            <div
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high border border-outline-variant/40 shrink-0"
-              title="Observation paused by user"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-outline" />
-              <span className="font-mono text-[10px] text-on-surface-variant">Paused</span>
-            </div>
-          ) : isWatching ? (
-            <div
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/30 shrink-0"
-              title="Real-time tab observation active"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="font-mono text-[10px] text-primary font-medium tracking-wide">
-                Watching
+            ) : isPaused ? (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full font-mono text-[10px] bg-outline-variant/40 text-on-surface-variant shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-outline" />
+                <span>Paused</span>
               </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/30 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-outline" />
-              <span className="font-mono text-[10px] text-on-surface-variant">Idle</span>
-            </div>
-          )}
+            ) : isWatching ? (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full font-mono text-[10px] bg-primary/10 text-primary border border-primary/20 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span>Watching</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full font-mono text-[10px] bg-surface-container-high text-on-surface-variant shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-outline" />
+                <span>Ready</span>
+              </span>
+            )}
+
+            {demoMode && (
+              <span className="font-mono text-[9px] uppercase px-1 py-0.2 rounded bg-tertiary/20 text-tertiary border border-tertiary/30 shrink-0">
+                Demo
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Trailing actions: Pause & Settings */}
+        {/* Action Controls */}
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={onTogglePause}
-            className="px-2 py-1 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors flex items-center gap-1 text-xs font-mono active:scale-95 duration-100"
-            title={isPaused ? 'Resume observation' : 'Pause observation'}
-            aria-label={isPaused ? 'Resume observation' : 'Pause observation'}
+            className={`px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors flex items-center gap-1 border active:scale-95 duration-100 ${
+              isPaused
+                ? 'bg-primary/20 text-primary border-primary/40 hover:bg-primary/30'
+                : 'bg-surface-container-high text-on-surface-variant border-outline-variant/40 hover:text-on-surface'
+            }`}
+            title={isPaused ? 'Resume live assistance' : 'Pause live assistance'}
+            aria-label={isPaused ? 'Resume live assistance' : 'Pause live assistance'}
           >
             {isPaused ? (
               <>
-                <PlayCircle className="w-3.5 h-3.5 text-primary" />
-                <span className="text-primary">Resume</span>
+                <PlayCircle className="w-3.5 h-3.5" />
+                <span>Resume</span>
               </>
             ) : (
               <>
@@ -133,12 +134,12 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Problem / Article Context Bar */}
-      {context && (
+      {context ? (
         <div className="bg-surface-container border border-outline-variant/40 rounded-xl p-2.5 flex flex-col gap-1.5 mt-0.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="px-1.5 py-0.5 rounded bg-surface-container-highest text-secondary font-mono text-[10px] border border-secondary/20 shrink-0 capitalize">
-                {context.contentType && context.contentType !== 'problem' ? context.contentType : context.site}
+              <span className="px-1.5 py-0.5 rounded bg-surface-container-highest text-secondary font-mono text-[10px] border border-secondary/20 shrink-0">
+                {pageProfile?.contextLabel || (context.contentType && context.contentType !== 'problem' ? context.contentType : context.site)}
               </span>
               <span className="text-on-surface font-mono text-xs font-semibold truncate" title={context.title}>
                 {context.title}
@@ -177,7 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </span>
                 ))
               ) : (
-                <span className="text-outline">Active problem session</span>
+                <span className="text-outline">Active session</span>
               )}
             </div>
 
@@ -186,6 +187,42 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Synced</span>
             </div>
           </div>
+        </div>
+      ) : (
+        <div className="bg-surface-container/60 border border-outline-variant/30 rounded-xl p-2.5 flex items-center justify-between gap-2 mt-0.5">
+          <div className="flex items-center gap-2 min-w-0">
+            {isLoadingPage ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin shrink-0" />
+                <span className="text-on-surface-variant font-mono text-xs truncate">
+                  Reading active page...
+                </span>
+              </>
+            ) : pageProfile?.kind === 'restricted' ? (
+              <>
+                <AlertCircle className="w-3.5 h-3.5 text-error shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-on-surface font-mono text-xs font-semibold truncate">
+                    {activeTabTitle || 'Restricted Page'}
+                  </div>
+                  <div className="text-[10px] font-sans text-on-surface-variant truncate">
+                    Browser security blocks extension on internal pages
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-outline shrink-0" />
+                <span className="text-on-surface-variant font-mono text-xs truncate">
+                  {activeTabTitle ? `${activeTabTitle.slice(0, 30)}... (No context)` : 'No readable page active'}
+                </span>
+              </>
+            )}
+          </div>
+
+          <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-mono text-[9px] shrink-0">
+            {pageProfile?.sourceLabel || 'Idle'}
+          </span>
         </div>
       )}
     </header>

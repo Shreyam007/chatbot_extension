@@ -76,13 +76,23 @@ export async function runAgentGraph(
     trace.nodeTimings.push(timing);
   }
 
-  // Record initial telemetry pipeline stages for XAI transparency
-  const siteName = context.site || 'leetcode';
-  recordNodeTiming('detector', startTime, { triggered: true });
-  recordNodeTiming('planner', startTime, {
-    selectedAction: `nudge_with_level_${level}`,
-    bucket: `${siteName}:high:intermediate`,
-  });
+  // Record telemetry pipeline stages for XAI transparency
+  const siteName = context.site || 'generic';
+  const isDirectUserRequest = !options.isProactiveNudge;
+  if (isDirectUserRequest) {
+    trace.userInitiated = true;
+  } else {
+    recordNodeTiming('detector', startTime, {
+      triggered: true,
+      pStuck: options.nudgeData?.pStuck,
+      threshold: options.nudgeData?.threshold,
+      contributions: options.nudgeData?.contributions,
+    });
+    recordNodeTiming('planner', startTime, {
+      selectedAction: `nudge_with_level_${level}`,
+      bucket: `${siteName}:high:intermediate`,
+    });
+  }
 
   // --- NODE 1: context_builder ---
   const cbStart = Date.now();

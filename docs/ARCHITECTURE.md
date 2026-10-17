@@ -753,6 +753,49 @@ $$P(\text{stuck}) = P_0 + (1 - P_0) \cdot \tanh\left(\frac{t - N_{\text{eff}}}{\
 - **Options UI Card:** Added Bento 4 "System Health & Recent Diagnostics" card in Options settings.
 - **One-Click Clipboard Export:** Exports sanitized diagnostics including browser runtime, platform, memory stats, active settings, and recent error records with zero key or user data leakage.
 
+---
+
+## 19. Page-Aware Architecture & Resilient Grounding (v1.0.8)
+
+### 1. Canonical Page Taxonomy (`src/shared/page-profile.ts`)
+- **Single Source of Truth:** `getPageProfile(context | tabInfo, fallbackUrl)` computes a complete `PageProfile` record consumed uniformly across SidePanel, Popup, Overlay, and Background.
+- **Taxonomic Classification:** Partitions URLs and contexts into:
+  - `coding_problem`: LeetCode, Codeforces, or pages with code editors. Hint levels 1..4 enabled, coding chips rendered.
+  - `wikipedia_article`: MediaWiki DOMs (`#mw-content-text`, `*.wikipedia.org`). Informational chips, level steppers disabled.
+  - `documentation`: MDN, DevDocs, language specs, API reference portals.
+  - `article`: Generic news, blog posts, essays.
+  - `pdf`: In-browser PDF viewers (`.pdf` or `application/pdf`). Explains browser PDF DOM limits honestly.
+  - `restricted`: Browser internal schemes (`chrome://`, `chrome-extension://`, `about:`).
+  - `none`: Empty or blank tabs.
+- **Gating Matrix:** `showLevels` and `showHintsTab` are strictly restricted to `coding_problem`.
+
+### 2. Dedicated Wikipedia Adapter (`src/content/adapters/wikipedia.ts`)
+- **MediaWiki Detection:** Targets all Wikipedia language subdomains (`en.wikipedia.org`, `hi.wikipedia.org`, etc.), mobile variants (`*.m.wikipedia.org`), and generic MediaWiki installations (`body.mediawiki`, `#mw-content-text`).
+- **DOM Cleansing:** Eliminates navigational chrome, site notices, fundraising banners, edit links (`.mw-editsection`), metadata sidebars, reference lists (`.reflist`, `ol.references`), and citation superscripts (`sup.reference`, `[1]`, `[20]`).
+- **Structured Hierarchy:** Captures lead section, section headings (`div.mw-heading`, `h2`, `h3`), paragraphs, definition lists, simplified data tables, math alt text, and infobox quick facts.
+- **Special Page Guard:** Recognizes `Special:`, `Category:`, `Talk:`, and edit mode URLs (`action=edit`), tagging them as restricted with clear educational guidance.
+
+### 3. Resilient Text Normalization (`src/shared/normalization.ts`)
+- **Shared Matching Normalizer (`normaliseForMatch()`):** Unified string normalization applied symmetrically in content extraction, grounding checks, and DOM text highlighting.
+- **Typography & Marker Stripping:** Strips bracketed citation markers `\[\d+\]`, zero-width spaces (`\u200B`), soft hyphens (`\u00AD`), collapses non-breaking whitespace (`\u00A0`), normalizes curly quotes (`“”‘’` $\to$ `""''`), and converts typographic dashes (`—–` $\to$ `-`).
+
+### 4. Multi-Strategy Highlighter (`src/content/highlighter.ts`)
+- **Dual Engine Highlight:** Uses CSS Custom Highlight API (`::highlight(unstuck-grounding-highlight)`) for zero-layout-shift visual styling with a fallback high-visibility outline.
+- **Multi-Strategy Resolution:** Traverses DOM text nodes using exact phrase match, prefix window search (first 8 words), and token-overlap fuzzy matching.
+- **Interactive Container Expansion:** Automatically traverses parent hierarchies to open collapsed `<details>` and accordion panels containing the target quote.
+- **Cross-Container Scrolling:** Scrolls target elements into view across nested or internally scrolled sub-containers (e.g. LeetCode description panes).
+- **Transient Lifetime:** Automatically clears highlight after 5 seconds or upon subsequent highlight triggers.
+
+### 5. Multi-Tab Session Synchronization (`src/sidepanel/SidePanelApp.tsx`)
+- **Active Tab Observation:** Binds to `chrome.tabs.onActivated` and `onUpdated` to track tab switches in real time.
+- **Per-Page State Isolation:** Indexes conversation histories and pending inputs by `pageKey` (`hashUrl(tab.url)`), preventing cross-tab chat leakage when switching between coding problems and encyclopedic research.
+- **Zero Input Loss Guarantee:** Sends chat messages optimistically to local UI while keeping input buffer until background acknowledgement. Re-populates user text on failure or network rejection.
+
+### 6. Honest Trace & Telemetry (`src/background/graph/graph.ts`, `TraceTab.tsx`)
+- **Proactive Node Isolation:** Detector and Planner agent timings are recorded only during genuine proactive nudge evaluations (`isProactiveNudge: true`). Direct user chat queries omit proactive timing nodes and are explicitly tagged `userInitiated: true`.
+- **Dynamic Stuck Threshold:** Replaces hardcoded values with active sensitivity settings (`0.45` high, `0.60` medium, `0.75` low).
+- **Real Progress Telemetry:** Dynamically aggregates `recentProblemHints` in `GET_MASTERY_PROGRESS` from stored hints index, displaying authentic problem titles and hints used.
+
 
 
 

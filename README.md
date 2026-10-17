@@ -4,7 +4,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](#)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Unit Tests](https://img.shields.io/badge/Tests-380%20Passing-brightgreen.svg)](#)
+[![Unit Tests](https://img.shields.io/badge/Tests-408%20Passing-brightgreen.svg)](#)
 [![Zero-Error Gate](https://img.shields.io/badge/Zero--Error%20Gate-13%2F13%20Passing-brightgreen.svg)](#)
 
 > **Unstuck** is an open-source, local-first Chrome extension that acts as a proactive, pedagogical coding tutor for competitive programming, documentation, and technical web reading.
@@ -32,12 +32,11 @@
    - Every candidate hint is audited by an independent Critic agent before delivery.
    - Inspects for code leakage at L1/L2, verifies statement grounding, and asserts topic relevance. Falls back to deterministic safe hints if verification fails.
 
-5. **Universal Mode (v1.0.4):**
-   - Usable across any normal website (Wikipedia, MDN, documentation, blogs) with privacy-first opt-in per site ("Use on this page once" via `activeTab` or "Always allow on this site" via `chrome.permissions`).
-   - Zero always-on broad permissions: content scripts only run where explicitly granted.
-   - Sensitive-page guardrails: aborts immediately on password fields, auth/checkout forms, and category blacklist patterns.
-   - Zero reading of generic form inputs/textareas.
-   - In-memory Okapi BM25 lexical ranking for long pages with zero network calls and zero embeddings.
+5. **Page-Aware Intelligence & Dedicated Adapters (v1.0.8):**
+   - Canonical `PageProfile` taxonomy deriving context metadata, prompt scaffolds, and dynamic empty states.
+   - Dedicated Wikipedia adapter extracting structured lead, infobox facts, and heading-chunked sections while cleanly removing citations (`[1]`), reference lists, and navboxes.
+   - Robust text highlighter utilizing the CSS Custom Highlight API (`::highlight`), auto-scrolling, and automatic `<details>` / accordion expansion.
+   - Multi-tab tracking with per-tab conversation isolation in the side panel.
 
 6. **Explainability & Telemetry Audit (Trace Tab):**
    - Full glassbox audit trail displaying each pipeline step: generator latency, critic approval verdict, confidence scores, retrieved BM25 sections, and token usage.
@@ -183,11 +182,11 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 |---|---|
 | `npm run compile` | Runs TypeScript typechecker (`tsc --noEmit`). |
 | `npm run lint` | Runs ESLint across all source and test files. |
-| `npm test` | Runs the complete Vitest unit test suite (54 files, 380 tests). |
+| `npm test` | Runs the complete Vitest unit test suite (57 files, 408 tests). |
 | `npm run verify:errors` | Runs Playwright Zero-Error verification suite across 13 real-world scenarios. |
 | `npm run test:e2e` | Runs Playwright E2E test scenarios in Chromium. |
 | `npm run build` | Builds the production extension package using WXT + Vite (sourcemaps disabled). |
-| `npm run zip` | Packages `.output/chrome-mv3` into `.output/unstuck-1.0.7-chrome.zip`. |
+| `npm run zip` | Packages `.output/chrome-mv3` into `.output/unstuck-1.0.8-chrome.zip`. |
 | `npm run eval` | Executes the offline Critic verification benchmark across 15 DSA problems. |
 | `npm run eval:live` | Runs live evaluation against the active Google Gemini API. |
 | `npm run security:scan`| Audits repository and git history for accidentally staged credentials. |
@@ -204,6 +203,7 @@ Users can view audit metrics, export their complete history as JSON/CSV/Markdown
 
 ## Troubleshooting & Diagnostics
 
+- **Page-Aware Panel & Dynamic Tracking (v1.0.8):** The Side Panel automatically tracks the active browser tab, switching conversation history and context tags seamlessly without cross-tab contamination. Non-coding pages (e.g. Wikipedia articles, documentation) present clean reading chips and omit coding hint levels.
 - **System Health & Recent Diagnostics (v1.0.7):** Open **Options > Advanced** to inspect the live 50-entry error ring buffer. Click **Copy Diagnostics to Clipboard** to copy sanitized system state and logs directly for bug reports.
 - **Zero-Error Hardening (v1.0.7):** Handled operational states (offline network, Gemini 429 rate limits, invalid keys, non-problem pages, contest mode, and user dismissals) are classified as `info` or `debug` logs, ensuring zero spurious warnings or unhandled rejections.
 - **Invalid API Key (S13.1):** Verify that your API key is active in [Google AI Studio](https://aistudio.google.com/) and that the Gemini API is enabled for your project.

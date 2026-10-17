@@ -20,6 +20,7 @@ export interface ProgressTabProps {
   weeklySolved?: number;
   hintsPerSolve?: number;
   nudgeAcceptRate?: number;
+  recentProblemHints?: Array<{ id: string; hints: number }>;
 }
 
 export const ProgressTab: React.FC<ProgressTabProps> = ({
@@ -27,6 +28,7 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
   weeklySolved = 0,
   hintsPerSolve = 0,
   nudgeAcceptRate = 0,
+  recentProblemHints = [],
 }) => {
   const [filterWeakOnly, setFilterWeakOnly] = useState(false);
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
@@ -110,7 +112,23 @@ export const ProgressTab: React.FC<ProgressTabProps> = ({
           </span>
         </div>
 
-        {weeklySolved === 0 ? (
+        {recentProblemHints && recentProblemHints.length > 0 ? (
+          <div className="space-y-1.5 pt-1">
+            {recentProblemHints.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-2 rounded-lg bg-surface-container-high/60 border border-outline-variant/30 text-xs font-mono"
+              >
+                <span className="text-on-surface truncate flex-1 min-w-0" title={item.id}>
+                  {item.id.replace(/^(leetcode|codeforces|wikipedia):/, '').replace(/-/g, ' ')}
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] shrink-0 font-semibold">
+                  {item.hints} {item.hints === 1 ? 'hint' : 'hints'}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : weeklySolved === 0 ? (
           <div className="p-4 rounded-lg bg-surface-container-lowest/80 border border-outline-variant/20 text-center">
             <p className="font-sans text-xs text-on-surface-variant">
               No problem completion history yet. Complete problems with Unstuck to track hint reduction trends.

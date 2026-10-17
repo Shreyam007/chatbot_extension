@@ -13,6 +13,7 @@ export interface NavigationProps {
   onTabChange: (tab: SidePanelTab) => void;
   chatBadgeCount?: number;
   hintsHasNew?: boolean;
+  showHintsTab?: boolean;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -20,8 +21,9 @@ export const Navigation: React.FC<NavigationProps> = ({
   onTabChange,
   chatBadgeCount,
   hintsHasNew,
+  showHintsTab = true,
 }) => {
-  const tabs: Array<{ id: SidePanelTab; label: string; icon: React.ReactNode }> = [
+  const allTabs: Array<{ id: SidePanelTab; label: string; icon: React.ReactNode }> = [
     {
       id: 'chat',
       label: 'Chat',
@@ -43,6 +45,8 @@ export const Navigation: React.FC<NavigationProps> = ({
       icon: <BarChart3 className="w-3.5 h-3.5" />,
     },
   ];
+
+  const tabs = showHintsTab ? allTabs : allTabs.filter((t) => t.id !== 'hints');
 
   return (
     <nav

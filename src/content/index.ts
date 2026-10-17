@@ -7,7 +7,7 @@ import { resolveAdapter, type PageAdapter } from './adapters';
 import { SignalCollector } from './signals/collector';
 import { SPANavigationWatcher } from './signals/navigation';
 import { OverlayHost } from './overlay/host';
-import { highlightTextInPage } from './highlighter';
+import { highlightTextInPage, highlightTextInPageDetailed } from './highlighter';
 import { installGlobalErrorHandlers } from '../shared/errors/reporter';
 
 const logger = createLogger('ContentScript');
@@ -515,8 +515,13 @@ export function initContentScript(ctx?: { onInvalidated?: (fn: () => void) => vo
   if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message?.type === 'HIGHLIGHT_PAGE_TEXT' && typeof message.text === 'string') {
-        const found = highlightTextInPage(message.text);
-        sendResponse({ ok: true, found });
+        const result = highlightTextInPageDetailed(message.text);
+        sendResponse({
+          ok: true,
+          found: result.found,
+          matchedLength: result.matchedLength,
+          strategyUsed: result.strategyUsed,
+        });
       } else if (message?.type === 'GET_PAGE_CONTEXT') {
         const pageCtx = activeController?.getCurrentContext() || null;
         sendResponse({ ok: true, context: pageCtx });

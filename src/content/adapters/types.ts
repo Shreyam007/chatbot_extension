@@ -7,7 +7,7 @@ export interface VerdictResult {
 }
 
 export interface PageAdapter {
-  name: 'leetcode' | 'codeforces' | 'generic';
+  name: 'leetcode' | 'codeforces' | 'generic' | 'wikipedia';
   matches(url: URL): boolean;
   extractContext(doc: Document, url: URL): PageContext | null;
   detectContest(url: URL, doc: Document): boolean;

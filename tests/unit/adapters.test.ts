@@ -7,6 +7,7 @@ import { resolveAdapter } from '../../src/content/adapters';
 import { leetcodeAdapter } from '../../src/content/adapters/leetcode';
 import { codeforcesAdapter } from '../../src/content/adapters/codeforces';
 import { genericAdapter } from '../../src/content/adapters/generic';
+import { wikipediaAdapter } from '../../src/content/adapters/wikipedia';
 import { PageContextSchema } from '../../src/shared/schemas/context';
 
 describe('Page Adapters (Step 5)', () => {
@@ -240,7 +241,72 @@ describe('Page Adapters (Step 5)', () => {
     it('adapter resolver routes URLs to the right adapter', () => {
       expect(resolveAdapter(new URL('https://leetcode.com/problems/foo'))).toBe(leetcodeAdapter);
       expect(resolveAdapter(new URL('https://codeforces.com/problem/123'))).toBe(codeforcesAdapter);
+      expect(resolveAdapter(new URL('https://en.wikipedia.org/wiki/India'))).toBe(wikipediaAdapter);
       expect(resolveAdapter(new URL('https://unknown-domain.io/algo'))).toBe(genericAdapter);
+    });
+  });
+
+  describe('Wikipedia Adapter', () => {
+    it('matches wikipedia URLs correctly', () => {
+      expect(wikipediaAdapter.matches(new URL('https://en.wikipedia.org/wiki/India'))).toBe(true);
+      expect(wikipediaAdapter.matches(new URL('https://hi.wikipedia.org/wiki/Bharat'))).toBe(true);
+      expect(wikipediaAdapter.matches(new URL('https://wikipedia.org/'))).toBe(true);
+      expect(wikipediaAdapter.matches(new URL('https://example.com/wiki/India'))).toBe(false);
+    });
+
+    it('extracts valid PageContext from Dijkstra fixture', () => {
+      const html = readFileSync(join(__dirname, '../fixtures/wikipedia-article.html'), 'utf-8');
+      const win = new Window({ url: 'https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm' });
+      win.document.write(html);
+      const doc = win.document as unknown as Document;
+      const url = new URL('https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm');
+
+      const context = wikipediaAdapter.extractContext(doc, url);
+      expect(context).not.toBeNull();
+      expect(context?.title).toBe("Dijkstra's algorithm");
+      expect(context?.site).toBe('generic');
+      expect(context?.adapterName).toBe('wikipedia');
+      expect(context?.statementText).toContain('Dijkstra');
+      expect(context?.statementText).not.toContain('Navigation box footer');
+      expect(context?.isContest).toBe(false);
+      expect(PageContextSchema.safeParse(context).success).toBe(true);
+    });
+
+    it('extracts valid PageContext and preformatted code from Binary Search fixture', () => {
+      const html = readFileSync(join(__dirname, '../fixtures/wikipedia-binary-search.html'), 'utf-8');
+      const win = new Window({ url: 'https://en.wikipedia.org/wiki/Binary_search_algorithm' });
+      win.document.write(html);
+      const doc = win.document as unknown as Document;
+      const url = new URL('https://en.wikipedia.org/wiki/Binary_search_algorithm');
+
+      const context = wikipediaAdapter.extractContext(doc, url);
+      expect(context).not.toBeNull();
+      expect(context?.title).toBe('Binary search algorithm');
+      expect(context?.statementText).toContain('binary_search(A, n, T)');
+      expect(context?.isContest).toBe(false);
+      expect(PageContextSchema.safeParse(context).success).toBe(true);
+    });
+
+    it('flags special pages and edit modes as sensitive/restricted', () => {
+      const win = new Window({ url: 'https://en.wikipedia.org/wiki/Special:Search' });
+      win.document.write('<html><head><title>Search - Wikipedia</title></head><body><h1>Search</h1></body></html>');
+      const doc = win.document as unknown as Document;
+
+      const specialContext = wikipediaAdapter.extractContext(doc, new URL('https://en.wikipedia.org/wiki/Special:Search'));
+      expect(specialContext?.isSensitive).toBe(true);
+      expect(specialContext?.sensitiveReason).toBe('wikipedia_special_page');
+
+      const editContext = wikipediaAdapter.extractContext(doc, new URL('https://en.wikipedia.org/wiki/India?action=edit'));
+      expect(editContext?.isSensitive).toBe(true);
+      expect(editContext?.sensitiveReason).toBe('wikipedia_special_page');
+    });
+
+    it('preserves invariants (no contest, no editor code, no verdict)', () => {
+      const dummyDoc = {} as Document;
+      const dummyUrl = new URL('https://en.wikipedia.org/wiki/India');
+      expect(wikipediaAdapter.detectContest(dummyUrl, dummyDoc)).toBe(false);
+      expect(wikipediaAdapter.readEditorCode?.(dummyDoc)).toBeNull();
+      expect(wikipediaAdapter.detectVerdict?.(dummyDoc)).toBeNull();
     });
   });
 });

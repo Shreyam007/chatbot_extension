@@ -249,7 +249,7 @@ describe('Side Panel Components & S03-S14 States (Step 10)', () => {
         );
       });
 
-      expect(container.textContent).toContain('Ask me anything about this page.');
+      expect(container.textContent).toContain('Ask me anything about this problem.');
       expect(container.textContent).toContain('Explain this problem');
       expect(container.textContent).toContain('Give me a direction');
       expect(container.textContent).toContain('Check my approach');
@@ -262,6 +262,24 @@ describe('Side Panel Components & S03-S14 States (Step 10)', () => {
         promptBtn?.click();
       });
       expect(onSendMessage).toHaveBeenCalled();
+    });
+
+    it('renders generic page empty state with article/page chips when contentType is article', () => {
+      act(() => {
+        root.render(
+          <ChatTab
+            messages={[]}
+            isLoading={false}
+            contentType="article"
+            onSendMessage={vi.fn()}
+            onHighlightQuote={vi.fn()}
+          />
+        );
+      });
+
+      expect(container.textContent).toContain('Ask me anything about this page.');
+      expect(container.textContent).toContain('Explain this page and what it offers');
+      expect(container.textContent).toContain('Summarise all details on this page in short points');
     });
 
     it('renders conversation messages and triggers highlight on citation click', () => {

@@ -15,8 +15,10 @@ import {
   RefreshCw,
   Eye,
   FileText,
+  Loader2,
 } from 'lucide-react';
 import type { HintLevel } from '../../shared/schemas/hints';
+import type { PageProfile } from '../../shared/page-profile';
 
 export interface ChatMessage {
   id: string;
@@ -42,11 +44,12 @@ export interface ChatMessage {
 export interface ChatTabProps {
   messages: ChatMessage[];
   isLoading: boolean;
-  onSendMessage: (query: string, level?: HintLevel) => void;
-  onHighlightQuote: (quote: string) => void;
+  onSendMessage: (query: string, level?: HintLevel) => Promise<void> | void;
+  onHighlightQuote: (quote: string, msgId?: string) => Promise<boolean | void> | boolean | void;
   siteName?: string;
   contentType?: string;
   isTruncatedPage?: boolean;
+  pageProfile?: PageProfile;
 }
 
 const DraftToggle: React.FC<{ draft: string }> = ({ draft }) => {
@@ -59,17 +62,11 @@ const DraftToggle: React.FC<{ draft: string }> = ({ draft }) => {
         className="text-[11px] font-mono text-on-surface-variant hover:text-on-surface underline underline-offset-2 flex items-center gap-1 transition-colors"
       >
         <Eye className="w-3 h-3" />
-        <span>{isOpen ? 'Hide unverified draft' : 'Show unverified draft'}</span>
+        <span>{isOpen ? 'Hide raw unverified draft' : 'View raw unverified draft'}</span>
       </button>
       {isOpen && (
-        <div className="mt-2 p-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs font-sans text-on-surface space-y-1.5">
-          <div className="text-[10px] font-mono text-amber-500 font-semibold uppercase tracking-wider flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" />
-            <span>Unverified draft (not verified against page context)</span>
-          </div>
-          <div className="text-xs font-sans text-on-surface leading-relaxed whitespace-pre-wrap select-text">
-            {draft}
-          </div>
+        <div className="mt-1.5 p-2 bg-surface-container-lowest border border-outline-variant/40 rounded-lg text-xs font-mono text-on-surface-variant whitespace-pre-wrap select-text leading-relaxed">
+          {draft}
         </div>
       )}
     </div>
@@ -81,25 +78,35 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   isLoading,
   onSendMessage,
   onHighlightQuote,
-  siteName = 'LeetCode',
+  siteName = 'Page',
   contentType,
-  isTruncatedPage = false,
+  isTruncatedPage,
+  pageProfile,
 }) => {
   const [inputText, setInputText] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<HintLevel>(1);
   const [isLevelDropdownOpen, setIsLevelDropdownOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [highlightStatus, setHighlightStatus] = useState<Record<string, 'highlighting' | 'highlighted' | 'not_found'>>({});
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || isLoading) return;
-    onSendMessage(inputText.trim(), selectedLevel);
-    setInputText('');
+    const query = inputText.trim();
+    if (!query || isLoading) return;
+
+    // Preserve text in input until acknowledged; if error occurs, user keeps their text
+    const backup = query;
+    try {
+      await onSendMessage(query, selectedLevel);
+      setInputText('');
+    } catch {
+      setInputText(backup);
+    }
   };
 
   const handleCopy = (id: string, text: string) => {
@@ -108,7 +115,30 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleHighlightClick = async (quote: string, msgId: string) => {
+    setHighlightStatus((prev) => ({ ...prev, [msgId]: 'highlighting' }));
+    try {
+      const res = await onHighlightQuote(quote);
+      if (res === false) {
+        setHighlightStatus((prev) => ({ ...prev, [msgId]: 'not_found' }));
+      } else {
+        setHighlightStatus((prev) => ({ ...prev, [msgId]: 'highlighted' }));
+      }
+    } catch {
+      setHighlightStatus((prev) => ({ ...prev, [msgId]: 'not_found' }));
+    }
+
+    setTimeout(() => {
+      setHighlightStatus((prev) => {
+        const next = { ...prev };
+        delete next[msgId];
+        return next;
+      });
+    }, 3500);
+  };
+
   const isGeneric = Boolean(contentType && contentType !== 'problem');
+  const showLevels = pageProfile ? pageProfile.showLevels : !isGeneric;
 
   const levelLabels: Record<HintLevel, string> = isGeneric
     ? {
@@ -124,9 +154,38 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         4: 'L4 Full Solution',
       };
 
-  const inputPlaceholder = isGeneric
+  const inputPlaceholder = pageProfile
+    ? pageProfile.placeholder
+    : isGeneric
     ? 'Ask a question about this page...'
     : 'Ask a question about this problem...';
+
+  const emptyTitle = pageProfile
+    ? pageProfile.emptyStateTitle
+    : isGeneric
+    ? 'Ask me anything about this page.'
+    : 'Ask me anything about this problem.';
+
+  const emptyBody = pageProfile
+    ? pageProfile.emptyStateBody
+    : isGeneric
+    ? 'I can explain sections, summarise details, clarify requirements, or locate specific information on this page.'
+    : "I'll give progressive hints, not code dumps. Current solution code and constraints are already indexed.";
+
+  const rawChips: string[] =
+    pageProfile?.chips ||
+    (isGeneric
+      ? [
+          'Explain this page and what it offers',
+          'Summarise all details on this page in short points',
+          'What are the key tracks, eligibility, or requirements here?',
+        ]
+      : [
+          'Explain this problem',
+          'Give me a direction',
+          'Check my approach',
+        ]);
+  const chips = rawChips.map((c) => ({ label: c, query: c }));
 
   const getBadgeDetails = (msg: ChatMessage) => {
     const status =
@@ -138,65 +197,50 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         : 'unverified');
 
     const tooltipParts: string[] = [];
+    if (msg.criticChecked) tooltipParts.push('Automated Critic passed');
+    if (msg.retrievalMode) tooltipParts.push(`Retrieval: ${msg.retrievalMode}`);
+    if (msg.coverageStats) tooltipParts.push(`Coverage: ${msg.coverageStats.covered}/${msg.coverageStats.total} chars`);
+    if (msg.llmCallCount !== undefined) tooltipParts.push(`Calls: ${msg.llmCallCount}`);
     if (msg.model) tooltipParts.push(`Model: ${msg.model}`);
-    if (msg.retrievalMode) tooltipParts.push(`Retrieval: ${msg.retrievalMode.toUpperCase()}`);
-    if (msg.llmCallCount) tooltipParts.push(`LLM Calls: ${msg.llmCallCount}`);
-    if (msg.groundedQuote) tooltipParts.push('Quote: Grounded');
-    else if (status === 'partly_verified') tooltipParts.push('Quote: Unverified (dropped)');
-    const tooltip = tooltipParts.join(' | ') || undefined;
+    const tooltipText = tooltipParts.length > 0 ? tooltipParts.join(' • ') : undefined;
 
     switch (status) {
       case 'checked':
-        return (
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-mono font-semibold shrink-0"
-            title={tooltip}
-          >
-            <ShieldCheck className="w-3 h-3" />
-            Critic: Checked
-          </span>
-        );
+        return {
+          label: 'Critic: Checked',
+          classes: 'bg-primary/10 text-primary border-primary/30',
+          icon: <ShieldCheck className="w-3 h-3 text-primary" />,
+          tooltip: tooltipText,
+        };
       case 'checked_basic':
-        return (
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 text-[10px] font-mono font-semibold shrink-0"
-            title={tooltip}
-          >
-            <ShieldCheck className="w-3 h-3" />
-            Critic: Checked (basic)
-          </span>
-        );
+        return {
+          label: 'Critic: Checked (basic)',
+          classes: 'bg-primary/10 text-primary border-primary/30',
+          icon: <ShieldCheck className="w-3 h-3 text-primary" />,
+          tooltip: tooltipText,
+        };
       case 'partly_verified':
-        return (
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[10px] font-mono font-semibold shrink-0"
-            title={tooltip}
-          >
-            <AlertTriangle className="w-3 h-3" />
-            Partly verified
-          </span>
-        );
+        return {
+          label: 'Partly verified (quote dropped)',
+          classes: 'bg-tertiary/10 text-tertiary border-tertiary/30',
+          icon: <ShieldAlert className="w-3 h-3 text-tertiary" />,
+          tooltip: tooltipText,
+        };
       case 'low_confidence':
-        return (
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/30 text-[10px] font-mono font-semibold shrink-0"
-            title={tooltip}
-          >
-            <AlertTriangle className="w-3 h-3" />
-            Low confidence
-          </span>
-        );
+        return {
+          label: 'Low confidence',
+          classes: 'bg-error/10 text-error border-error/30',
+          icon: <AlertTriangle className="w-3 h-3 text-error" />,
+          tooltip: tooltipText,
+        };
       case 'unverified':
       default:
-        return (
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant/40 text-[10px] font-mono font-semibold shrink-0"
-            title={tooltip}
-          >
-            <ShieldAlert className="w-3 h-3 text-outline" />
-            Critic: Unverified
-          </span>
-        );
+        return {
+          label: 'Unverified',
+          classes: 'bg-outline/10 text-on-surface-variant border-outline/30',
+          icon: <ShieldAlert className="w-3 h-3 text-outline" />,
+          tooltip: tooltipText,
+        };
     }
   };
 
@@ -205,7 +249,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       {/* Scrollable messages area */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
         {messages.length === 0 ? (
-          /* Empty State per S03 */
+          /* Empty State per S03 & PageProfile */
           <div className="flex flex-col items-center justify-center text-center py-6 px-2 my-auto select-none">
             {/* Watermark */}
             <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center border border-outline-variant/40 mb-3 text-primary/80">
@@ -225,208 +269,129 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             </div>
 
             <h2 className="text-on-surface font-mono text-sm font-semibold mb-1">
-              Ask me anything about this page.
+              {emptyTitle}
             </h2>
             <p className="text-on-surface-variant font-sans text-xs max-w-[280px] mb-4 leading-relaxed">
-              {isGeneric
-                ? 'I can explain sections, summarise details, clarify requirements, or locate specific information on this page.'
-                : "I'll give progressive hints, not code dumps. Current solution code and constraints are already indexed."}
+              {emptyBody}
             </p>
 
             {/* Suggested Question Chips */}
             <div className="w-full max-w-sm flex flex-col gap-2">
-              {isGeneric ? (
-                <>
-                  <button
-                    onClick={() => onSendMessage('Explain this page and what it offers', 1)}
-                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-2">
+              {chips.map((chip, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => onSendMessage(chip.query, 1)}
+                  className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-2">
+                    {idx === 0 ? (
                       <Lightbulb className="w-4 h-4 text-tertiary" />
-                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
-                        Explain this page
-                      </span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </button>
-
-                  <button
-                    onClick={() => onSendMessage('Summarise all details on this page in short points', 1)}
-                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-secondary" />
-                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
-                        Summarise all details in short points
-                      </span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </button>
-
-                  <button
-                    onClick={() => onSendMessage('What are the key tracks, eligibility, or requirements here?', 1)}
-                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Terminal className="w-4 h-4 text-primary" />
-                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
-                        Key tracks & requirements
-                      </span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => onSendMessage('Explain this problem and what it is asking for', 1)}
-                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4 text-tertiary" />
-                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
-                        Explain this problem
-                      </span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </button>
-
-                  <button
-                    onClick={() => onSendMessage('Give me a high-level conceptual direction without spoiling code', 1)}
-                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-2">
+                    ) : idx === 1 ? (
                       <Compass className="w-4 h-4 text-secondary" />
-                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
-                        Give me a direction
-                      </span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </button>
-
-                  <button
-                    onClick={() => onSendMessage('Check my approach: is there an O(n) space/time tradeoff?', 2)}
-                    className="w-full text-left bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 hover:border-primary/50 p-2.5 rounded-xl transition-all flex items-center justify-between group active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Terminal className="w-4 h-4 text-primary" />
-                      <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
-                        Check my approach
-                      </span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </button>
-                </>
-              )}
+                    ) : (
+                      <FileText className="w-4 h-4 text-primary" />
+                    )}
+                    <span className="text-on-surface font-mono text-xs group-hover:text-primary transition-colors">
+                      {chip.label}
+                    </span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                </button>
+              ))}
             </div>
           </div>
         ) : (
           messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col w-full min-w-0 ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-            >
+            <div key={msg.id} className="space-y-1">
               {msg.sender === 'user' ? (
-                /* User Bubble */
-                <div className="max-w-[85%] min-w-0 bg-surface-container-high border border-outline-variant/50 rounded-xl rounded-tr-xs p-3 transition-colors break-words">
-                  <p className="font-sans text-xs text-on-surface break-words leading-relaxed select-text [overflow-wrap:anywhere]">
-                    {msg.text}
-                  </p>
-                  <div className="flex items-center justify-end gap-1 mt-1 text-[10px] font-mono text-outline">
-                    <span>
+                /* User query bubble */
+                <div className="flex justify-end">
+                  <div className="max-w-[85%] bg-primary/10 border border-primary/20 rounded-2xl rounded-tr-sm p-3 text-on-surface font-sans text-xs select-text leading-relaxed break-words [overflow-wrap:anywhere]">
+                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                    <span className="block text-right text-[10px] font-mono text-on-surface-variant/70 mt-1">
                       {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    <button
-                      onClick={() => handleCopy(msg.id, msg.text)}
-                      className="p-0.5 hover:text-primary transition-colors ml-1"
-                      title="Copy message"
-                      aria-label="Copy message"
-                    >
-                      {copiedId === msg.id ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
-                    </button>
                   </div>
                 </div>
               ) : (
-                /* Assistant Bubble */
-                <article className="w-full min-w-0 bg-surface-container border border-outline-variant/40 rounded-xl p-3 flex flex-col gap-2.5 transition-all shadow-sm">
-                  {/* Low Confidence Warning Banner (S14.4) */}
-                  {!msg.isError && msg.confidence !== undefined && msg.confidence <= 0.48 && (
-                    <div className="flex items-center justify-between gap-1.5 bg-tertiary/10 border border-tertiary/30 rounded-lg p-2 text-tertiary min-w-0">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <AlertTriangle className="w-4 h-4 shrink-0 text-tertiary" />
-                        <span className="font-mono text-[11px] leading-tight font-medium truncate">
-                          I'm not sure about this one. Treat it as a guess.
-                        </span>
-                      </div>
-                      <span className="px-1.5 py-0.2 rounded-full bg-tertiary/20 text-tertiary text-[10px] font-mono font-semibold shrink-0">
-                        {Math.round(msg.confidence * 100)}%
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Header: Brand & Critic status */}
-                  <div className="flex items-center justify-between gap-2 border-b border-outline-variant/25 pb-2 min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-5 h-5 rounded bg-primary/20 border border-primary/50 flex items-center justify-center text-primary shrink-0">
-                        <Lightbulb className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="font-mono text-xs font-semibold text-on-surface tracking-tight truncate">
+                /* Assistant response card */
+                <article
+                  className={`bg-surface-container border rounded-xl p-3 space-y-2.5 transition-all max-w-[95%] shadow-sm ${
+                    msg.isError
+                      ? 'border-error/40 bg-error/5'
+                      : 'border-outline-variant/30 hover:border-outline-variant/60'
+                  }`}
+                  aria-label="Assistant response"
+                >
+                  {/* Top metadata pill bar */}
+                  <div className="flex items-center justify-between border-b border-outline-variant/20 pb-1.5 gap-2 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                      <span className="font-mono text-[10px] text-on-surface-variant truncate">
                         Unstuck Tutor
                       </span>
                     </div>
 
-                    {getBadgeDetails(msg)}
-                  </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Dynamic Verification Badge */}
+                      {(() => {
+                        const badge = getBadgeDetails(msg);
+                        return (
+                          <div
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-mono text-[9px] border ${badge.classes}`}
+                            title={badge.tooltip}
+                          >
+                            {badge.icon}
+                            <span>{badge.label}</span>
+                          </div>
+                        );
+                      })()}
 
-                  {/* Coverage Stats Pill */}
-                  {msg.coverageStats && (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant border border-outline-variant/30 text-[10px] font-mono">
-                        <span>
-                          Based on {msg.coverageStats.covered} of {msg.coverageStats.total} sections
-                        </span>
-                        {isTruncatedPage && (
-                          <span className="text-secondary font-medium" title="Page content was truncated for token budget">
-                            • Excerpt limited
-                          </span>
-                        )}
-                      </span>
-                      {msg.retrievalMode === 'coverage' && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-mono font-medium">
-                          Coverage Mode
+                      {/* Confidence Score Pill */}
+                      {msg.confidence !== undefined && (
+                        <span
+                          className={`font-mono text-[9px] px-1.5 py-0.5 rounded-full border ${
+                            msg.confidence > 0.65
+                              ? 'text-primary bg-primary/10 border-primary/20'
+                              : msg.confidence > 0.48
+                              ? 'text-secondary bg-secondary/10 border-secondary/20'
+                              : 'text-error bg-error/10 border-error/20'
+                          }`}
+                          title={`Confidence: ${Math.round(msg.confidence * 100)}%`}
+                        >
+                          {Math.round(msg.confidence * 100)}%
                         </span>
                       )}
                     </div>
+                  </div>
+
+                  {/* Truncation notification banner */}
+                  {isTruncatedPage && (
+                    <div className="flex items-center gap-1.5 p-1.5 rounded bg-tertiary/10 border border-tertiary/20 text-tertiary text-[10px] font-mono">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      <span>Note: Page was partially trimmed to fit context budget.</span>
+                    </div>
                   )}
 
-                  {/* Message body or Honest Failure Card */}
+                  {/* Body Text / Error State */}
                   {msg.isError ? (
-                    <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 space-y-2.5">
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                        <div className="space-y-1 min-w-0 flex-1">
-                          <p className="text-xs font-sans font-medium text-on-surface leading-snug">
-                            I couldn't produce a verified answer based on this page.
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2 p-2 rounded-lg bg-error/10 border border-error/20 text-error">
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div className="text-xs font-sans space-y-1">
+                          <p className="font-semibold font-mono text-[11px]">
+                            {msg.errorCode === 'GROUNDING_FAILED'
+                              ? 'Grounding Verification Failed'
+                              : 'Unable to verify response'}
                           </p>
-                          <p className="text-[11px] font-mono text-on-surface-variant leading-relaxed break-words">
-                            Reason: {msg.errorReason || 'Grounding checks could not verify the draft against page context.'}
-                          </p>
+                          <p className="leading-relaxed">{msg.text}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 pt-1 border-t border-outline-variant/20 flex-wrap">
+                      <div className="flex items-center justify-between pt-1">
                         <button
-                          type="button"
-                          onClick={() => {
-                            const prev = messages
-                              .slice(0, messages.findIndex((m) => m.id === msg.id))
-                              .reverse()
-                              .find((m) => m.sender === 'user');
-                            if (prev) {
-                              onSendMessage(prev.text, selectedLevel);
-                            }
-                          }}
-                          className="px-2.5 py-1 rounded-md bg-surface-container-high hover:bg-surface-container-highest text-primary border border-primary/30 text-[11px] font-mono font-medium flex items-center gap-1 transition-colors"
+                          onClick={() => onSendMessage(messages[messages.length - 2]?.text || 'Retry', 1)}
+                          className="px-2 py-1 rounded bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/40 font-mono text-[10px] text-on-surface flex items-center gap-1 transition-colors"
                           title="Retry generation"
                         >
                           <RefreshCw className="w-3 h-3" />
@@ -457,10 +422,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     </div>
                   )}
 
-                  {/* "From the page" Citation Pill (highlights on page) */}
+                  {/* "From the page" Citation Pill (highlights on page with real feedback) */}
                   {msg.groundedQuote && (
                     <div
-                      onClick={() => onHighlightQuote(msg.groundedQuote!)}
+                      onClick={() => handleHighlightClick(msg.groundedQuote!, msg.id)}
                       className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-secondary/50 cursor-pointer transition-colors group w-full min-w-0"
                       title="Click to locate and highlight this quote on active page"
                     >
@@ -470,9 +435,28 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                           {msg.groundedQuote}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] font-mono text-secondary shrink-0 opacity-80 group-hover:opacity-100">
-                        <span>Highlight</span>
-                        <ExternalLink className="w-3 h-3" />
+                      <div className="flex items-center gap-1 text-[10px] font-mono shrink-0">
+                        {highlightStatus[msg.id] === 'highlighting' ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin text-secondary" />
+                            <span className="text-secondary">Locating...</span>
+                          </>
+                        ) : highlightStatus[msg.id] === 'highlighted' ? (
+                          <>
+                            <Check className="w-3 h-3 text-primary" />
+                            <span className="text-primary font-semibold">Highlighted</span>
+                          </>
+                        ) : highlightStatus[msg.id] === 'not_found' ? (
+                          <>
+                            <AlertTriangle className="w-3 h-3 text-tertiary" />
+                            <span className="text-tertiary">Not found on page</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-secondary opacity-80 group-hover:opacity-100">Highlight</span>
+                            <ExternalLink className="w-3 h-3 text-secondary opacity-80 group-hover:opacity-100" />
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
@@ -518,51 +502,53 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Footer Dock */}
-      <footer className="p-3 border-t border-outline-variant/30 bg-surface-container/95 backdrop-blur-md flex flex-col gap-2 relative z-30 shrink-0">
-        {/* Mini toolbar */}
-        <div className="flex items-center justify-between text-xs font-mono">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsLevelDropdownOpen(!isLevelDropdownOpen)}
-              className="flex items-center gap-1.5 bg-surface-container-lowest px-2 py-1 rounded-lg border border-outline-variant/40 hover:border-outline-variant transition-colors"
-              title="Select pedagogical hint level"
-            >
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              <span className="text-on-surface-variant text-[11px]">Level:</span>
-              <span className="text-on-surface font-medium text-[11px]">
-                {levelLabels[selectedLevel]}
-              </span>
-              <ChevronDown className="w-3 h-3 text-on-surface-variant" />
-            </button>
+      {/* Input area */}
+      <footer className="p-2.5 bg-surface-container-low border-t border-outline-variant/40 shrink-0 space-y-1.5">
+        {/* Level selector if enabled */}
+        <div className="flex items-center justify-between gap-2 px-1">
+          {showLevels ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsLevelDropdownOpen(!isLevelDropdownOpen)}
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 text-[11px] font-mono text-on-surface transition-colors"
+                title="Select guidance level"
+              >
+                <span>Level: {levelLabels[selectedLevel]}</span>
+                <ChevronDown className="w-3 h-3 text-on-surface-variant" />
+              </button>
 
-            {isLevelDropdownOpen && (
-              <div className="absolute bottom-8 left-0 w-48 bg-surface-container-high border border-outline-variant rounded-lg shadow-xl p-1 z-50 text-xs font-mono">
-                {([1, 2, 3, 4] as HintLevel[]).map((lvl) => (
-                  <button
-                    key={lvl}
-                    type="button"
-                    onClick={() => {
-                      setSelectedLevel(lvl);
-                      setIsLevelDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded flex items-center justify-between ${
-                      selectedLevel === lvl
-                        ? 'bg-primary/20 text-primary font-semibold'
-                        : 'text-on-surface hover:bg-surface-container'
-                    }`}
-                  >
-                    <span>{levelLabels[lvl]}</span>
-                    {selectedLevel === lvl && <Check className="w-3 h-3 text-primary" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              {isLevelDropdownOpen && (
+                <div className="absolute bottom-full left-0 mb-1 w-48 bg-surface-container-highest border border-outline-variant rounded-lg shadow-xl p-1 z-50 text-xs font-mono">
+                  {([1, 2, 3, 4] as HintLevel[]).map((lvl) => (
+                    <button
+                      key={lvl}
+                      type="button"
+                      onClick={() => {
+                        setSelectedLevel(lvl);
+                        setIsLevelDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded flex items-center justify-between ${
+                        selectedLevel === lvl
+                          ? 'bg-primary/20 text-primary font-semibold'
+                          : 'text-on-surface hover:bg-surface-container'
+                      }`}
+                    >
+                      <span>{levelLabels[lvl]}</span>
+                      {selectedLevel === lvl && <Check className="w-3 h-3 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <span className="text-on-surface-variant font-mono text-[11px]">
+              Direct Guidance
+            </span>
+          )}
 
           <span className="text-on-surface-variant/70 text-[10px] font-mono truncate max-w-[140px] min-w-0">
-            Context: {siteName}
+            Context: {pageProfile?.sourceLabel || siteName}
           </span>
         </div>
 

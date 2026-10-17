@@ -75,13 +75,13 @@ export const HintsTab: React.FC<HintsTabProps> = ({
         1: { title: 'Pointer', subtitle: 'Where in page to look' },
         2: { title: 'Explain Simply', subtitle: 'Jargon-free explanation' },
         3: { title: 'Worked Example', subtitle: 'Analogy or scenario' },
-        4: { title: 'Full Explanation', subtitle: 'In-depth guide' },
+        4: { title: activeHint?.codeBlock ? 'Full Solution' : 'Full Explanation', subtitle: activeHint?.codeBlock ? 'Working implementation' : 'In-depth guide' },
       }
     : {
         1: { title: 'Direction', subtitle: 'Conceptual nudge' },
         2: { title: 'Approach', subtitle: 'Algorithmic pattern' },
         3: { title: 'Pseudocode', subtitle: 'Logic scaffold' },
-        4: { title: 'Full Code', subtitle: 'Working implementation' },
+        4: { title: activeHint?.codeBlock ? 'Full Solution' : 'Full Explanation', subtitle: activeHint?.codeBlock ? 'Working implementation' : 'In-depth guide' },
       };
 
   return (
@@ -114,7 +114,7 @@ export const HintsTab: React.FC<HintsTabProps> = ({
                     <Check className="w-3.5 h-3.5" />
                   </div>
                   <span className="font-mono text-[10px] text-on-surface group-hover:text-primary transition-colors truncate w-full block">
-                    L{lvl} {levelTitles[lvl].title.slice(0, 5)}
+                    L{lvl} {levelTitles[lvl].title}
                   </span>
                   <span className="text-[9px] font-mono text-on-surface-variant/70 leading-none truncate w-full block">
                     Reviewed
@@ -136,7 +136,7 @@ export const HintsTab: React.FC<HintsTabProps> = ({
                     {lvl}
                   </div>
                   <span className="font-mono text-[10px] text-primary font-semibold truncate w-full block">
-                    L{lvl} {levelTitles[lvl].title.slice(0, 5)}
+                    L{lvl} {levelTitles[lvl].title}
                   </span>
                   <span className="text-[9px] font-mono text-primary/80 leading-none truncate w-full block">
                     Active

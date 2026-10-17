@@ -77,6 +77,8 @@ export const RequestHintRequestSchema = z.object({
   problemHash: z.string().min(1),
   userQuery: z.string().max(2000).optional(),
   requestId: z.string().optional(),
+  tabId: z.number().optional(),
+  pageKey: z.string().optional(),
 });
 
 export const RequestHintResponseSchema = z.object({
@@ -190,6 +192,8 @@ export const SubmitChatQueryRequestSchema = z.object({
   level: HintLevelSchema.optional(),
   requestId: z.string().optional(),
   mode: z.enum(['page', 'standalone', 'no_page']).optional(),
+  tabId: z.number().optional(),
+  pageKey: z.string().optional(),
 });
 
 export const SubmitChatQueryResponseSchema = z.object({
@@ -286,11 +290,14 @@ export const GetWeakTopicsReviewResponseSchema = z.object({
 export const HighlightPageTextRequestSchema = z.object({
   type: z.literal('HIGHLIGHT_PAGE_TEXT'),
   text: z.string().min(1),
+  tabId: z.number().optional(),
 });
 
 export const HighlightPageTextResponseSchema = z.object({
   type: z.literal('PAGE_TEXT_HIGHLIGHTED'),
   found: z.boolean(),
+  matchedLength: z.number().optional(),
+  strategyUsed: z.string().optional(),
 });
 
 export const SetPausedRequestSchema = z.object({

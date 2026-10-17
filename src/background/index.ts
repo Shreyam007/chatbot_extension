@@ -205,10 +205,13 @@ export function initBackground() {
       };
     },
     REQUEST_HINT: async (req, sender) => {
-      let tabId = sender?.tab?.id;
+      let tabId = req.tabId ?? sender?.tab?.id;
       if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
-        const { tabId: activeId } = await getActiveTabState();
-        tabId = activeId;
+        tabId = req.tabId;
+        if (!tabId) {
+          const { tabId: activeId } = await getActiveTabState();
+          tabId = activeId;
+        }
       }
 
       const stored = await chrome.storage?.local?.get(['settings']);
@@ -545,16 +548,22 @@ export function initBackground() {
         success: true,
       };
     },
-    GET_PROBLEM_CONTEXT: async (_req) => {
-      const { tabId, state: activeTabState } = await getActiveTabState();
-      let context = activeTabState?.context ?? null;
-      const signals = activeTabState?.signals ?? null;
-      const pStuck = activeTabState?.pStuck ?? 0;
+    GET_PROBLEM_CONTEXT: async (req) => {
+      let targetTabId = req?.tabId;
+      let tabState = targetTabId ? await getTabState(targetTabId) : undefined;
+      if (!tabState || !tabState.context) {
+        const { tabId: activeId, state: activeTabState } = await getActiveTabState();
+        if (!targetTabId) targetTabId = activeId;
+        if (!tabState) tabState = activeTabState;
+      }
+      let context = tabState?.context ?? null;
+      const signals = tabState?.signals ?? null;
+      const pStuck = tabState?.pStuck ?? 0;
 
-      if (!context && tabId && typeof chrome !== 'undefined' && chrome.tabs?.sendMessage) {
+      if (!context && targetTabId && typeof chrome !== 'undefined' && chrome.tabs?.sendMessage) {
         try {
           const tabRes = await new Promise<{ ok: boolean; context: PageContext | null }>((resolve) => {
-            chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_CONTEXT' }, (res) => {
+            chrome.tabs.sendMessage(targetTabId!, { type: 'GET_PAGE_CONTEXT' }, (res) => {
               if (chrome.runtime?.lastError || !res) {
                 resolve({ ok: false, context: null });
               } else {
@@ -564,7 +573,7 @@ export function initBackground() {
           });
           if (tabRes?.context) {
             context = tabRes.context;
-            await setTabState(tabId, { context });
+            await setTabState(targetTabId!, { context });
           }
         } catch (err) {
           logger.debug('Active tab context lookup error:', err);
@@ -588,10 +597,13 @@ export function initBackground() {
       };
     },
     SUBMIT_CHAT_QUERY: async (req, sender) => {
-      let tabId = sender?.tab?.id;
+      let tabId = req.tabId ?? sender?.tab?.id;
       if (!tabId || sender?.tab?.url?.startsWith('chrome-extension://')) {
-        const { tabId: activeId } = await getActiveTabState();
-        tabId = activeId;
+        tabId = req.tabId;
+        if (!tabId) {
+          const { tabId: activeId } = await getActiveTabState();
+          tabId = activeId;
+        }
       }
 
       const stored = await chrome.storage?.local?.get(['settings']);
@@ -736,13 +748,23 @@ export function initBackground() {
       ]);
       const metrics = calculateMetricsFromRecords(events, hints, banditStats, recentTraces);
 
+      const hintsByProblem: Record<string, number> = {};
+      for (const h of hints) {
+        if (h.problemHash) {
+          hintsByProblem[h.problemHash] = (hintsByProblem[h.problemHash] || 0) + 1;
+        }
+      }
+      const recentProblemHints = Object.entries(hintsByProblem)
+        .map(([id, count]) => ({ id, hints: count }))
+        .slice(0, 10);
+
       return {
         type: 'MASTERY_PROGRESS',
         topics,
         weeklySolved: metrics.solvedProblemsCount,
         hintsPerSolve: metrics.hintsPerSolve,
         nudgeAcceptRate: metrics.nudgeAcceptanceRate,
-        recentProblemHints: [],
+        recentProblemHints,
       };
     },
     GET_WEAK_TOPICS_REVIEW: async (_req) => {
@@ -815,20 +837,47 @@ export function initBackground() {
     },
     HIGHLIGHT_PAGE_TEXT: async (req) => {
       logger.info(`Highlighting page text: "${req.text.slice(0, 30)}..."`);
+      let found = false;
+      let matchedLength: number | undefined;
+      let strategyUsed: string | undefined;
+
       try {
-        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (activeTab?.id) {
-          chrome.tabs.sendMessage(activeTab.id, {
-            type: 'HIGHLIGHT_PAGE_TEXT',
-            text: req.text,
+        let targetTabId = req.tabId;
+        if (!targetTabId) {
+          const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          targetTabId = activeTab?.id;
+        }
+        if (targetTabId && typeof chrome !== 'undefined' && chrome.tabs?.sendMessage) {
+          const resp = await new Promise<{ ok?: boolean; found?: boolean; matchedLength?: number; strategyUsed?: string } | null>((resolve) => {
+            chrome.tabs.sendMessage(
+              targetTabId!,
+              {
+                type: 'HIGHLIGHT_PAGE_TEXT',
+                text: req.text,
+              },
+              (res) => {
+                if (chrome.runtime?.lastError || !res) {
+                  resolve(null);
+                } else {
+                  resolve(res);
+                }
+              }
+            );
           });
+          if (resp) {
+            found = Boolean(resp.found);
+            matchedLength = resp.matchedLength;
+            strategyUsed = resp.strategyUsed;
+          }
         }
       } catch (err) {
         logger.debug('Highlight dispatch tab query failed', err);
       }
       return {
         type: 'PAGE_TEXT_HIGHLIGHTED',
-        found: true,
+        found,
+        matchedLength,
+        strategyUsed,
       };
     },
     ENABLE_SITE_ONCE: async (req, sender) => {

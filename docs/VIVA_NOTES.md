@@ -428,6 +428,23 @@ In v1.0.7:
 #### Q54: How does v1.0.7 prevent false positive sensitive page blocking on educational URLs?
 **Answer:** Previously, sensitive keywords like "pay", "cart", or "bank" used broad substring queries, causing educational pages like `https://en.wikipedia.org/wiki/Payment`, `/wiki/Open_banking`, `/wiki/Passport`, or `/wiki/Cartoon` to be blocked as checkout or banking pages. In v1.0.7, `src/shared/sensitive.ts` uses strict URL boundary regexes (`(?:^|\/)(?:checkout|cart|pay|billing)(?:\/|$|\?|#)`) and domain suffix matching, ensuring educational reading remains completely accessible.
 
+#### Q55: Why did Wikipedia articles previously show LeetCode subtitles and coding problem chips in the side panel (Evidence E1)?
+**Answer:** Prior to v1.0.8, the Side Panel UI lacked a unified taxonomy and fell back to hardcoded competitive programming strings (`"LeetCode"`, `"Explain this problem"`, `"Current solution code and constraints are already indexed"`) whenever page context lacked explicit overrides. In v1.0.8, canonical `src/shared/page-profile.ts` computes a `PageProfile` record consumed uniformly across all UI surfaces. On Wikipedia, the side panel displays `"Wikipedia"`, informational suggestion chips, generic reading empty states, and strictly disables the 1..4 coding hint stepper.
+
+#### Q56: How does the v1.0.8 text highlighter handle inline markup, accordions, and citation markers (Evidence E2)?
+**Answer:** Quotes retrieved from web pages often contain citation markers (e.g., `[1]`, `[20]`), non-breaking spaces, or typographic quotes, and can span across multiple inline tags (`<span>`, `<a>`, `<em>`) or reside inside collapsed `<details>` panels. In v1.0.8, `src/content/highlighter.ts`:
+1. Uses `normaliseForMatch()` to strip citation superscripts and normalize punctuation.
+2. Injects a non-destructive CSS Custom Highlight API style (`::highlight(unstuck-grounding-highlight)`).
+3. Executes multi-strategy matching (exact match, prefix window, token-overlap fuzzy match).
+4. Recursively traverses parent DOM nodes to open collapsed `<details>` or accordion parents containing the target quote.
+5. Smoothly scrolls the element into view across any internal scrollable container.
+
+#### Q57: How was user input loss prevented during conversational chat queries (Evidence E3)?
+**Answer:** Previously, user input text in `ChatTab.tsx` was cleared immediately when the send button was clicked. If an asynchronous network error or background schema rejection occurred, the typed question was permanently lost. In v1.0.8, an optimistic UI renders the user message bubble immediately, retains the typed text in an internal buffer, and automatically restores the text into the textarea if the background fails to acknowledge the request within a 3-second watchdog timer.
+
+#### Q58: Why were proactive Detector and Planner timings appearing in the Trace Tab for direct chat queries (Evidence E4)?
+**Answer:** The multi-agent graph architecture previously logged default node timings for all nodes in its pipeline regardless of invocation entrypoint. For direct chat interactions initiated by the user, running detector and planner telemetry was inaccurate because no proactive struggle evaluation occurred. In v1.0.8, `src/background/graph/graph.ts` strictly gates detector and planner telemetry behind `isProactiveNudge: true`. Direct chat requests omit proactive nodes and tag traces with `userInitiated: true`.
+
 ---
 
 ## 6. Upfront Weaknesses & Technical Limitations (Honest Self-Critique)

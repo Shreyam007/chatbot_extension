@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { OnboardingWizard } from '../ui/OnboardingWizard';
 import { sendToBackground, listenToBroadcastEvents } from '../shared/messaging';
 import type { PageContext } from '../shared/schemas/context';
@@ -6,6 +6,7 @@ import type { Hint, HintLevel } from '../shared/schemas/hints';
 import type { SignalWindow } from '../shared/schemas/signals';
 import type { AgentRunTrace } from '../background/graph/types';
 import type { SubmitChatQueryResponse } from '../shared/messaging/protocol';
+import { getPageProfile, hashUrl } from '../shared/page-profile';
 
 import { Header } from './components/Header';
 import { Navigation, type SidePanelTab } from './components/Navigation';
@@ -25,6 +26,12 @@ export const SidePanelApp: React.FC = () => {
   const [hasApiKey, setHasApiKey] = useState<boolean>(true);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
+  // Active Tab & Page State
+  const [activeTabId, setActiveTabId] = useState<number | null>(null);
+  const [activeUrl, setActiveUrl] = useState<string | null>(null);
+  const [activeTabTitle, setActiveTabTitle] = useState<string | null>(null);
+  const [isLoadingPage, setIsLoadingPage] = useState<boolean>(false);
+
   // Active Context & Telemetry
   const [context, setContext] = useState<PageContext | null>(null);
   const [signals, setSignals] = useState<SignalWindow | null>(null);
@@ -33,8 +40,20 @@ export const SidePanelApp: React.FC = () => {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [demoMode, setDemoMode] = useState<boolean>(false);
 
+  // Derived Page Profile
+  const pageProfile = useMemo(() => {
+    return getPageProfile(context, activeUrl ?? undefined);
+  }, [context, activeUrl]);
+
   // Tabs & Navigation
-  const [activeTab, setActiveTab] = useState<SidePanelTab>('hints');
+  const [activeTab, setActiveTab] = useState<SidePanelTab>('chat');
+
+  // Enforce Invariant: Hints tab strictly enabled ONLY for coding_problem
+  useEffect(() => {
+    if (!pageProfile.showHintsTab && activeTab === 'hints') {
+      setActiveTab('chat');
+    }
+  }, [pageProfile.showHintsTab, activeTab]);
 
   // Hints State
   const [currentLevel, setCurrentLevel] = useState<HintLevel>(1);
@@ -46,8 +65,9 @@ export const SidePanelApp: React.FC = () => {
   const [isEstimate, setIsEstimate] = useState<boolean>(false);
   const [errorModel, setErrorModel] = useState<string | undefined>(undefined);
 
-  // Chat State
+  // Chat State per Page
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [pageMessagesMap, setPageMessagesMap] = useState<Map<string, ChatMessage[]>>(new Map());
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
 
   // Trace & Progress State
@@ -56,6 +76,11 @@ export const SidePanelApp: React.FC = () => {
   const [weeklySolved, setWeeklySolved] = useState<number>(0);
   const [hintsPerSolve, setHintsPerSolve] = useState<number>(0);
   const [nudgeAcceptRate, setNudgeAcceptRate] = useState<number>(0);
+  const [recentProblemHints, setRecentProblemHints] = useState<Array<{ id: string; hints: number }>>([]);
+  const [diagnostics, setDiagnostics] = useState<{
+    sensitivity?: 'low' | 'medium' | 'high';
+    activeThresholds?: Record<string, number>;
+  } | null>(null);
 
   // Solved Modal
   const [showSolvedModal, setShowSolvedModal] = useState<boolean>(false);
@@ -69,16 +94,144 @@ export const SidePanelApp: React.FC = () => {
     | null
   >(null);
 
-  // 1. Initial Data Fetch
+  const currentPageKey = useMemo(() => {
+    return hashUrl(activeUrl);
+  }, [activeUrl]);
+
+  // Sync active page messages when pageKey changes
   useEffect(() => {
-    // Check onboarding
+    if (currentPageKey) {
+      const existing = pageMessagesMap.get(currentPageKey) || [];
+      setMessages(existing);
+    }
+  }, [currentPageKey]);
+
+  const loadHintsHistory = useCallback(async (problemHash: string) => {
+    try {
+      const res = await sendToBackground<{ type: string; hints: Hint[] }>({
+        type: 'GET_HINTS_HISTORY',
+        problemHash,
+      });
+      if (res?.hints && res.hints.length > 0) {
+        const latest = res.hints[res.hints.length - 1]!;
+        setActiveHint(latest);
+        setCurrentLevel(latest.level);
+      } else {
+        setActiveHint(null);
+        setCurrentLevel(1);
+      }
+    } catch {
+      setActiveHint(null);
+      setCurrentLevel(1);
+    }
+  }, []);
+
+  const loadTelemetryAndMastery = useCallback(() => {
+    sendToBackground<{ type: string; traces: AgentRunTrace[] }>({
+      type: 'GET_RUN_TRACES',
+    })
+      .then((res) => {
+        if (res?.traces) setTraces(res.traces);
+      })
+      .catch(() => {});
+
+    sendToBackground<{
+      type: string;
+      topics: TopicProgress[];
+      weeklySolved: number;
+      hintsPerSolve: number;
+      nudgeAcceptRate: number;
+      recentProblemHints?: Array<{ id: string; hints: number }>;
+    }>({ type: 'GET_MASTERY_PROGRESS' })
+      .then((res) => {
+        if (res) {
+          setTopics(res.topics || []);
+          setWeeklySolved(res.weeklySolved || 0);
+          setHintsPerSolve(res.hintsPerSolve || 0);
+          setNudgeAcceptRate(res.nudgeAcceptRate || 0);
+          if (res.recentProblemHints) {
+            setRecentProblemHints(res.recentProblemHints);
+          }
+        }
+      })
+      .catch(() => {});
+
+    sendToBackground<{
+      type: string;
+      sensitivity?: 'low' | 'medium' | 'high';
+      activeThresholds?: Record<string, number>;
+    }>({ type: 'GET_NUDGE_DIAGNOSTICS' })
+      .then((res) => {
+        if (res) {
+          setDiagnostics({
+            sensitivity: res.sensitivity,
+            activeThresholds: res.activeThresholds,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const syncActiveTabContext = useCallback(async (targetTabId?: number) => {
+    setIsLoadingPage(true);
+    try {
+      let tabId = targetTabId;
+      let url: string | undefined;
+      let title: string | undefined;
+
+      if (typeof chrome !== 'undefined' && chrome.tabs?.query) {
+        if (!tabId) {
+          const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+          tabId = active?.id;
+          url = active?.url;
+          title = active?.title;
+        } else {
+          const tab = await chrome.tabs.get(tabId).catch(() => null);
+          url = tab?.url;
+          title = tab?.title;
+        }
+      }
+
+      if (tabId) setActiveTabId(tabId);
+      if (url) setActiveUrl(url);
+      if (title) setActiveTabTitle(title);
+
+      const res = await sendToBackground<{
+        type: string;
+        context: PageContext | null;
+        signals: SignalWindow | null;
+        pStuck: number;
+        isContest: boolean;
+        isPaused: boolean;
+      }>({ type: 'GET_PROBLEM_CONTEXT', tabId });
+
+      if (res?.context) {
+        setContext(res.context);
+        setSignals(res.signals);
+        setPStuck(res.pStuck);
+        setIsContest(res.isContest);
+        setIsPaused(res.isPaused);
+        loadHintsHistory(res.context.url);
+      } else {
+        setContext(null);
+        setActiveHint(null);
+      }
+    } catch {
+      setContext(null);
+      setActiveHint(null);
+    } finally {
+      setIsLoadingPage(false);
+    }
+  }, [loadHintsHistory]);
+
+  // Initial Data Fetch & Tab Listeners
+  useEffect(() => {
     sendToBackground<{ type: string; state: { completed?: boolean } }>({ type: 'GET_ONBOARDING' })
       .then((res) => {
         setOnboardingComplete(Boolean(res?.state?.completed));
       })
       .catch(() => setOnboardingComplete(true));
 
-    // Fetch settings
     sendToBackground<{ type: string; settings: Settings }>({ type: 'GET_SETTINGS' })
       .then((res) => {
         if (res?.settings) {
@@ -90,7 +243,6 @@ export const SidePanelApp: React.FC = () => {
       })
       .catch(() => {});
 
-    // Check status & API key
     sendToBackground<{ type: string; status: { hasApiKey: boolean; isContest: boolean } }>({
       type: 'GET_STATUS',
     })
@@ -102,43 +254,14 @@ export const SidePanelApp: React.FC = () => {
       })
       .catch(() => {});
 
-    // Fetch active problem context
-    sendToBackground<{
-      type: string;
-      context: PageContext | null;
-      signals: SignalWindow | null;
-      pStuck: number;
-      isContest: boolean;
-      isPaused: boolean;
-    }>({ type: 'GET_PROBLEM_CONTEXT' })
-      .then((res) => {
-        if (res?.context) {
-          setContext(res.context);
-          setSignals(res.signals);
-          setPStuck(res.pStuck);
-          setIsContest(res.isContest);
-          setIsPaused(res.isPaused);
-          loadHintsHistory(res.context.url);
-        } else {
-          setContext(null);
-          setActiveHint(null);
-        }
-      })
-      .catch(() => {
-        setContext(null);
-        setActiveHint(null);
-      });
-
-    // Fetch traces & mastery
+    syncActiveTabContext();
     loadTelemetryAndMastery();
 
-    // Online/offline listeners
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Listen to background broadcast events
     const unsubscribe = listenToBroadcastEvents((event) => {
       if (event.event === 'CONTEST_DETECTED') {
         setIsContest(true);
@@ -148,84 +271,53 @@ export const SidePanelApp: React.FC = () => {
       }
     });
 
+    if (typeof chrome !== 'undefined' && chrome.tabs) {
+      const handleActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
+        syncActiveTabContext(activeInfo.tabId);
+      };
+      const handleUpdated = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+        if (changeInfo.status === 'complete' || changeInfo.url) {
+          syncActiveTabContext(tabId);
+        }
+      };
+      const handleWindowFocus = (windowId: number) => {
+        if (windowId !== chrome.windows?.WINDOW_ID_NONE) {
+          syncActiveTabContext();
+        }
+      };
+
+      chrome.tabs.onActivated?.addListener(handleActivated);
+      chrome.tabs.onUpdated?.addListener(handleUpdated);
+      chrome.windows?.onFocusChanged?.addListener(handleWindowFocus);
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+        unsubscribe();
+        chrome.tabs.onActivated?.removeListener(handleActivated);
+        chrome.tabs.onUpdated?.removeListener(handleUpdated);
+        chrome.windows?.onFocusChanged?.removeListener(handleWindowFocus);
+      };
+    }
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       unsubscribe();
     };
-  }, []);
+  }, [syncActiveTabContext, loadTelemetryAndMastery]);
 
-  const loadHintsHistory = async (problemHash: string) => {
-    try {
-      const res = await sendToBackground<{ type: string; hints: Hint[] }>({
-        type: 'GET_HINTS_HISTORY',
-        problemHash,
-      });
-      if (res?.hints && res.hints.length > 0) {
-        const last = res.hints[res.hints.length - 1];
-        if (last) {
-          setActiveHint(last);
-          setCurrentLevel(last.level);
-        }
-      } else {
-        setActiveHint(null);
-        setCurrentLevel(1);
-      }
-    } catch {
-      setActiveHint(null);
-      setCurrentLevel(1);
+  const handleNextLevel = async (targetLevel: HintLevel) => {
+    if (!context) return;
+    if (shouldPromptSendPreview()) {
+      setPendingAction({ type: 'hint', level: targetLevel });
+      setShowPreviewModal(true);
+      return;
     }
+    executeRequestHint(targetLevel);
   };
 
-  const loadTelemetryAndMastery = async () => {
-    try {
-      const tracesRes = await sendToBackground<{ type: string; traces: AgentRunTrace[] }>({
-        type: 'GET_RUN_TRACES',
-      });
-      if (tracesRes?.traces) {
-        setTraces(tracesRes.traces);
-      }
-
-      const masteryRes = await sendToBackground<{
-        type: string;
-        topics: TopicProgress[];
-        weeklySolved: number;
-        hintsPerSolve: number;
-        nudgeAcceptRate: number;
-      }>({ type: 'GET_MASTERY_PROGRESS' });
-      if (masteryRes?.topics) {
-        setTopics(masteryRes.topics);
-        setWeeklySolved(masteryRes.weeklySolved);
-        setHintsPerSolve(masteryRes.hintsPerSolve);
-        setNudgeAcceptRate(masteryRes.nudgeAcceptRate);
-      }
-    } catch {
-      // Best-effort
-    }
-  };
-
-  const getContextOrigin = (): string => {
-    if (!context?.url) return '';
-    try {
-      return new URL(context.url).origin;
-    } catch {
-      return '';
-    }
-  };
-
-  const shouldPromptSendPreview = (): boolean => {
-    if (!context) return false;
-    // Known platforms are pre-confirmed
-    if (context.site === 'leetcode' || context.site === 'codeforces') return false;
-    const origin = getContextOrigin();
-    if (!origin) return false;
-    const isConfirmed = settings?.confirmedSendSites?.includes(origin);
-    const isNeverSend = settings?.neverSendPageTextSites?.includes(origin);
-    return !isConfirmed && !isNeverSend;
-  };
-
-  // 2. Actions
-  const executeNextLevel = async (targetLevel: HintLevel) => {
+  const executeRequestHint = async (targetLevel: HintLevel) => {
     if (!context) return;
     setIsHintLoading(true);
     setErrorState(null);
@@ -238,6 +330,8 @@ export const SidePanelApp: React.FC = () => {
         level: targetLevel,
         problemHash: context.url,
         requestId,
+        tabId: activeTabId ?? undefined,
+        pageKey: currentPageKey || undefined,
       });
 
       if (res?.hint) {
@@ -254,7 +348,7 @@ export const SidePanelApp: React.FC = () => {
           : undefined;
 
       const qKind = details?.quotaKind || (msg.includes('per_day') || msg.includes('daily') ? 'per_day' : 'per_minute');
-      const waitSec = details?.retryAfterSeconds || (details?.retryAfterMs ? Math.ceil(details.retryAfterMs / 1000) : 10);
+      const waitSec = details?.retryAfterSeconds || (details?.retryAfterMs ? Math.ceil(details.retryAfterMs / 1000) : 3);
       const estimate = Boolean(details?.isEstimate);
       const mod = details?.model || settings?.model;
 
@@ -267,57 +361,53 @@ export const SidePanelApp: React.FC = () => {
         setErrorState('no_api_key');
       } else if (code === 'INVALID_KEY' || msg.includes('INVALID_KEY') || msg.includes('403') || msg.includes('permission_denied')) {
         setErrorState('invalid_key');
-      } else if (code === 'NO_PAGE_CONTEXT' || msg.includes('NO_PAGE_CONTEXT')) {
-        setErrorState('no_page_context');
-      } else if (code === 'TIMEOUT' || msg.includes('TIMEOUT') || msg.includes('timed out')) {
-        setErrorState('timeout');
       } else if (code === 'RATE_LIMITED' || msg.includes('RATE_LIMITED') || msg.includes('429')) {
         setErrorState('rate_limited');
-      } else if (code === 'OFFLINE' || msg.includes('OFFLINE') || msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('connection')) {
+      } else if (code === 'OFFLINE' || msg.includes('OFFLINE')) {
         setErrorState('offline');
-      } else {
+      } else if (code === 'TIMEOUT' || msg.includes('timed out')) {
         setErrorState('timeout');
+      } else {
+        setErrorState('rate_limited');
       }
     } finally {
       setIsHintLoading(false);
     }
   };
 
-  const handleNextLevel = async (targetLevel: HintLevel) => {
-    if (!context) return;
-    if (shouldPromptSendPreview()) {
-      setPendingAction({ type: 'hint', level: targetLevel });
-      setShowPreviewModal(true);
-      return;
-    }
-    executeNextLevel(targetLevel);
-  };
-
-  const handleMakeMoreDirect = () => {
-    handleNextLevel(Math.min(4, currentLevel + 1) as HintLevel);
+  const appendChatMessage = (msg: ChatMessage) => {
+    setMessages((prev) => {
+      const updated = [...prev, msg];
+      if (currentPageKey) {
+        setPageMessagesMap((map) => new Map(map).set(currentPageKey, updated));
+      }
+      return updated;
+    });
   };
 
   const executeSendMessage = async (query: string, level?: HintLevel) => {
-    if (!context) return;
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
       text: query,
       timestamp: Date.now(),
     };
-    setMessages((prev) => [...prev, userMsg]);
+    appendChatMessage(userMsg);
     setIsChatLoading(true);
     setErrorState(null);
 
     const requestId = `chat-req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const problemHash = context?.url || `page:${currentPageKey || 'active'}`;
 
     try {
       const res = await sendToBackground<SubmitChatQueryResponse>({
         type: 'SUBMIT_CHAT_QUERY',
         query,
-        problemHash: context.url,
+        problemHash,
         level: level ?? currentLevel,
         requestId,
+        tabId: activeTabId ?? undefined,
+        pageKey: currentPageKey || undefined,
       });
 
       if (res) {
@@ -338,7 +428,7 @@ export const SidePanelApp: React.FC = () => {
             model: res.model,
             sectionsUsed: res.sectionsUsed,
           };
-          setMessages((prev) => [...prev, assistantMsg]);
+          appendChatMessage(assistantMsg);
         } else {
           const assistantMsg: ChatMessage = {
             id: `asst-err-${Date.now()}`,
@@ -355,7 +445,7 @@ export const SidePanelApp: React.FC = () => {
             llmCallCount: res.llmCallCount,
             model: res.model,
           };
-          setMessages((prev) => [...prev, assistantMsg]);
+          appendChatMessage(assistantMsg);
         }
         loadTelemetryAndMastery();
       }
@@ -395,7 +485,7 @@ export const SidePanelApp: React.FC = () => {
           timestamp: Date.now(),
           criticChecked: false,
         };
-        setMessages((prev) => [...prev, errorMsg]);
+        appendChatMessage(errorMsg);
       }
     } finally {
       setIsChatLoading(false);
@@ -403,13 +493,24 @@ export const SidePanelApp: React.FC = () => {
   };
 
   const handleSendMessage = async (query: string, level?: HintLevel) => {
-    if (!context) return;
+    if (pageProfile.kind === 'restricted') {
+      const restrictedMsg: ChatMessage = {
+        id: `asst-restricted-${Date.now()}`,
+        sender: 'assistant',
+        text: 'Browser security restricts extension access on internal browser pages (chrome://, edge://, or extension management). Please open any public web page or coding problem.',
+        timestamp: Date.now(),
+        isError: true,
+      };
+      appendChatMessage(restrictedMsg);
+      return;
+    }
+
     if (shouldPromptSendPreview()) {
       setPendingAction({ type: 'chat', query, level });
       setShowPreviewModal(true);
       return;
     }
-    executeSendMessage(query, level);
+    await executeSendMessage(query, level);
   };
 
   const handleConfirmSendPreview = async (payload: {
@@ -427,32 +528,30 @@ export const SidePanelApp: React.FC = () => {
           neverSendPageText: payload.neverSendForSite || !payload.includePageText,
           confirmed: true,
         });
-        setSettings((prev) =>
-          prev
-            ? {
-                ...prev,
-                confirmedSendSites: Array.from(new Set([...(prev.confirmedSendSites || []), origin])),
-                neverSendPageTextSites:
-                  payload.neverSendForSite || !payload.includePageText
-                    ? Array.from(new Set([...(prev.neverSendPageTextSites || []), origin]))
-                    : prev.neverSendPageTextSites,
-              }
-            : prev
-        );
+        setSettings((prev) => {
+          if (!prev) return null;
+          const neverSend =
+            payload.neverSendForSite || !payload.includePageText
+              ? Array.from(new Set([...(prev.neverSendPageTextSites || []), origin]))
+              : (prev.neverSendPageTextSites || []).filter((s) => s !== origin);
+          const confirmed = Array.from(new Set([...(prev.confirmedSendSites || []), origin]));
+          return {
+            ...prev,
+            neverSendPageTextSites: neverSend,
+            confirmedSendSites: confirmed,
+          };
+        });
       } catch {
         // Best-effort
       }
     }
 
-    const action = pendingAction;
-    setPendingAction(null);
-    if (!action) return;
-
-    if (action.type === 'hint') {
-      executeNextLevel(action.level);
-    } else if (action.type === 'chat') {
-      executeSendMessage(action.query, action.level);
+    if (pendingAction?.type === 'hint') {
+      executeRequestHint(pendingAction.level);
+    } else if (pendingAction?.type === 'chat') {
+      executeSendMessage(pendingAction.query, pendingAction.level);
     }
+    setPendingAction(null);
   };
 
   const handleCancelSendPreview = () => {
@@ -460,11 +559,17 @@ export const SidePanelApp: React.FC = () => {
     setPendingAction(null);
   };
 
-  const handleHighlightQuote = (quote: string) => {
-    sendToBackground({
-      type: 'HIGHLIGHT_PAGE_TEXT',
-      text: quote,
-    }).catch(() => {});
+  const handleHighlightQuote = async (quote: string): Promise<boolean> => {
+    try {
+      const res = await sendToBackground<{ type: string; found: boolean; matchedLength?: number; strategyUsed?: string }>({
+        type: 'HIGHLIGHT_PAGE_TEXT',
+        text: quote,
+        tabId: activeTabId ?? undefined,
+      });
+      return Boolean(res?.found);
+    } catch {
+      return false;
+    }
   };
 
   const handleTogglePause = async () => {
@@ -486,67 +591,116 @@ export const SidePanelApp: React.FC = () => {
     }).catch(() => {});
   };
 
-  const handleSolved = () => {
-    if (context) {
-      sendToBackground({
+  const handleSolved = async () => {
+    if (!context) return;
+    setShowSolvedModal(true);
+    try {
+      await sendToBackground({
         type: 'RECORD_SOLVED',
         problemHash: context.url,
         hintsUsedCount: currentLevel,
-      }).catch(() => {});
+        topics: context.tags,
+      });
+      loadTelemetryAndMastery();
+    } catch {
+      // Best-effort
     }
-    setShowSolvedModal(true);
+  };
+
+  const handleMakeMoreDirect = () => {
+    const next = Math.min(4, currentLevel + 1) as HintLevel;
+    handleNextLevel(next);
   };
 
   const handleOpenSettings = () => {
-    try {
-      const optionsUrl = chrome.runtime?.getURL ? chrome.runtime.getURL('options.html') : 'options.html';
-      window.open(optionsUrl, '_blank');
-    } catch {
-      if (chrome.runtime?.openOptionsPage) {
-        chrome.runtime.openOptionsPage();
-      }
+    if (typeof chrome !== 'undefined' && chrome.runtime?.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
     }
   };
 
-  // 3. Onboarding Guard
+  const getContextOrigin = (): string | null => {
+    if (activeUrl) {
+      try {
+        return new URL(activeUrl).origin;
+      } catch {
+        // Fallback below
+      }
+    }
+    if (!context?.url) return null;
+    try {
+      if (context.url.startsWith('http://') || context.url.startsWith('https://')) {
+        return new URL(context.url).origin;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const shouldPromptSendPreview = (): boolean => {
+    const origin = getContextOrigin();
+    if (!origin) return false;
+    const confirmed = settings?.confirmedSendSites?.includes(origin);
+    const neverSend = settings?.neverSendPageTextSites?.includes(origin);
+    if (confirmed || neverSend) return false;
+    return true;
+  };
+
   if (onboardingComplete === false) {
     return (
-      <div className="flex flex-col h-screen bg-surface text-on-surface antialiased overflow-y-auto p-2">
+      <div className="flex flex-col h-screen w-full bg-background text-on-surface">
         <OnboardingWizard onComplete={() => setOnboardingComplete(true)} />
       </div>
     );
   }
 
+  const effectiveThreshold =
+    diagnostics?.activeThresholds?.[diagnostics.sensitivity || 'medium'] ??
+    (diagnostics?.sensitivity === 'high' ? 0.45 : diagnostics?.sensitivity === 'low' ? 0.75 : 0.60);
+
   return (
-    <div className="flex flex-col h-screen bg-surface text-on-surface antialiased overflow-hidden select-none">
-      {/* Top Telemetry Header */}
+    <div className="flex flex-col h-screen w-full bg-background text-on-surface overflow-hidden">
+      {/* Top Header */}
       <Header
         context={context}
-        isWatching={!isPaused && !isContest}
+        isWatching={!isPaused && isOnline && Boolean(context)}
         isPaused={isPaused}
         isContest={isContest}
         demoMode={demoMode}
+        pageProfile={pageProfile}
+        activeUrl={activeUrl}
+        activeTabTitle={activeTabTitle}
+        isLoadingPage={isLoadingPage}
         onTogglePause={handleTogglePause}
         onOpenSettings={handleOpenSettings}
       />
 
-      {/* 4-Tab Navigation */}
+      {/* Main 4-Tab Navigation */}
       <Navigation
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab)}
-        chatBadgeCount={messages.length > 0 ? messages.length : undefined}
+        onTabChange={(tab) => {
+          setErrorState(null);
+          setActiveTab(tab);
+        }}
+        showHintsTab={pageProfile.showHintsTab}
       />
 
-      {/* Main View Canvas */}
-      <main className="flex-1 overflow-hidden relative flex flex-col bg-background">
-        {/* Offline Global Error View (S13.2) */}
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-hidden flex flex-col relative" id={`tabpanel-${activeTab}`} role="tabpanel">
         {!isOnline ? (
-          <ErrorStateView type="offline" onRetry={() => setIsOnline(navigator.onLine)} />
+          <ErrorStateView
+            type="offline"
+            onRetry={() => {
+              if (navigator.onLine) setIsOnline(true);
+            }}
+            onOpenSettings={handleOpenSettings}
+          />
         ) : !hasApiKey ? (
-          /* No API Key Error View (S13.1) */
-          <ErrorStateView type="no_api_key" onOpenSettings={handleOpenSettings} />
+          <ErrorStateView
+            type="no_api_key"
+            onOpenSettings={handleOpenSettings}
+          />
         ) : errorState ? (
-          /* Error views (S13.3 - S13.5, S14.1) */
           <ErrorStateView
             type={errorState}
             retryAfterSeconds={retryAfterSeconds}
@@ -561,27 +715,22 @@ export const SidePanelApp: React.FC = () => {
             }}
           />
         ) : isPaused && activeTab === 'hints' ? (
-          /* Paused Contextual View (S14.3) */
           <ContextualStateView type="paused" onResume={handleTogglePause} />
         ) : isContest && activeTab === 'hints' ? (
-          /* Contest Fairness Lock View (S14.2) */
           <ContextualStateView type="contest" />
         ) : context?.isSensitive && activeTab === 'hints' ? (
-          /* Sensitive Page Guardrail View */
           <ContextualStateView
             type="sensitive"
             sensitiveReason={context.sensitiveReason}
             onOpenChat={() => setActiveTab('chat')}
           />
         ) : context?.isSparse && activeTab === 'hints' ? (
-          /* Sparse Content Portal View */
           <ContextualStateView
             type="sparse"
             onOpenChat={() => setActiveTab('chat')}
             onSelectText={() => setActiveTab('chat')}
           />
         ) : !context && activeTab === 'hints' ? (
-          /* No Problem Detected View (S14.1) */
           <ContextualStateView
             type="no_problem"
             onOpenChat={() => setActiveTab('chat')}
@@ -589,7 +738,6 @@ export const SidePanelApp: React.FC = () => {
             onUseWholePage={() => setActiveTab('chat')}
           />
         ) : (
-          /* Standard Active Tabs */
           <>
             {activeTab === 'chat' && (
               <ChatTab
@@ -597,13 +745,14 @@ export const SidePanelApp: React.FC = () => {
                 isLoading={isChatLoading}
                 onSendMessage={handleSendMessage}
                 onHighlightQuote={handleHighlightQuote}
-                siteName={context?.site ?? 'LeetCode'}
+                siteName={pageProfile.sourceLabel}
                 contentType={context?.contentType}
                 isTruncatedPage={Boolean(context?.isTruncated)}
+                pageProfile={pageProfile}
               />
             )}
 
-            {activeTab === 'hints' && (
+            {activeTab === 'hints' && pageProfile.showHintsTab && (
               <HintsTab
                 currentLevel={currentLevel}
                 activeHint={activeHint}
@@ -620,6 +769,8 @@ export const SidePanelApp: React.FC = () => {
               <TraceTab
                 traces={traces}
                 activePStuck={pStuck}
+                activeThreshold={effectiveThreshold}
+                sensitivity={diagnostics?.sensitivity}
                 contributions={signals ? {
                   dwell: Math.min(1, (signals.dwellMs / 1000) / 300),
                   scrollReversals: Math.min(1, signals.scrollReversals / 10),
@@ -635,13 +786,14 @@ export const SidePanelApp: React.FC = () => {
                 weeklySolved={weeklySolved}
                 hintsPerSolve={hintsPerSolve}
                 nudgeAcceptRate={nudgeAcceptRate}
+                recentProblemHints={recentProblemHints}
               />
             )}
           </>
         )}
       </main>
 
-      {/* Solved Summary Modal (S12) */}
+      {/* Solved Summary Modal */}
       {showSolvedModal && (
         <SolvedModal
           problemTitle={context?.title || 'Current Problem'}
@@ -654,7 +806,7 @@ export const SidePanelApp: React.FC = () => {
       {/* Send Preview Modal */}
       {showPreviewModal && (
         <SendPreviewModal
-          siteOrigin={getContextOrigin()}
+          siteOrigin={getContextOrigin() || ''}
           question={pendingAction?.type === 'chat' ? pendingAction.query : 'Initial hint request'}
           extractedText={context?.selectedText || context?.statementText || ''}
           onConfirm={handleConfirmSendPreview}
